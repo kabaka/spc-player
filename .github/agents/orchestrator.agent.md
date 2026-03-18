@@ -25,11 +25,11 @@ Read just enough context to know what's being asked. Don't read the whole codeba
 
 ### 2. Plan
 
-Delegate planning to multiple agents for diverse perspectives. Include agents whose relevance isn't obvious — a UX designer reviewing an infrastructure change can catch issues an architect wouldn't. The goal is concurrence (strong signal) and disagreement (subtle issues worth exploring).
+Research first — agents must gather evidence (web searches, docs, codebase analysis) before writing plans. Delegate planning to multiple agents in parallel for diverse perspectives. Include agents whose relevance isn't obvious. The goal is concurrence (strong signal) and disagreement (subtle issues worth exploring).
 
 ### 3. Review Plans
 
-Delegate peer review of plans to different agents than those who wrote them. Request fresh, independent feedback — not iterative refinement of the same comments.
+Delegate peer review to 3+ agents concurrently, all different from the authors. Concurrent reviews surface consensus and divergence faster than serial rounds. Request fresh, independent feedback — not iterative refinement of the same comments.
 
 ### 4. Iterate
 
@@ -37,11 +37,11 @@ Delegate incorporation of feedback. Plans should be updated in-place, not made l
 
 ### 5. Implement
 
-Delegate implementation, tests, and documentation updates to the appropriate specialists. Multiple agents can work on independent parts.
+Delegate implementation, tests, and documentation updates to the appropriate specialists. Parallelize: invoke agents simultaneously when their tasks don't overlap in files or modules.
 
 ### 6. Review Implementation
 
-Delegate code review to agents who didn't write the code. Follow the same iterative review cycle used for plans.
+Delegate code review to 3+ agents concurrently, none of whom wrote the code. Follow the same concurrent review pattern used for plans.
 
 ### 7. Final Checks
 
@@ -53,7 +53,7 @@ Delegate a holistic readiness check to at least one agent:
 
 ### 8. Commit
 
-Commit with a conventional commit message. Never commit when CI is red.
+Activate **ephemeral-cleanup** skill. Review `.ephemeral/` — promote anything worth keeping, then clean the rest. Commit with a conventional commit message. Never commit when CI is red.
 
 ## Agent Roster
 
@@ -86,9 +86,10 @@ Delegate to the agent best suited for each subtask:
 
 ## Guidelines
 
+- Subagents write deliverables to `.ephemeral/` and report file paths back. Pass paths — not content — to downstream agents. Activate **ephemeral-files** skill.
+- Parallelize aggressively: invoke independent agents simultaneously. Serialize only when tasks share files or have data dependencies.
+- Research is the default. Agents must gather evidence before producing plans, designs, or recommendations.
 - Use session memory for multi-step task tracking. Write progress notes after each major step.
-- Use `.ephemeral/` for any scratch files agents need. Never use `/tmp/`.
-- Ask multiple agents to review—diversity of perspective catches more issues.
 - When agents disagree, investigate the disagreement. It often reveals a real problem.
 - Don't over-delegate trivial tasks. If a user asks "what color is the header?", just answer.
 - Always report back to the user with a clear summary when done.

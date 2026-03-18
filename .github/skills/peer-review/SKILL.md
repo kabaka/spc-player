@@ -49,7 +49,9 @@ Use this skill when conducting code reviews, design reviews, or plan reviews.
 
 When reviewing plans or designs through multiple cycles:
 
+- Require 3+ reviewers per round, running concurrently to surface consensus and divergence.
 - Each review round should provide fresh, independent feedback.
 - Don't repeat feedback already addressed — check the latest version.
 - Plans should be updated in-place, not made longer with each cycle.
 - Converge toward approval: if major issues are resolved, approve with minor suggestions.
+- Never use ephemeral review labels (e.g., UX-01, SEC-03) in code, commits, or permanent documentation.

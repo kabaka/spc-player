@@ -98,6 +98,13 @@ General workflow for significant tasks:
 8. Delegate final readiness checks.
 9. Commit changes.
 
+Key conventions:
+
+- Subagents write output to `.ephemeral/` and report file paths — not content — to the orchestrator.
+- Independent tasks run in parallel; serialize only when tasks share files or have data dependencies.
+- Agents research before planning: gather evidence first, not write from assumptions.
+- Reviews require 3+ concurrent reviewers per round.
+
 The workflow is adaptive — simple questions may skip most steps; complex features use all of them. Use judgment, not rigid procedure.
 
 ## Boundaries
@@ -112,6 +119,7 @@ The workflow is adaptive — simple questions may skip most steps; complex featu
 - Validate SPC file input defensively (untrusted binary data).
 - Check CI status before committing.
 - Activate relevant skills when working in their domain.
+- Never use ephemeral review labels (e.g., UX-01, SEC-03) in code, commits, or permanent documentation.
 
 ### Ask First
 

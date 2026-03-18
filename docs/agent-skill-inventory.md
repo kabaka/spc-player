@@ -133,5 +133,6 @@ All skills live in `.github/skills/{name}/SKILL.md`. Names are lowercase with hy
 | github-research | GitHub search, issue/PR mining, ecosystem analysis |
 | git-workflow | Branching strategy, merge practices, history hygiene |
 | ephemeral-files | Temp file conventions, .ephemeral/ usage, cleanup |
+| ephemeral-cleanup | Pre-commit cleanup of .ephemeral/, promote-or-discard |
 | cross-platform | Platform detection, feature detection, graceful degradation |
 | browser-compatibility | Can I Use checks, polyfills, vendor prefixes |
