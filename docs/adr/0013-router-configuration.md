@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Configure TanStack Router with File-Based Routes, Hash History, and Zod-Validated Search Params

@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Use Zustand with Domain Slices and a Ref-Based Real-Time Audio Channel

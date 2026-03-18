@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Test Framework Selection: Vitest + React Testing Library + Playwright

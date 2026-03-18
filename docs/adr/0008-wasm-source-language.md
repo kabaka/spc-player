@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Use Rust as the WASM Source Language for Custom DSP and Audio Processing Modules

@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Use snes-apu-spcp (Rust) for Sample-Accurate SNES Audio Emulation

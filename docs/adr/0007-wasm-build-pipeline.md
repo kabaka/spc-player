@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # WASM Build Pipeline: Raw Exports with Cargo and wasm-opt for DSP AudioWorklet Integration

@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Use WASM-Compiled Reference Encoders for Audio Export with Custom WAV Implementation

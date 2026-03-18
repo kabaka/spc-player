@@ -22,11 +22,11 @@ Use this skill when creating or updating Architecture Decision Records. All sign
 2. Fill in all required sections. Remove optional sections only if genuinely irrelevant.
 3. Number sequentially: `NNNN-slug.md` (e.g., `0002-ui-framework-selection.md`).
 4. Place in `docs/adr/`.
-5. Set status to `proposed` initially. Update to `accepted` after review.
+5. Set status to `proposed` for drafts. Set to `accepted` before committing.
 
 ## Template Sections
 
-- **Status/Date/Decision-makers** (YAML frontmatter): track lifecycle.
+- **Status/Date** (YAML frontmatter): track lifecycle.
 - **Context and Problem Statement**: what decision is needed and why.
 - **Decision Drivers**: forces and constraints influencing the decision.
 - **Considered Options**: all options evaluated (minimum two).

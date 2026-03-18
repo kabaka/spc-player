@@ -1,9 +1,6 @@
 ---
 status: "{proposed | rejected | accepted | deprecated | superseded by ADR-NNNN}"
 date: YYYY-MM-DD
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # {Short title, representative of solved problem and found solution}

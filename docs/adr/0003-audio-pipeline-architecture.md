@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Audio Pipeline Architecture: Sample Rate, Resampling, and Real-Time/Export Paths

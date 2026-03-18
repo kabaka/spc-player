@@ -1,9 +1,6 @@
 ---
 status: "accepted"
 date: 2026-03-18
-decision-makers: []
-consulted: []
-informed: []
 ---
 
 # Vite Bundler Configuration: WASM Loading, AudioWorklet Bundling, Code Splitting, and Build Optimization
