@@ -103,7 +103,7 @@ Key conventions:
 - Subagents write output to `.ephemeral/` and report file paths — not content — to the orchestrator.
 - Independent tasks run in parallel; serialize only when tasks share files or have data dependencies.
 - Agents research before planning: gather evidence first, not write from assumptions.
-- Reviews require 3+ concurrent reviewers per round.
+- Reviews require 3+ concurrent reviewers plus a researcher per round. Use more reviewers for complex changes.
 
 The workflow is adaptive — simple questions may skip most steps; complex features use all of them. Use judgment, not rigid procedure.
 

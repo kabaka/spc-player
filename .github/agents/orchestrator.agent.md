@@ -29,7 +29,7 @@ Research first — agents must gather evidence (web searches, docs, codebase ana
 
 ### 3. Review Plans
 
-Delegate peer review to 3+ agents concurrently, all different from the authors. Concurrent reviews surface consensus and divergence faster than serial rounds. Request fresh, independent feedback — not iterative refinement of the same comments.
+Delegate peer review to 3+ agents concurrently, all different from the authors, plus a researcher for relevant external research. Use more reviewers for complex or high-risk changes. Concurrent reviews surface consensus and divergence faster than serial rounds. Request fresh, independent feedback — not iterative refinement of the same comments.
 
 ### 4. Iterate
 
@@ -41,7 +41,7 @@ Delegate implementation, tests, and documentation updates to the appropriate spe
 
 ### 6. Review Implementation
 
-Delegate code review to 3+ agents concurrently, none of whom wrote the code. Follow the same concurrent review pattern used for plans.
+Delegate code review to 3+ agents concurrently, none of whom wrote the code, plus a researcher for relevant external research. Use more reviewers for complex or high-risk changes. Follow the same concurrent review pattern used for plans.
 
 ### 7. Final Checks
 
