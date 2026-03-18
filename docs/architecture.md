@@ -46,22 +46,24 @@ SPC Player is a **client-side-only** web application. There is no backend server
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Key Architectural Decisions (Pending ADRs)
+## Key Architectural Decisions
 
-| Decision | Options | Status |
-|----------|---------|--------|
-| UI framework | React, Preact, Solid, Vanilla TS | Not decided |
-| UI component library | Radix, shadcn/ui, custom, headless | Not decided |
-| State management | Zustand (domain slices) | Decided ([ADR-0005](adr/0005-state-management-architecture.md)) |
-| WASM language for DSP core | Rust (via cargo + wasm-opt) | Decided ([ADR-0007](adr/0007-wasm-build-pipeline.md)/[ADR-0008](adr/0008-wasm-source-language.md)) |
-| Existing SPC emulation lib | snes-apu-wasm, libopenspc, SNESjs, custom | Not decided |
-| Audio encoding libraries | WAV custom, FLAC/OGG/MP3 via WASM libs | Decided ([ADR-0006](adr/0006-audio-codec-libraries.md)) |
-| Bundler | Vite, esbuild, Turbopack | Not decided |
-| Test framework | Vitest, Jest, Playwright (E2E) | Not decided |
-| CSS approach | CSS Modules + CSS custom properties | Decided ([ADR-0004](adr/0004-css-methodology.md)) |
-| Router | React Router, TanStack Router, custom hash router | Not decided |
-
-Each of these will be resolved via ADR during the architecture phase, with input from multiple agent perspectives.
+| Decision | Outcome | ADR |
+| -------- | ------- | --- |
+| SPC emulation library | snes-apu-spcp (Rust, BSD-2-Clause) | [ADR-0001](adr/0001-snes-audio-emulation-library.md) |
+| UI framework | React 19 + TypeScript + Vite | [ADR-0002](adr/0002-ui-framework.md) |
+| Audio pipeline | 48 kHz AudioContext, WASM resampling, dual-path | [ADR-0003](adr/0003-audio-pipeline-architecture.md) |
+| CSS approach | CSS Modules + CSS custom properties | [ADR-0004](adr/0004-css-methodology.md) |
+| State management | Zustand (domain slices) + ref-based audio channel | [ADR-0005](adr/0005-state-management-architecture.md) |
+| Audio encoding libraries | WAV custom, FLAC/OGG/MP3 via WASM reference encoders | [ADR-0006](adr/0006-audio-codec-libraries.md) |
+| WASM build pipeline | cargo + wasm-opt, raw exports (no wasm-bindgen) | [ADR-0007](adr/0007-wasm-build-pipeline.md) |
+| WASM source language | Rust for all custom WASM modules | [ADR-0008](adr/0008-wasm-source-language.md) |
+| Bundler configuration | Minimal Vite config, `?url` for WASM, route-based splitting | [ADR-0009](adr/0009-bundler-configuration.md) |
+| Test framework | Vitest + React Testing Library + Playwright | [ADR-0010](adr/0010-test-framework.md) |
+| IndexedDB wrapper | idb (~1.2 KB) for Promise-based IndexedDB access | [ADR-0011](adr/0011-indexeddb-wrapper.md) |
+| Component library scope | Maximalist Radix UI adoption + custom domain components | [ADR-0012](adr/0012-component-library-scope.md) |
+| Router configuration | TanStack Router, file-based routes, hash history | [ADR-0013](adr/0013-router-configuration.md) |
+| Resampling quality | User-configurable presets (Standard/High Quality/Custom) | [ADR-0014](adr/0014-resampling-quality-settings.md) |
 
 ## Emulation Strategy
 
