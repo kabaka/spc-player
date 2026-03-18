@@ -143,4 +143,6 @@ Extract the S-DSP emulation code from byuu's bsnes/higan, widely regarded as the
 
 These edge cases are rare in the SPC library but can produce audible artifacts when triggered. Failures in these areas should be documented and tracked for patching.
 
+**Build tooling update**: While this ADR references wasm-pack as the compilation path, [ADR-0007](0007-wasm-build-pipeline.md) subsequently selected `cargo build --target wasm32-unknown-unknown` + `wasm-opt` as the build pipeline, bypassing wasm-pack. The library's WASM compatibility assessment remains valid.
+
 **Related decisions:** This ADR should be revisited if the vendored library fails confirmation criteria (build, accuracy, performance, or binary size). See [ADR-0003](0003-audio-pipeline-architecture.md) for the audio pipeline architecture that connects this emulation core to the Web Audio output path. A follow-up ADR will cover the wasm-bindgen integration strategy and AudioWorklet message protocol design.

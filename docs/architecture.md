@@ -52,13 +52,13 @@ SPC Player is a **client-side-only** web application. There is no backend server
 |----------|---------|--------|
 | UI framework | React, Preact, Solid, Vanilla TS | Not decided |
 | UI component library | Radix, shadcn/ui, custom, headless | Not decided |
-| State management | Zustand, Jotai, Redux Toolkit, signals | Not decided |
-| WASM language for DSP core | C/C++ (via Emscripten), Rust (via wasm-pack), AssemblyScript | Not decided |
+| State management | Zustand (domain slices) | Decided ([ADR-0005](adr/0005-state-management-architecture.md)) |
+| WASM language for DSP core | Rust (via cargo + wasm-opt) | Decided ([ADR-0007](adr/0007-wasm-build-pipeline.md)/[ADR-0008](adr/0008-wasm-source-language.md)) |
 | Existing SPC emulation lib | snes-apu-wasm, libopenspc, SNESjs, custom | Not decided |
-| Audio encoding libraries | lamejs (MP3), libflac.js, opus, custom | Not decided |
+| Audio encoding libraries | WAV custom, FLAC/OGG/MP3 via WASM libs | Decided ([ADR-0006](adr/0006-audio-codec-libraries.md)) |
 | Bundler | Vite, esbuild, Turbopack | Not decided |
 | Test framework | Vitest, Jest, Playwright (E2E) | Not decided |
-| CSS approach | Tailwind, CSS Modules, styled-components, vanilla CSS | Not decided |
+| CSS approach | CSS Modules + CSS custom properties | Decided ([ADR-0004](adr/0004-css-methodology.md)) |
 | Router | React Router, TanStack Router, custom hash router | Not decided |
 
 Each of these will be resolved via ADR during the architecture phase, with input from multiple agent perspectives.
