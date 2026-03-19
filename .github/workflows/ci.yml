@@ -33,8 +33,22 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'crates/spc-apu-wasm -> target'
       - run: npm ci
       - run: npm run build
+      - name: Check WASM binary size
+        run: |
+          SIZE=$(stat -c%s src/wasm/dsp.wasm 2>/dev/null || stat -f%z src/wasm/dsp.wasm)
+          echo "WASM binary size: ${SIZE} bytes"
+          if [ "$SIZE" -gt 307200 ]; then
+            echo "::error::WASM binary exceeds 300 KB limit (${SIZE} bytes)"
+            exit 1
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -30,6 +30,7 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
+      'vendor/**',
       'src/app/routeTree.gen.ts',
       '*.config.js',
       '*.config.ts',

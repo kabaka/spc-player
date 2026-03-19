@@ -1,0 +1,6 @@
+# Binary files
+*.spc binary
+*.wasm binary
+
+# Vendored Rust — linguist should still count it
+vendor/**/*.rs linguist-vendored=false

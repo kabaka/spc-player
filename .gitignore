@@ -39,6 +39,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Rust / WASM build output
+target/
+src/wasm/*.wasm
+
 # OS files
 .DS_Store
 Desktop.ini

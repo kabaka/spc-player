@@ -1138,7 +1138,7 @@ This section explains how implementing agents should use this roadmap.
 
 5. **CI must be green before committing at the end of every phase.** This means lint, typecheck, and all tests pass. If Phase N breaks something from Phase N-1, fix it within Phase N.
 
-6. **Pre-commit hooks catch issues locally.** Hooks stay under 10 seconds: ESLint fix + Prettier formatting only. Heavy validation (WASM build, E2E, full test suite) belongs in CI.
+6. **Pre-commit hooks catch issues locally.** Hooks stay under 10 seconds: ESLint fix + Prettier formatting only. Heavy validation (WASM build, E2E, full test suite) must also pass locally before committing. Since we commit directly to `main` without PRs, all tests — including E2E and the full test suite — must be locally verified to ensure CI stays green.
 
 7. **Incremental CI pipeline expansion.** When the roadmap says "CI: new `e2e` job" in a phase, that phase is responsible for configuring the CI change alongside the feature work. Infrastructure before features.
 

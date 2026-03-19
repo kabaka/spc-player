@@ -7,8 +7,10 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "npm run build:wasm:dev && vite",
+    "build": "npm run build:wasm && vite build",
+    "build:wasm": "RUSTC=$(rustup which rustc) $(rustup which cargo) build --target wasm32-unknown-unknown --release -p spc-apu-wasm && npx wasm-opt -Oz -o src/wasm/dsp.wasm target/wasm32-unknown-unknown/release/spc_apu_wasm.wasm",
+    "build:wasm:dev": "RUSTC=$(rustup which rustc) $(rustup which cargo) build --target wasm32-unknown-unknown -p spc-apu-wasm && cp target/wasm32-unknown-unknown/debug/spc_apu_wasm.wasm src/wasm/dsp.wasm",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -39,6 +41,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
+    "binaryen": "^125.0.0",
     "eslint": "^9",
     "eslint-plugin-react-hooks": "^5",
     "globals": "^16",
