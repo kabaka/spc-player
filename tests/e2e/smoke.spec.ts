@@ -130,14 +130,19 @@ test.describe('Theme toggle', () => {
     const themeToggle = page.getByRole('button', { name: /theme/i });
     await expect(themeToggle).toBeVisible();
 
-    // Get initial theme state
-    const initialTheme = await page.locator('html').getAttribute('data-theme');
+    // Get initial theme class (project uses .dark/.light classes per ADR-0004)
+    const htmlLocator = page.locator('html');
+    const initialClasses = await htmlLocator.getAttribute('class');
+    const wasDark = initialClasses?.includes('dark') ?? false;
 
     // Click to toggle
     await themeToggle.click();
 
-    // Theme attribute should change
-    const newTheme = await page.locator('html').getAttribute('data-theme');
-    expect(newTheme).not.toEqual(initialTheme);
+    // Theme class should change
+    if (wasDark) {
+      await expect(htmlLocator).toHaveClass(/light/);
+    } else {
+      await expect(htmlLocator).toHaveClass(/dark/);
+    }
   });
 });
