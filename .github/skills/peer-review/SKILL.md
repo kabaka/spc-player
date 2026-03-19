@@ -30,6 +30,7 @@ Use this skill when conducting code reviews, design reviews, or plan reviews.
 - Explain why: "this could cause X because Y" is better than "don't do this."
 - Be kind: critique the code, not the author.
 - Distinguish taste from substance: if it works and meets standards, approve it even if you'd write it differently.
+- Write review output to `.ephemeral/` and return the file path. Do not return lengthy reports inline.
 
 ## Checklist
 

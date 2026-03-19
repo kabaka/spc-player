@@ -11,7 +11,7 @@ export default defineConfig({
         ['junit', { outputFile: 'playwright-report/results.xml' }],
         ['html', { open: 'never' }],
       ]
-    : [['html', { open: 'on-failure' }]],
+    : [['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:4173/spc-player/',
     trace: 'on-first-retry',

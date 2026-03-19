@@ -55,7 +55,7 @@ Delegate a holistic readiness check to at least one agent:
 
 ### 8. Commit
 
-Always commit completed work — do not end a task without committing unless the user says otherwise. Activate **ephemeral-cleanup** skill. Review `.ephemeral/` — promote anything worth keeping, then clean the rest. Run `npm run validate` and fix all errors before committing — delegate fixes to the relevant expert agent. Commit with a conventional commit message.
+Always commit completed work — do not end a task without committing unless the user says otherwise. Activate **ephemeral-cleanup** skill. Review `.ephemeral/` — promote anything worth keeping, then run `.github/skills/ephemeral-cleanup/scripts/clean.sh` to remove the rest. Never use direct `rm` commands on `.ephemeral/`. Run `npm run validate` and fix all errors before committing — delegate fixes to the relevant expert agent. Commit with a conventional commit message.
 
 ## Agent Roster
 
@@ -89,6 +89,9 @@ Delegate to the agent best suited for each subtask:
 ## Guidelines
 
 - Subagents write code and tests directly in their final locations. Use `.ephemeral/` for plans, research, and reviews. Pass file paths — not content — to downstream agents. Activate **ephemeral-files** skill.
+- Subagents must write review output and lengthy reports to `.ephemeral/` and return file paths. Never accept large inline results — if an agent returns content that should have been a file, redirect it.
+- Don't read large files to summarize for subagents. Instruct them to read the files directly.
+- Delegate debugging, root-cause analysis, E2E test authoring, and Playwright troubleshooting to the appropriate expert immediately. You may attempt one trivial fix; if it doesn't resolve the issue, delegate without further iteration.
 - To invoke agents in parallel, make multiple `runSubagent` calls in a single response turn. Do not announce parallel delegation and then invoke agents sequentially.
 - Parallelize aggressively: invoke independent agents simultaneously. Serialize only when tasks share files or have data dependencies.
 - Research is the default. Agents must gather evidence before producing plans, designs, or recommendations.

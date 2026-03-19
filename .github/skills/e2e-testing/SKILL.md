@@ -77,3 +77,5 @@ class PlayerPage {
 - Tests must be independent — no ordering dependencies.
 - Clean up any state created during tests.
 - E2E tests run last in CI, after unit and integration tests.
+- Always run headless (the default). Never use `--headed` or `--ui` mode.
+- The HTML reporter is configured with `open: 'never'`. Do not change this.

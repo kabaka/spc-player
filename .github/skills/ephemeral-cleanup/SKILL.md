@@ -30,7 +30,7 @@ Use this skill before committing to ensure `.ephemeral/` is clean.
 
 ## Cleanup Script
 
-Run the cleanup script after promoting any valuable content:
+Always use the cleanup script after promoting any valuable content. Never use direct `rm` commands on `.ephemeral/`.
 
 ```bash
 .github/skills/ephemeral-cleanup/scripts/clean.sh
