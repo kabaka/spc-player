@@ -241,7 +241,7 @@ Style the initial set of Radix primitives with CSS Modules (ADR-0004, ADR-0012):
 - [ ] `npm run build:wasm:dev` script: debug build without optimization.
 - [ ] Update `npm run build` to chain `build:wasm && vite build`.
 - [ ] `src/audio/dsp-exports.ts` — TypeScript `DspExports` interface mirroring all WASM exports (from ADR-0007).
-- [ ] `src/audio/wasm-loader.ts` — `loadDspModule()` function using `WebAssembly.compileStreaming()` with `?url` import for the .wasm file.
+- [ ] `src/audio/wasm-loader.ts` — `loadDspModule()` function using `fetch()` + `arrayBuffer()` with `?url` import for the .wasm file.
 - [ ] Rust unit tests (`cargo test`) for DSP init, render produces non-zero samples, voice mask changes output.
 - [ ] Binary size verification: optimized `.wasm` < 150 KB.
 
@@ -412,7 +412,7 @@ No CI structural changes. Existing lint → typecheck → test → build → dep
 
 | Document                                       | Why                                                                                                       |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `docs/adr/0003-audio-pipeline-architecture.md` | Full audio pipeline: 48 kHz AudioContext, WASM resampling, buffer management, Module-transfer pattern     |
+| `docs/adr/0003-audio-pipeline-architecture.md` | Full audio pipeline: 48 kHz AudioContext, WASM resampling, buffer management, bytes-transfer pattern      |
 | `docs/adr/0007-wasm-build-pipeline.md`         | WASM export interface, typed array views, instantiation in worklet                                        |
 | `docs/design/worker-protocol.md`               | All MessagePort message types (MainToWorklet, WorkletToMain), init handshake, telemetry                   |
 | `docs/design/loop-playback-design.md`          | `TrackDuration` interface, `calculateTrackDuration()`, `SetPlaybackConfig` message, worklet fade/counting |
@@ -434,7 +434,7 @@ No CI structural changes. Existing lint → typecheck → test → build → dep
 #### AudioWorklet
 
 - [ ] `src/audio/spc-worklet.ts` — `SpcProcessor` class (extends `AudioWorkletProcessor`):
-  - Receives compiled `WebAssembly.Module` + SPC data via `Init` message.
+  - Receives raw WASM bytes (`ArrayBuffer`) + SPC data via `Init` message.
   - Instantiates WASM with empty `importObject`.
   - `process()` calls WASM `dsp_render()`, copies output from WASM linear memory to AudioWorklet output buffers.
   - Handles all `MainToWorklet` message types from the worker protocol.
@@ -458,7 +458,7 @@ No CI structural changes. Existing lint → typecheck → test → build → dep
   - Creates `AudioContext` at 48 kHz.
   - Loads worklet script via `audioWorklet.addModule()`.
   - Creates `AudioWorkletNode` connected to `GainNode` → `destination`.
-  - Compiles WASM module via `WebAssembly.compileStreaming()`, transfers to worklet (Module-transfer pattern per ADR-0003, ADR-0007).
+  - Fetches WASM binary as raw bytes via `fetch()` + `arrayBuffer()`, sends bytes to worklet (bytes-transfer pattern per ADR-0003, ADR-0007).
   - Exposes methods: `loadSpc(buffer)`, `play()`, `pause()`, `stop()`, `seek(position)`, `setVoiceMask(mask)`, `setSpeed(factor)`, `setVolume(volume)`.
   - Receives telemetry via `node.port.onmessage`, writes to `audioStateBuffer`.
   - Handles AudioContext state management (user gesture requirement, resume on play).

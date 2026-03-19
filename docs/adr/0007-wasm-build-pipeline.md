@@ -7,7 +7,7 @@ date: 2026-03-18
 
 ## Context and Problem Statement
 
-ADR-0001 selects snes-apu-spcp (Rust, BSD-2-Clause) as the SNES audio emulation library. ADR-0003 defines the audio pipeline architecture: the main thread compiles the `.wasm` binary into a `WebAssembly.Module`, transfers it to the AudioWorklet via `postMessage`, and the worklet instantiates the module in its own execution context. Pre-allocated buffers in WASM linear memory enable zero-allocation `process()` calls. ADR-0006 selects pre-compiled Emscripten WASM ports of C reference encoders (libFLAC, libvorbisenc, LAME) for audio export.
+ADR-0001 selects snes-apu-spcp (Rust, BSD-2-Clause) as the SNES audio emulation library. ADR-0003 defines the audio pipeline architecture: the main thread fetches the `.wasm` binary as raw bytes (`ArrayBuffer`), sends the bytes to the AudioWorklet via `postMessage`, and the worklet compiles and instantiates the module in its own execution context. (`WebAssembly.Module` objects are silently dropped by Chromium when sent to AudioWorklet `MessagePort`, so raw bytes are used instead.) Pre-allocated buffers in WASM linear memory enable zero-allocation `process()` calls. ADR-0006 selects pre-compiled Emscripten WASM ports of C reference encoders (libFLAC, libvorbisenc, LAME) for audio export.
 
 The project now needs to define the concrete WASM build pipeline for the DSP emulation core: how Rust source becomes a `.wasm` binary, how that binary is loaded and instantiated inside an AudioWorklet, how the JS-WASM boundary is managed, and how all of this integrates with Vite and GitHub Actions CI.
 
@@ -18,12 +18,12 @@ This ADR also addresses five sub-decisions that are tightly coupled to the inter
 ## Decision Drivers
 
 - **AudioWorklet compatibility** — the DSP WASM module runs exclusively inside an AudioWorklet, which has no DOM, no `fetch()`, no `importScripts()`, and limited ES module import support across browsers. Any generated glue code must function in this environment without modification.
-- **Simplicity of WASM instantiation in worklet** — the worklet receives a compiled `WebAssembly.Module` via `postMessage` (per ADR-0003). Instantiation should use the platform primitive `WebAssembly.instantiate(module, importObject)` with minimal ceremony.
+- **Simplicity of WASM instantiation in worklet** — the worklet receives raw WASM bytes (`ArrayBuffer`) via `postMessage` (per ADR-0003). Instantiation should use `WebAssembly.instantiate(bytes, importObject)` which compiles and instantiates in one step.
 - **Type safety at the JS-WASM boundary** — the TypeScript wrapper around WASM exports must provide type-safe function signatures to prevent misuse (wrong argument types, wrong buffer offsets, missing initialization calls).
 - **Build reproducibility and CI integration** — the build must produce identical artifacts from the same source, with a clear dependency chain (Rust toolchain version, wasm-opt version) that CI can install and cache reliably.
 - **Developer experience** — editing Rust DSP code and testing changes in the browser should have a reasonable feedback loop. Hot reload of WASM is not expected, but a rebuild-and-refresh cycle should take seconds, not minutes.
 - **Production binary size** — the `.wasm` artifact directly affects PWA download size and cache footprint. ADR-0001 sets a target of under 150 KB after optimization. wasm-opt integration is essential for production builds.
-- **Compatibility with the Module-transfer pattern** — the loading flow defined in ADR-0003 (compile in main thread → transfer Module → instantiate in worklet) must work without modification. The interop strategy must not assume the module is instantiated in the same context where it was compiled.
+- **Compatibility with the bytes-transfer pattern** — the loading flow defined in ADR-0003 (fetch bytes in main thread → send ArrayBuffer to worklet → compile and instantiate in worklet) must work without modification. `WebAssembly.Module` objects are silently dropped by Chromium when sent to AudioWorklet `MessagePort`, so raw bytes are sent instead.
 - **Maintenance burden of glue code** — generated glue code must be audited for AudioWorklet compatibility after every wasm-bindgen version upgrade. Hand-written wrappers are more work up front but fully controlled and stable across toolchain upgrades.
 - **Coexistence with Emscripten WASM artifacts** — ADR-0006 introduces pre-compiled Emscripten WASM modules for audio codecs. The DSP build pipeline must coexist cleanly: two distinct WASM origins (Rust/cargo and Emscripten/pre-compiled) with separate loading paths and no toolchain conflicts.
 
@@ -36,7 +36,7 @@ This ADR also addresses five sub-decisions that are tightly coupled to the inter
 
 ## Decision Outcome
 
-Chosen option: **"Raw WASM exports (no wasm-bindgen)"**, because the DSP emulation interface is a narrow, numeric-only API (~10–15 exported functions passing integers, floats, and memory offsets) that does not benefit from wasm-bindgen's type conversion machinery, and the AudioWorklet environment eliminates the primary advantages of generated glue code while introducing compatibility risks. Raw exports produce the simplest possible instantiation path — a single `WebAssembly.instantiate(module, {})` call in the worklet — with zero generated code to audit, debug, or maintain across toolchain upgrades. The hand-written TypeScript wrapper that mirrors these exports is small, stable, and provides equivalent type safety for the narrow interface surface.
+Chosen option: **"Raw WASM exports (no wasm-bindgen)"**, because the DSP emulation interface is a narrow, numeric-only API (~10–15 exported functions passing integers, floats, and memory offsets) that does not benefit from wasm-bindgen's type conversion machinery, and the AudioWorklet environment eliminates the primary advantages of generated glue code while introducing compatibility risks. Raw exports produce the simplest possible instantiation path — a single `WebAssembly.instantiate(bytes, {})` call in the worklet (which compiles and instantiates from raw bytes in one step) — with zero generated code to audit, debug, or maintain across toolchain upgrades. The hand-written TypeScript wrapper that mirrors these exports is small, stable, and provides equivalent type safety for the narrow interface surface.
 
 Option 1 (wasm-bindgen `--target web`) was the closest alternative. Its `init()` function can accept a `WebAssembly.Module` directly, bypassing `fetch()`. However, the generated glue code is an ES module that must be bundled into the AudioWorklet script — requiring Vite to resolve and inline the wasm-bindgen output into the worklet entry point. This is feasible but adds a fragile dependency on Vite's worklet bundling behavior and on wasm-bindgen's generated code remaining AudioWorklet-compatible across versions. The type-safety benefit is real but insufficient to justify the integration complexity, given the narrow interface.
 
@@ -104,16 +104,14 @@ No strings, no complex objects, no closures cross the boundary. Error conditions
 
 ### AudioWorklet WASM Loading Strategy
 
-The loading flow implements ADR-0003's Module-transfer pattern in concrete detail:
+The loading flow implements ADR-0003's bytes-transfer pattern in concrete detail:
 
 **Main thread (application startup):**
 
 ```typescript
-// 1. Fetch and compile WASM (compileStreaming uses streaming compilation
-//    for faster startup than fetch → arrayBuffer → compile)
-const wasmModule = await WebAssembly.compileStreaming(
-  fetch(dspWasmUrl), // dspWasmUrl from Vite's ?url import with content hash
-);
+// 1. Fetch WASM binary as raw bytes
+const wasmBytes = await fetch(dspWasmUrl).then((r) => r.arrayBuffer());
+// dspWasmUrl from Vite's ?url import with content hash
 
 // 2. Register the AudioWorklet processor script
 await audioContext.audioWorklet.addModule(workletUrl);
@@ -125,9 +123,9 @@ const node = new AudioWorkletNode(audioContext, 'spc-processor', {
   outputChannelCount: [2],
 });
 
-// 4. Transfer the compiled Module and SPC data to the worklet
+// 4. Send the raw WASM bytes and SPC data to the worklet
 node.port.postMessage(
-  { type: 'init', wasmModule, spcData: spcDataArray },
+  { type: 'init', wasmBytes, spcData: spcDataArray },
   [spcDataArray.buffer], // Transfer the SPC ArrayBuffer (zero-copy)
 );
 ```
@@ -135,12 +133,13 @@ node.port.postMessage(
 **AudioWorklet processor (`spc-worklet.ts`):**
 
 ```typescript
-// Receive the compiled Module — no fetch, no import, no DOM
+// Receive the raw WASM bytes — no fetch, no import, no DOM
 case 'init': {
+  // Compile and instantiate from raw bytes in one step.
   // importObject is empty: the Rust crate uses #![no_std] with panic=abort,
   // producing no env imports. The wasm32-unknown-unknown target does not
   // generate WASI or Emscripten imports.
-  const instance = await WebAssembly.instantiate(msg.wasmModule, {});
+  const { instance } = await WebAssembly.instantiate(msg.wasmBytes, {});
   const exports = instance.exports as DspExports;
 
   // Allocate space in WASM memory for SPC data (64 KB + headers)
@@ -181,8 +180,8 @@ WASM and worklet assets integrate with Vite using standard asset import patterns
 
 **AudioWorklet script (`spc-worklet.ts`):**
 
-- Imported via `new URL('./audio/spc-worklet.ts', import.meta.url)` — Vite resolves and bundles the worklet script as a separate entry point with content-based hashing.
-- The worklet script must be a self-contained module: no imports from the main application bundle (AudioWorklet isolation). Shared types are duplicated or extracted into a types-only module that Vite tree-shakes to zero runtime code.
+- Imported via `import spcWorkletUrl from './spc-worklet.ts?worker&url'` — Vite compiles TypeScript and emits the worklet as a separate `.js` asset with content-based hashing. The `.js` extension is critical: GitHub Pages serves `.ts` files with MIME type `video/mp2t` (MPEG-2 Transport Stream), which causes `audioContext.audioWorklet.addModule()` to fail. The `?worker&url` pattern ensures the output has a `.js` extension served as `application/javascript`.
+- The worklet script must not import runtime values from the main application bundle — the AudioWorklet global scope has no access to the main thread's module graph. Vite's worker pipeline bundles the worklet's own imports, but shared TypeScript types (erased at compilation) should be used for cross-boundary type safety rather than runtime imports.
 
 **Dev vs. Production:**
 
@@ -250,7 +249,7 @@ Build order in CI: install dependencies → build WASM → lint/typecheck → te
 
 1. **Build verification** — run `cargo build --target wasm32-unknown-unknown --release -p spc-apu-wasm` and `wasm-opt -Oz` on the output. Verify the pipeline produces a valid `.wasm` binary with the expected exports (`dsp_init`, `dsp_render`, `dsp_set_voice_mask`, `dsp_get_output_ptr`, `wasm_alloc`, `wasm_dealloc`, `memory`).
 2. **Empty importObject verification** — instantiate the optimized `.wasm` binary with `WebAssembly.instantiate(module, {})` in a test. Verify instantiation succeeds with no import-related errors. If the Rust code inadvertently introduces imports (e.g., via a dependency that uses `extern` functions), the build pipeline must detect and fail.
-3. **AudioWorklet integration test** — create an end-to-end test that loads an SPC file, compiles the WASM module in the main thread, transfers it to an AudioWorklet via `postMessage`, instantiates it in the worklet, renders one quantum of audio, and verifies non-silent output. This validates the complete Module-transfer flow from ADR-0003.
+3. **AudioWorklet integration test** — create an end-to-end test that loads an SPC file, fetches the WASM binary as raw bytes, sends the bytes to an AudioWorklet via `postMessage`, and verifies the worklet compiles, instantiates, renders one quantum of audio, and produces non-silent output. This validates the complete bytes-transfer flow from ADR-0003.
 4. **Binary size verification** — measure the optimized `.wasm` binary size. Target: under 150 KB (per ADR-0001 confirmation criteria).
 5. **TypeScript type consistency** — write a build-time script or CI step that parses the `.wasm` binary's export section (via `wasm-tools` or a custom script) and compares it against the TypeScript `DspExports` interface. Any mismatch (missing export, wrong signature) fails CI.
 6. **Dev build cycle time** — measure the time from Rust source change to browser-testable result (cargo build + manual browser refresh). Target: under 10 seconds on a modern development machine.
@@ -263,7 +262,7 @@ Build order in CI: install dependencies → build WASM → lint/typecheck → te
 Compile Rust with cargo, then post-process the `.wasm` with the wasm-bindgen CLI using `--target web`. This generates an ES module (`.js`) that provides a typed JavaScript API for the WASM exports, along with a modified `.wasm` file. The generated `init()` function accepts a `WebAssembly.Module`, `URL`, `Request`, or `BufferSource`, enabling flexible instantiation. When passed a pre-compiled `Module`, it skips `fetch()` and directly instantiates — compatible in principle with AudioWorklet.
 
 - Good, because generated TypeScript bindings automatically mirror the Rust exported function signatures, providing compile-time type checking at the JS-WASM boundary with zero manual wrapper code.
-- Good, because `init(module: WebAssembly.Module)` accepts a pre-compiled Module directly, which is compatible with the Module-transfer pattern from ADR-0003 — the worklet can call `init(receivedModule)` without `fetch()`.
+- Good, because `init(module: WebAssembly.Module)` accepts a pre-compiled Module directly, which would be compatible with the bytes-transfer pattern from ADR-0003 if Module transfer worked — but Chromium silently drops `WebAssembly.Module` objects sent to AudioWorklet `MessagePort`, so this advantage is moot.
 - Good, because wasm-bindgen handles panic hook installation (`console_error_panic_hook`), converting Rust panics to JavaScript exceptions with stack traces — invaluable for debugging DSP emulation bugs during development.
 - Good, because wasm-bindgen manages `TextEncoder`/`TextDecoder`, closures, and complex type conversions, which could be useful if the WASM API surface expands beyond numeric types in the future (e.g., returning error messages as strings).
 - Good, because wasm-pack (Option 4) can orchestrate wasm-bindgen + wasm-opt in a single command, reducing build script complexity.
@@ -373,10 +372,10 @@ Strategy 2 is preferred for routine debugging. Strategy 1 is available for deep 
 
 The project produces two kinds of WASM artifacts:
 
-| Artifact                           | Source                          | Toolchain                              | Context      | Loading                         |
-| ---------------------------------- | ------------------------------- | -------------------------------------- | ------------ | ------------------------------- |
-| DSP emulation (`dsp.wasm`)         | Rust (snes-apu-spcp)            | cargo + wasm-opt                       | AudioWorklet | Module-transfer via postMessage |
-| Audio encoders (FLAC, Vorbis, MP3) | C (libFLAC, libvorbisenc, LAME) | Emscripten (pre-compiled npm packages) | Web Worker   | Dynamic `import()` per format   |
+| Artifact                           | Source                          | Toolchain                              | Context      | Loading                       |
+| ---------------------------------- | ------------------------------- | -------------------------------------- | ------------ | ----------------------------- |
+| DSP emulation (`dsp.wasm`)         | Rust (snes-apu-spcp)            | cargo + wasm-opt                       | AudioWorklet | Raw bytes via postMessage     |
+| Audio encoders (FLAC, Vorbis, MP3) | C (libFLAC, libvorbisenc, LAME) | Emscripten (pre-compiled npm packages) | Web Worker   | Dynamic `import()` per format |
 
 These two categories have completely separate build pipelines, loading mechanisms, and execution contexts:
 
@@ -419,7 +418,7 @@ These checks happen once per function call (not per sample) and add negligible o
 ### Related Decisions
 
 - [ADR-0001](0001-snes-audio-emulation-library.md) — selects snes-apu-spcp (Rust, BSD-2-Clause) as the emulation library. This ADR defines how that library is compiled to WASM and integrated into the AudioWorklet.
-- [ADR-0003](0003-audio-pipeline-architecture.md) — defines the Module-transfer pattern (compile in main thread → transfer to worklet → instantiate), the pre-allocated buffer strategy, and the per-quantum render cycle. This ADR provides the concrete implementation of that pattern.
+- [ADR-0003](0003-audio-pipeline-architecture.md) — defines the bytes-transfer pattern (fetch bytes in main thread → send to worklet → compile and instantiate), the pre-allocated buffer strategy, and the per-quantum render cycle. This ADR provides the concrete implementation of that pattern.
 - [ADR-0006](0006-audio-codec-libraries.md) — selects pre-compiled Emscripten WASM encoder libraries for audio export. This ADR documents how the two WASM artifact categories (Rust DSP + Emscripten codecs) coexist without toolchain conflicts.
 
 **Note on ADR-0001**: ADR-0001 references wasm-pack as the WASM compilation path for snes-apu-spcp. This ADR supersedes that assumption — the library compiles cleanly via `cargo build --target wasm32-unknown-unknown` without wasm-pack. ADR-0001's assessment of the library's WASM compatibility remains valid; only the build tooling choice has been refined.

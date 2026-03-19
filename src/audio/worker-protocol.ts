@@ -41,12 +41,12 @@ export type MainToWorklet =
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace MainToWorklet {
-  /** Initial handshake: transfers compiled WASM module and first SPC file. */
+  /** Initial handshake: transfers raw WASM bytes and first SPC file. */
   export interface Init {
     readonly type: 'init';
     readonly version: number;
-    /** Compiled WebAssembly.Module — structured clone (not transferable). */
-    readonly wasmModule: WebAssembly.Module;
+    /** Raw WASM bytes. Compiled and instantiated by the worklet. */
+    readonly wasmBytes: ArrayBuffer;
     /** SPC file data. ArrayBuffer is transferred (zero-copy). */
     readonly spcData: ArrayBuffer;
     /** Detected AudioContext.sampleRate for resampler configuration. */

@@ -337,9 +337,13 @@ class SpcProcessor extends AudioWorkletProcessor {
         return;
       }
 
-      // Instantiate WASM with empty importObject — the Rust crate uses
-      // #![no_std] with panic=abort, producing no env imports.
-      const instance = await WebAssembly.instantiate(msg.wasmModule, {});
+      // Compile + instantiate WASM from raw bytes. The Rust crate targets
+      // wasm32-unknown-unknown with panic=abort, producing no env imports.
+      // NOTE: Ideally we'd pre-compile on the main thread and transfer a
+      // WebAssembly.Module, but Chromium silently drops Module objects sent
+      // via postMessage to AudioWorklet ports (browser bug). Raw bytes are
+      // the workaround.
+      const { instance } = await WebAssembly.instantiate(msg.wasmBytes, {});
       const exports = instance.exports as unknown as DspExports;
 
       // Allocate space in WASM memory for SPC data and copy it in.

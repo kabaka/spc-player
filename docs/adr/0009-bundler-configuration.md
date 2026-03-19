@@ -9,10 +9,10 @@ date: 2026-03-18
 
 ADR-0002 selected React 19 + TypeScript with Vite as the bundler, citing Vite's fast HMR, native WASM plugin support, and efficient production builds with code splitting. Subsequent ADRs made decisions that depend on specific Vite behaviors:
 
-- ADR-0003 defines a DSP WASM binary loaded via `?url` import and compiled with `WebAssembly.compileStreaming()`, and an AudioWorklet script loaded via `new URL('./audio/spc-worklet.ts', import.meta.url)`.
+- ADR-0003 defines a DSP WASM binary loaded via `?url` import and fetched as raw bytes (`ArrayBuffer`), and an AudioWorklet script loaded as a separate compiled asset via `?worker&url` import.
 - ADR-0004 selects CSS Modules (`.module.css` files), which Vite supports natively.
 - ADR-0006 specifies lazy-loaded WASM encoder modules (libflac.js, ogg-vorbis-encoder-wasm, lame-wasm) via dynamic `import()`.
-- ADR-0007 defines raw WASM exports with `cargo build` + `wasm-opt`, no wasm-bindgen, with Vite integration using `?url` for WASM and `new URL()` for worklets with content-based hashing.
+- ADR-0007 defines raw WASM exports with `cargo build` + `wasm-opt`, no wasm-bindgen, with Vite integration using `?url` for WASM and `?worker&url` for worklets with content-based hashing.
 
 However, none of these ADRs define the actual Vite configuration: plugin selection, build target, code splitting strategy, `rollupOptions`, dev vs. production differences, `base` path for GitHub Pages, or how all these asset types compose in a single build. Without a formalized configuration, these interdependent decisions risk producing incompatible or suboptimal build behavior.
 
@@ -20,8 +20,8 @@ What Vite configuration — plugins, build options, code splitting strategy, and
 
 ## Decision Drivers
 
-- **WASM file handling** — the DSP binary (`.wasm`) must be imported via `?url` and served with the correct MIME type (`application/wasm`) for `WebAssembly.compileStreaming()` to succeed. Content-based hashing is required for PWA cache busting. Codec WASM modules (libflac.js, ogg-vorbis-encoder-wasm, lame-wasm) from npm packages must be lazy-loadable via dynamic `import()` as separate chunks.
-- **AudioWorklet script bundling** — the worklet script (`spc-worklet.ts`) must be compiled from TypeScript, emitted as a separate asset with content-based hashing, and remain self-contained (no imports from the main application bundle). It is loaded via `audioContext.audioWorklet.addModule(url)`, not via Vite's `?worker` pattern.
+- **WASM file handling** — the DSP binary (`.wasm`) must be imported via `?url` and served with the correct MIME type (`application/wasm`). Content-based hashing is required for PWA cache busting. Codec WASM modules (libflac.js, ogg-vorbis-encoder-wasm, lame-wasm) from npm packages must be lazy-loadable via dynamic `import()` as separate chunks.
+- **AudioWorklet script bundling** — the worklet script (`spc-worklet.ts`) must be compiled from TypeScript, emitted as a separate asset with a `.js` extension and content-based hashing, and remain self-contained (no imports from the main application bundle). It is loaded via `audioContext.audioWorklet.addModule(url)` using a `?worker&url` import that provides TypeScript compilation without Worker constructor wrapping.
 - **Code splitting for route-based lazy loading** — TanStack Router routes (player, playlist, inspector, instrument performer, settings) should be lazy-loaded via dynamic `import()`, creating separate chunks per view so the initial bundle contains only the active route's code.
 - **Lazy loading of export codec modules** — encoder libraries (FLAC, OGG Vorbis, MP3) are downloaded only when the user exports in that format. Each must produce an independent chunk via dynamic `import()`.
 - **CSS Modules support** — Vite's built-in CSS Modules support must work with `.module.css` files and the `camelCaseOnly` naming convention (per ADR-0004).
@@ -33,13 +33,13 @@ What Vite configuration — plugins, build options, code splitting strategy, and
 
 ## Considered Options
 
-- **Option 1: Minimal Vite configuration** — `@vitejs/plugin-react` plus ecosystem plugins required by upstream ADRs (e.g., TanStack Router's Vite plugin per ADR-0013); `?url` for WASM, `new URL()` for worklet; moderate `manualChunks` for vendor splitting; built-in CSS Modules; build target `esnext`
+- **Option 1: Minimal Vite configuration** — `@vitejs/plugin-react` plus ecosystem plugins required by upstream ADRs (e.g., TanStack Router's Vite plugin per ADR-0013); `?url` for WASM, `?worker&url` for worklet; moderate `manualChunks` for vendor splitting; built-in CSS Modules; build target `esnext`
 - **Option 2: Plugin-assisted WASM handling** — adds `vite-plugin-wasm` + `vite-plugin-top-level-await` for ES module-style WASM imports; otherwise similar to Option 1
 - **Option 3: Extensive `rollupOptions` configuration** — adds explicit input entries for the AudioWorklet, fine-grained `manualChunks` for every module category, custom `assetFileNames` / `chunkFileNames` / `entryFileNames` patterns for detailed control over the output structure
 
 ## Decision Outcome
 
-Chosen option: **"Minimal Vite configuration"**, because Vite's defaults and built-in features already satisfy every upstream ADR requirement — `?url` imports for WASM, `new URL()` resolution for the AudioWorklet script, automatic code splitting on dynamic `import()` boundaries, native CSS Modules support, and content-based hashing — with only `@vitejs/plugin-react` and the TanStack Router Vite plugin (per ADR-0013) as plugins. No WASM-specific plugins are needed. The WASM-specific plugins (Option 2) are unnecessary because the project does not import WASM as ES modules, and extensive `rollupOptions` (Option 3) adds configuration complexity that fights against Vite's optimized defaults without providing measurable benefit.
+Chosen option: **"Minimal Vite configuration"**, because Vite's defaults and built-in features already satisfy every upstream ADR requirement — `?url` imports for WASM, `?worker&url` import for the AudioWorklet script, automatic code splitting on dynamic `import()` boundaries, native CSS Modules support, and content-based hashing — with only `@vitejs/plugin-react` and the TanStack Router Vite plugin (per ADR-0013) as plugins. No WASM-specific plugins are needed. The WASM-specific plugins (Option 2) are unnecessary because the project does not import WASM as ES modules, and extensive `rollupOptions` (Option 3) adds configuration complexity that fights against Vite's optimized defaults without providing measurable benefit.
 
 ### Configuration
 
@@ -108,7 +108,7 @@ Two plugins are included, both addressing concrete upstream requirements:
 
 No WASM plugin is needed because:
 
-- The DSP `.wasm` binary is imported via `?url` (a built-in Vite feature) and manually compiled via `WebAssembly.compileStreaming()` — it is not imported as an ES module (per ADR-0007).
+- The DSP `.wasm` binary is imported via `?url` (a built-in Vite feature) and fetched as raw bytes (`ArrayBuffer`) for transfer to the AudioWorklet — it is not imported as an ES module (per ADR-0007).
 - Codec WASM modules (per ADR-0006) are npm packages with their own internal WASM loading mechanisms — Vite bundles their JavaScript entry points, and the packages handle their own `.wasm` file loading at runtime.
 - `vite-plugin-wasm` and `vite-plugin-top-level-await` solve a problem the project does not have: synchronous ES module-style WASM imports with top-level `await`.
 
@@ -122,14 +122,14 @@ No CSS plugin is needed because Vite supports CSS Modules natively (per ADR-0004
 import dspWasmUrl from '../wasm/dsp.wasm?url';
 
 // In audio engine initialization:
-const wasmModule = await WebAssembly.compileStreaming(fetch(dspWasmUrl));
+const wasmBytes = await fetch(dspWasmUrl).then((r) => r.arrayBuffer());
 ```
 
 - The `?url` suffix tells Vite to treat the file as a static asset and return its resolved URL.
 - In development: resolves to a dev server URL (e.g., `/src/wasm/dsp.wasm`).
 - In production: the file is copied to the output directory with a content-based hash (e.g., `/spc-player/assets/dsp-a1b2c3d4.wasm`) and the import resolves to this hashed path.
 - The WASM file is never parsed, transformed, or processed by Vite — it is treated as an opaque binary asset.
-- `WebAssembly.compileStreaming()` requires the server to respond with `Content-Type: application/wasm`. Vite's dev server serves `.wasm` files with this MIME type. GitHub Pages also serves `.wasm` files with the correct MIME type.
+- The raw `ArrayBuffer` is sent to the AudioWorklet via `postMessage`, where it is compiled and instantiated with `WebAssembly.instantiate(bytes, {})`. (`WebAssembly.Module` objects are silently dropped by Chromium when sent to AudioWorklet `MessagePort`, so raw bytes are used instead.)
 - The file is placed in `src/wasm/dsp.wasm` after the WASM build step (`npm run build:wasm`) places it there (per ADR-0007).
 
 **Codec WASM modules (libflac.js, ogg-vorbis-encoder-wasm, lame-wasm):**
@@ -149,16 +149,20 @@ const getLameEncoder = () => import('lame-wasm');
 ### AudioWorklet Script Bundling
 
 ```typescript
-const workletUrl = new URL('./audio/spc-worklet.ts', import.meta.url).href;
-await audioContext.audioWorklet.addModule(workletUrl);
+import spcWorkletUrl from './spc-worklet.ts?worker&url';
+
+// In audio engine initialization:
+await audioContext.audioWorklet.addModule(spcWorkletUrl);
 ```
 
-- The `new URL('./file.ts', import.meta.url)` pattern is a Vite-recognized static analysis pattern for asset references.
-- In development: Vite serves the TypeScript file through its transform pipeline (compiling TS to JS on-the-fly), and the URL resolves to the dev server path.
-- In production: Vite compiles the TypeScript file, emits it as a separate asset with a content-based hash, and rewrites the URL reference to point to the emitted file.
+- The `?worker&url` import tells Vite to compile TypeScript and emit the file as a separate asset with a `.js` extension and content-based hash, returning the resolved URL as a string.
+- In development: Vite compiles and serves the file on-the-fly.
+- In production: emitted as e.g. `/spc-player/assets/spc-worklet-a1b2c3d4.js`.
+- Despite using `?worker`, Vite does NOT wrap the output in Worker boilerplate when `&url` is appended — the file contains only the AudioWorklet processor code with `registerProcessor()` at the top level.
 - **Self-containment constraint**: the worklet script must have zero runtime imports from the main application bundle. `audioContext.audioWorklet.addModule()` loads the script in an isolated AudioWorklet global scope that has no access to the main thread's module graph. Shared TypeScript types can be imported (they are erased at compilation), but runtime values, functions, or modules cannot. This constraint is documented in ADR-0007.
-- The `?worker` suffix is **not used** because it wraps the file in a `new Worker()` constructor, which is incompatible with `audioWorklet.addModule()`. AudioWorklets are not Web Workers — they have different APIs, different global scopes, and different loading mechanisms.
-- The `worker.format: 'es'` configuration in `vite.config.ts` applies to Vite's `?worker` pipeline and is included because ADR-0006 specifies a dedicated Web Worker for long-running audio export operations. When that worker is implemented, it will use the `?worker` suffix and this setting ensures it is emitted as an ES module.
+- The `?worker` suffix alone (without `&url`) wraps the file in a `new Worker()` constructor, which is incompatible with `audioWorklet.addModule()`. However, `?worker&url` only returns the URL to the compiled file without any Worker constructor wrapping. This combination provides TypeScript compilation and `.js` output extension while maintaining AudioWorklet compatibility.
+- **MIME type consideration**: GitHub Pages serves `.ts` files with MIME type `video/mp2t` (MPEG-2 Transport Stream). Using `?worker&url` ensures the worklet is emitted with a `.js` extension, which is served with `application/javascript` — required by `audioContext.audioWorklet.addModule()`. The earlier `new URL('./file.ts', import.meta.url)` pattern produced output files that retained a `.ts` extension (e.g., `spc-worklet-D9sPDmgk.ts`), causing `addModule()` to fail on GitHub Pages due to the incorrect MIME type.
+- The `worker.format: 'es'` configuration in `vite.config.ts` applies to Vite's `?worker` pipeline. Both the AudioWorklet file (via `?worker&url`) and the future export Worker (per ADR-0006) pass through this pipeline, so this setting ensures both are emitted as ES modules.
 
 ### Code Splitting Strategy
 
@@ -295,7 +299,7 @@ No custom `assetFileNames`, `chunkFileNames`, or `entryFileNames` configuration 
 ### Consequences
 
 - Good, because only two plugins (`@tanstack/router-plugin/vite` per ADR-0013 and `@vitejs/plugin-react`) are needed, minimizing the build dependency surface and reducing upgrade risk and build configuration complexity.
-- Good, because all WASM and AudioWorklet loading patterns required by ADR-0003 and ADR-0007 work with Vite's built-in features (`?url` imports, `new URL()` pattern) — no additional plugins needed.
+- Good, because all WASM and AudioWorklet loading patterns required by ADR-0003 and ADR-0007 work with Vite's built-in features (`?url` imports for WASM, `?worker&url` for the AudioWorklet) — no additional plugins needed.
 - Good, because dynamic `import()` for both route-based splitting and codec lazy loading works automatically via Vite's Rollup integration, requiring zero code-splitting configuration.
 - Good, because CSS Modules work natively with a single `localsConvention` setting, consistent with ADR-0004.
 - Good, because `build.target: 'esnext'` avoids unnecessary transpilation, producing smaller bundles given the project's modern browser requirements.
@@ -303,14 +307,14 @@ No custom `assetFileNames`, `chunkFileNames`, or `entryFileNames` configuration 
 - Good, because the configuration is ~30 lines of code — small enough to be fully understood and maintained by AI agents without risk of configuration drift.
 - Good, because production source maps enable debugging of the complex WASM + AudioWorklet loading pipeline without impacting end-user performance.
 - Bad, because the `manualChunks` configuration only separates `react` and `react-dom` — other vendor dependencies may be duplicated across route chunks if imported by multiple routes, slightly increasing total download size. This tradeoff is acceptable because Service Worker caching eliminates repeat-download cost, and the alternative (aggressive per-library splitting) increases request count on first load.
-- Bad, because the AudioWorklet script's self-containment constraint (no runtime imports) must be enforced by developer discipline — Vite does not validate that files referenced via `new URL()` are self-contained. A runtime import in the worklet script would fail silently in development (Vite serves modules individually) and break in production (the emitted file lacks bundled dependencies).
+- Bad, because the AudioWorklet script's self-containment constraint (no runtime imports from the main application bundle) must be enforced by developer discipline. Vite's `?worker&url` pipeline bundles the worklet's own imports, but the AudioWorklet global scope has no access to the main thread's module graph — runtime values, functions, or modules from the application bundle cannot be imported. Shared TypeScript types (erased at compilation) are safe; runtime dependencies are not.
 - Bad, because the `base` path is hardcoded in `vite.config.ts` and must be changed for non-GitHub-Pages deployments (custom domain or different project name). This can be mitigated by using the `--base` CLI flag at build time.
 - Bad, because codec WASM modules from npm packages may internally load their `.wasm` files via `fetch()` with paths relative to the package — Vite's build may not correctly rewrite these internal paths. This must be verified per-package during ADR-0006 confirmation and may require per-package workarounds (e.g., configuring the package's WASM path at initialization, or using `optimizeDeps.exclude` to prevent Vite from pre-bundling the package's WASM loader).
 
 ### Confirmation
 
-1. **WASM `?url` import verification** — import `dsp.wasm` via `?url` in both dev and production. Verify that `WebAssembly.compileStreaming(fetch(url))` succeeds (correct MIME type, correct path, no CORS issues). In production, verify the filename contains a content-based hash.
-2. **AudioWorklet loading verification** — load the worklet script via `new URL('./audio/spc-worklet.ts', import.meta.url)` in both dev and production. Verify that `audioContext.audioWorklet.addModule(url)` succeeds and the processor registers correctly. In production, verify the emitted file is valid JavaScript (TypeScript compiled), contains no unresolved imports, and has a content-based hash.
+1. **WASM `?url` import verification** — import `dsp.wasm` via `?url` in both dev and production. Verify that `fetch(url).then(r => r.arrayBuffer())` succeeds (correct path, no CORS issues). In production, verify the filename contains a content-based hash.
+2. **AudioWorklet loading verification** — import the worklet script via `import spcWorkletUrl from './spc-worklet.ts?worker&url'` and load it with `audioContext.audioWorklet.addModule(spcWorkletUrl)` in both dev and production. Verify the processor registers correctly. In production, verify the emitted file is valid JavaScript (TypeScript compiled, `.js` extension), contains no unresolved imports, and has a content-based hash.
 3. **Code splitting verification** — build the production bundle and inspect the output with `npx vite-bundle-visualizer` or `rollup-plugin-visualizer`. Verify that: (a) each TanStack Router route produces a separate chunk, (b) each codec encoder produces a separate chunk, (c) React + ReactDOM are in a `react-vendor` chunk, and (d) no unexpected code duplication exists across chunks.
 4. **CSS Modules verification** — verify that `.module.css` imports produce scoped class names in both dev and production, and that the `camelCaseOnly` convention is applied (e.g., `.main-container` in CSS is only accessible as `styles.mainContainer` in TypeScript).
 5. **GitHub Pages deployment verification** — deploy the production build to GitHub Pages and verify all asset URLs resolve correctly with the `/spc-player/` base path. Verify the Service Worker correctly caches and serves all hashed assets.
@@ -321,27 +325,27 @@ No custom `assetFileNames`, `chunkFileNames`, or `entryFileNames` configuration 
 
 ### Option 1: Minimal Vite Configuration
 
-`@vitejs/plugin-react` and the TanStack Router Vite plugin (per ADR-0013) as the only plugins. WASM loaded via `?url`, AudioWorklet via `new URL()`, code splitting via dynamic `import()` and automatic route splitting, CSS Modules via built-in support. A narrow `manualChunks` function separates React + ReactDOM into a vendor chunk. Build target `esnext`. Configuration is ~30 lines.
+`@vitejs/plugin-react` and the TanStack Router Vite plugin (per ADR-0013) as the only plugins. WASM loaded via `?url`, AudioWorklet via `?worker&url`, code splitting via dynamic `import()` and automatic route splitting, CSS Modules via built-in support. A narrow `manualChunks` function separates React + ReactDOM into a vendor chunk. Build target `esnext`. Configuration is ~30 lines.
 
 - Good, because the configuration is trivially understandable — every line maps to a concrete architectural requirement, with no speculative or "might need it later" settings.
 - Good, because a single plugin (`@vitejs/plugin-react`) means the build depends on only two tools (Vite and the React plugin), both maintained by the Vite team, minimizing third-party dependency risk.
-- Good, because `?url` for WASM and `new URL()` for the AudioWorklet are documented, stable Vite features — not plugin-specific APIs that could change across plugin versions.
+- Good, because `?url` for WASM and `?worker&url` for the AudioWorklet are documented, stable Vite features — not plugin-specific APIs that could change across plugin versions.
 - Good, because Vite's default code splitting on dynamic `import()` boundaries automatically handles route-based splitting (TanStack Router) and codec lazy loading (ADR-0006) with zero configuration.
 - Good, because `build.target: 'esnext'` avoids useless transpilation overhead — browsers that can't run ES2022+ also can't run AudioWorklet or WebAssembly, which the application requires.
 - Good, because Vite's default content-based hashing produces correct PWA cache-busting behavior without custom filename patterns.
 - Good, because the configuration is well-represented in LLM training data (the pattern of "React + Vite with minimal config" is among the most common Vite configurations), reducing the risk of AI agents producing incorrect config edits.
 - Neutral, because `manualChunks` only separates React/ReactDOM — other vendor libraries (TanStack Router ~24.5 kB, Radix UI, Zustand) remain in Vite's default splitting. This is a deliberate tradeoff: Service Worker caching makes aggressive vendor splitting unnecessary, and simpler configuration reduces maintenance burden.
-- Bad, because there is no build-time validation that the AudioWorklet script is self-contained — a runtime import would compile and serve in dev but break in production. This must be caught by E2E tests or manual review.
+- Bad, because there is no build-time validation that the AudioWorklet script avoids importing runtime values from the main application bundle. Vite's `?worker&url` pipeline bundles the worklet's own imports, but the AudioWorklet global scope cannot access the main thread's module graph. An import that resolves at build time but references main-thread-only APIs would fail at runtime in the worklet. This must be caught by E2E tests or manual review.
 - Bad, because codec WASM modules from npm packages may require per-package investigation to ensure their internal WASM loading is compatible with Vite's production output (path rewriting, MIME types, CORS).
 
 ### Option 2: Plugin-Assisted WASM Handling (`vite-plugin-wasm` + `vite-plugin-top-level-await`)
 
 Adds `vite-plugin-wasm` and `vite-plugin-top-level-await` to enable ES module-style WASM imports: `import init, { dsp_render } from './dsp.wasm'` with top-level `await init()`.
 
-- Good, because ES module-style WASM imports provide a more ergonomic developer experience — `import` statements instead of manual `fetch()` + `compileStreaming()`.
+- Good, because ES module-style WASM imports provide a more ergonomic developer experience — `import` statements instead of manual `fetch()` + `arrayBuffer()`.
 - Good, because `vite-plugin-wasm` handles WASM binary embedding and module generation automatically.
-- Bad, because **the project does not need ES module-style WASM imports**. ADR-0007 explicitly chose raw WASM exports with manual `WebAssembly.compileStreaming()` + `WebAssembly.instantiate()` — the DSP WASM binary is compiled in the main thread and transferred to the AudioWorklet, a flow that ES module WASM imports do not support.
-- Bad, because `vite-plugin-wasm` inlines WASM binaries as base64 or uses `fetch()` internally — both incompatible with the Module-transfer pattern where the compiled `WebAssembly.Module` object is sent to the AudioWorklet via `postMessage` (per ADR-0003).
+- Bad, because **the project does not need ES module-style WASM imports**. ADR-0007 explicitly chose raw WASM exports with manual `fetch()` + `arrayBuffer()` — the DSP WASM binary is fetched as raw bytes in the main thread and sent to the AudioWorklet, a flow that ES module WASM imports do not support.
+- Bad, because `vite-plugin-wasm` inlines WASM binaries as base64 or uses `fetch()` internally — both incompatible with the bytes-transfer pattern where raw `ArrayBuffer` data is sent to the AudioWorklet via `postMessage` (per ADR-0003).
 - Bad, because `vite-plugin-top-level-await` transforms the output to wrap modules in async IIFEs, which can interfere with tree-shaking and produce unexpected module evaluation order.
 - Bad, because adding two plugins for a problem the project doesn't have increases the dependency surface and build complexity without benefit.
 - Bad, because both plugins are community-maintained (not by the Vite team) — they may lag behind Vite major version upgrades, creating CI breakage risk.
@@ -430,8 +434,8 @@ The configuration may evolve in response to confirmed needs:
 ### Related Decisions
 
 - [ADR-0002](0002-ui-framework.md) — selected React 19 + Vite, establishing Vite as the bundler.
-- [ADR-0003](0003-audio-pipeline-architecture.md) — defines the WASM Module-transfer pattern and AudioWorklet loading that this configuration supports.
+- [ADR-0003](0003-audio-pipeline-architecture.md) — defines the WASM bytes-transfer pattern and AudioWorklet loading that this configuration supports.
 - [ADR-0004](0004-css-methodology.md) — selected CSS Modules, which this configuration enables via `css.modules.localsConvention`.
 - [ADR-0006](0006-audio-codec-libraries.md) — selected lazy-loaded WASM encoder packages, whose dynamic `import()` lazy loading this configuration supports.
-- [ADR-0007](0007-wasm-build-pipeline.md) — defines the WASM build pipeline and Vite integration patterns (`?url`, `new URL()`) that this configuration relies on.
+- [ADR-0007](0007-wasm-build-pipeline.md) — defines the WASM build pipeline and Vite integration patterns (`?url`, `?worker&url`) that this configuration relies on.
 - [ADR-0013](0013-router-configuration.md) — configures TanStack Router with file-based routing; the TanStack Router Vite plugin (`@tanstack/router-plugin/vite`) is included in this configuration per that ADR.

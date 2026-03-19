@@ -8,7 +8,8 @@
  * @see docs/adr/0007-wasm-build-pipeline.md
  */
 
-import { loadDspModule } from './wasm-loader';
+import spcWorkletUrl from './spc-worklet.ts?worker&url';
+import { loadDspWasmBytes } from './wasm-loader';
 import { audioStateBuffer, resetAudioStateBuffer } from './audio-state-buffer';
 import type { MainToWorklet, WorkletToMain } from './worker-protocol';
 import { PROTOCOL_VERSION } from './worker-protocol';
@@ -31,7 +32,7 @@ class AudioEngine {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private gainNode: GainNode | null = null;
-  private wasmModule: WebAssembly.Module | null = null;
+  private wasmBytes: ArrayBuffer | null = null;
   private isInitialized = false;
   private onPlaybackEnded: (() => void) | null = null;
   private visibilityHandler: (() => void) | null = null;
@@ -43,15 +44,14 @@ class AudioEngine {
     if (this.isInitialized) return;
 
     try {
-      // 1. Compile WASM module (streaming compilation)
-      this.wasmModule = await loadDspModule();
+      // 1. Fetch raw WASM bytes (worklet compiles + instantiates)
+      this.wasmBytes = await loadDspWasmBytes();
 
       // 2. Create AudioContext at 48 kHz
       this.audioContext = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
 
       // 3. Load AudioWorklet processor script
-      const workletUrl = new URL('./spc-worklet.ts', import.meta.url);
-      await this.audioContext.audioWorklet.addModule(workletUrl);
+      await this.audioContext.audioWorklet.addModule(spcWorkletUrl);
 
       // 4. Build audio graph: WorkletNode → GainNode → destination
       this.workletNode = new AudioWorkletNode(
@@ -93,7 +93,7 @@ class AudioEngine {
       const detail = error instanceof Error ? error.message : String(error);
 
       // Distinguish WASM fetch failure from worklet load failure
-      if (!this.wasmModule) {
+      if (!this.wasmBytes) {
         reportError(audioPipelineError('AUDIO_WASM_INIT_FAILED', { detail }));
       } else {
         reportError(
@@ -118,17 +118,16 @@ class AudioEngine {
       await this.init();
     }
 
-    if (!this.workletNode || !this.audioContext || !this.wasmModule) return;
+    if (!this.workletNode || !this.audioContext || !this.wasmBytes) return;
 
     const port = this.workletNode.port;
     const actualSampleRate = this.audioContext.sampleRate;
 
     if (!this.hasWorkletReceived()) {
-      // First load — send Init with compiled WASM Module
       const msg: MainToWorklet.Init = {
         type: 'init',
         version: PROTOCOL_VERSION,
-        wasmModule: this.wasmModule,
+        wasmBytes: this.wasmBytes,
         spcData,
         outputSampleRate: actualSampleRate,
         resamplerMode: DEFAULT_RESAMPLER_MODE,
@@ -137,6 +136,9 @@ class AudioEngine {
         fadeOutSamples,
       };
 
+      // wasmBytes is intentionally cloned (not transferred) so it
+      // remains available for future loadSpc calls after destroy/re-init.
+      // spcData is transferred (zero-copy) since the caller is done with it.
       port.postMessage(msg, [spcData]);
     } else {
       // Subsequent load — worklet already has WASM instance
@@ -154,8 +156,8 @@ class AudioEngine {
   }
 
   /** Begin or resume playback. Resumes suspended AudioContext for autoplay policy. */
-  play(): void {
-    if (!this.isInitialized || !this.audioContext) return;
+  play(): boolean {
+    if (!this.isInitialized || !this.audioContext) return false;
     this.userIntentPlaying = true;
 
     // Handle browser autoplay policy — AudioContext starts suspended
@@ -172,6 +174,7 @@ class AudioEngine {
     }
 
     this.postCommand({ type: 'play' });
+    return true;
   }
 
   /** Pause playback. Retains position. */
@@ -226,7 +229,7 @@ class AudioEngine {
   async destroy(): Promise<void> {
     await this.teardownGraph();
     this.isInitialized = false;
-    this.wasmModule = null;
+    this.wasmBytes = null;
     resetAudioStateBuffer();
   }
 

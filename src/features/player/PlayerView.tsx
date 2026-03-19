@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
@@ -6,6 +6,7 @@ import { Button } from '@/components/Button/Button';
 import { FileDropZone } from '@/components/FileDropZone/FileDropZone';
 import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
 import { audioEngine } from '@/audio/engine';
+import { audioStateBuffer } from '@/audio/audio-state-buffer';
 
 import styles from './PlayerView.module.css';
 
@@ -72,6 +73,25 @@ export function PlayerView() {
   const isPlaying = playbackStatus === 'playing';
   const hasTrack = metadata !== null;
 
+  // ── Sync position from audioStateBuffer during playback ────────────
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    let rafId: number;
+    let lastPosition = -1;
+    const sync = () => {
+      const pos = audioStateBuffer.positionSamples;
+      if (pos !== lastPosition) {
+        lastPosition = pos;
+        setPosition(pos);
+      }
+      rafId = requestAnimationFrame(sync);
+    };
+    rafId = requestAnimationFrame(sync);
+
+    return () => cancelAnimationFrame(rafId);
+  }, [isPlaying, setPosition]);
+
   // ── Playback state announcement ───────────────────────────────────
   const [announcement, setAnnouncement] = useState('');
 
@@ -93,9 +113,11 @@ export function PlayerView() {
       setPlaybackStatus('paused');
       setAnnouncement('Paused');
     } else {
-      audioEngine.play();
-      setPlaybackStatus('playing');
-      setAnnouncement(`Playing: ${metadata?.title ?? 'Unknown track'}`);
+      const started = audioEngine.play();
+      if (started) {
+        setPlaybackStatus('playing');
+        setAnnouncement(`Playing: ${metadata?.title ?? 'Unknown track'}`);
+      }
     }
   }, [isPlaying, setPlaybackStatus, metadata]);
 

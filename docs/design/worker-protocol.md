@@ -40,7 +40,7 @@ SPC Player uses three execution contexts. Each has strict boundaries on what it 
 │                                                                 │
 │  React 19 UI · Zustand stores · AudioContext owner              │
 │  AudioWorkletNode owner · MessagePort endpoints                 │
-│  WASM module compilation (compileStreaming)                      │
+│  WASM binary fetch (ArrayBuffer)                                │
 │  User gesture handling · File I/O (IndexedDB via idb)           │
 │  Export Worker lifecycle management                              │
 │  audioStateBuffer (ref-based real-time channel, rAF consumers)  │
@@ -63,7 +63,7 @@ SPC Player uses three execution contexts. Each has strict boundaries on what it 
 
 ### Main Thread
 
-Owns the `AudioContext`, all React UI, Zustand stores, and IndexedDB access. Compiles the WASM module via `WebAssembly.compileStreaming()` and transfers the compiled `WebAssembly.Module` to the AudioWorklet and Export Worker. Receives real-time telemetry from the AudioWorklet via `MessagePort` and writes it to a module-scoped `audioStateBuffer` object (ADR-0005's ref-based channel). Never performs DSP computation.
+Owns the `AudioContext`, all React UI, Zustand stores, and IndexedDB access. Fetches the WASM binary as raw bytes (`ArrayBuffer`) and sends it to the AudioWorklet and Export Worker via `postMessage`. Each recipient compiles and instantiates the WASM from bytes in its own context. (`WebAssembly.Module` objects are silently dropped by Chromium when sent to AudioWorklet `MessagePort`, so raw bytes are used instead.) Receives real-time telemetry from the AudioWorklet via `MessagePort` and writes it to a module-scoped `audioStateBuffer` object (ADR-0005's ref-based channel). Never performs DSP computation.
 
 ### AudioWorklet Thread
 
@@ -108,12 +108,12 @@ type MainToWorklet =
   | MainToWorklet.SetPlaybackConfig;
 
 namespace MainToWorklet {
-  /** Initial handshake: transfers compiled WASM module and first SPC file. */
+  /** Initial handshake: transfers raw WASM bytes and first SPC file. */
   interface Init {
     readonly type: 'init';
     readonly version: number;
-    /** Compiled WebAssembly.Module — structured clone (not transferable). */
-    readonly wasmModule: WebAssembly.Module;
+    /** Raw WASM bytes — cloned (not transferred), so main thread retains a copy for reuse. */
+    readonly wasmBytes: ArrayBuffer;
     /** SPC file data. ArrayBuffer is transferred (zero-copy). */
     readonly spcData: ArrayBuffer;
     /** Detected AudioContext.sampleRate for resampler configuration. */
@@ -388,12 +388,12 @@ type MainToExportWorker =
   | MainToExportWorker.CancelExport;
 
 namespace MainToExportWorker {
-  /** Initialize the export worker with the DSP WASM module. */
+  /** Initialize the export worker with DSP WASM bytes. */
   interface Init {
     readonly type: 'init';
     readonly version: number;
-    /** Compiled WebAssembly.Module — structured clone (not transferable). */
-    readonly wasmModule: WebAssembly.Module;
+    /** Raw WASM bytes — cloned (not transferred), so main thread retains a copy for reuse. */
+    readonly wasmBytes: ArrayBuffer;
   }
 
   /** Begin an export job. */
@@ -547,9 +547,9 @@ User gesture (click/tap)
   │    AudioContext({ sampleRate: 48000 })
   │    await ctx.resume()                       ← unblocks autoplay
   │
-  ├─② WASM module compilation (can overlap with ③ if cached)
-  │    WebAssembly.compileStreaming(fetch(dspWasmUrl))
-  │    Returns WebAssembly.Module
+  ├─② WASM binary fetch (can overlap with ③ if cached)
+  │    fetch(dspWasmUrl).then(r => r.arrayBuffer())
+  │    Returns ArrayBuffer
   │
   ├─③ AudioWorklet module registration
   │    await ctx.audioWorklet.addModule(workletScriptUrl)
@@ -566,7 +566,7 @@ User gesture (click/tap)
   │    node.port.postMessage({
   │      type: 'init',
   │      version: PROTOCOL_VERSION,
-  │      wasmModule,              ← WebAssembly.Module (structured clone)
+  │      wasmBytes,               ← ArrayBuffer (cloned, not transferred — main thread retains copy)
   │      spcData: spcArrayBuffer, ← ArrayBuffer (transferred)
   │      outputSampleRate: ctx.sampleRate,
   │      resamplerMode: 0,
@@ -574,7 +574,7 @@ User gesture (click/tap)
   │    }, [spcArrayBuffer])
   │
   ├─⑥ Worklet-side initialization (inside SpcProcessor)
-  │    WebAssembly.instantiate(wasmModule, {})  ← empty importObject
+  │    WebAssembly.instantiate(wasmBytes, {})  ← compiles AND instantiates from raw bytes
   │    wasm_alloc() → copy SPC data into WASM memory
   │    dsp_init(spcPtr, spcLen)
   │    dsp_set_resampler_mode(resamplerMode)
@@ -619,8 +619,8 @@ async function initializeAudio(spcData: ArrayBuffer): Promise<void> {
   await ctx.resume(); // ① Must complete before ③
 
   // ② and ③ in parallel
-  const [wasmModule] = await Promise.all([
-    WebAssembly.compileStreaming(fetch(dspWasmUrl)), // ②
+  const [wasmBytes] = await Promise.all([
+    fetch(dspWasmUrl).then((r) => r.arrayBuffer()), // ②
     ctx.audioWorklet.addModule(workletScriptUrl), // ③
   ]);
 
@@ -796,19 +796,19 @@ Every `postMessage` call crosses a thread boundary. The choice between **structu
 
 ### 5.1 Transfer Matrix
 
-| Direction            | Message Type         | Transfer Strategy                                                                                                                                                     | Rationale                                                                                                         |
-| -------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Main → Worklet       | `init`               | `wasmModule`: structured clone (Module is clonable, not transferable — browser shares compiled code backing store). `spcData`: **transferred** via transferable list. | SPC data can be 66 KiB+. Transfer avoids a copy. The main thread loses access to the buffer.                      |
-| Main → Worklet       | `load-spc`           | `spcData`: **transferred**.                                                                                                                                           | Same rationale. Main thread doesn't need the buffer after sending.                                                |
-| Main → Worklet       | `restore-snapshot`   | `snapshotData`: **transferred**.                                                                                                                                      | ~68 KiB snapshot. Transfer avoids copy.                                                                           |
-| Main → Worklet       | All control messages | Structured clone.                                                                                                                                                     | Small payloads (<100 bytes). Clone cost is negligible.                                                            |
-| Worklet → Main       | `telemetry`          | Structured clone.                                                                                                                                                     | Telemetry is a small object (~200 bytes). Structured clone at ~60 Hz is sustainable. No ArrayBuffers to transfer. |
-| Worklet → Main       | `snapshot`           | `snapshotData`: **transferred**.                                                                                                                                      | ~68 KiB. Transfer avoids copy on the audio thread.                                                                |
-| Worklet → Main       | All other messages   | Structured clone.                                                                                                                                                     | Small payloads.                                                                                                   |
-| Main → Export Worker | `init`               | `wasmModule`: structured clone.                                                                                                                                       | Same as worklet init.                                                                                             |
-| Main → Export Worker | `start-export`       | `spcData`: **transferred**.                                                                                                                                           | Same rationale as worklet.                                                                                        |
-| Export Worker → Main | `complete`           | `fileData`: **transferred**.                                                                                                                                          | Encoded file can be several MiB. Transfer is essential.                                                           |
-| Export Worker → Main | `progress`, `error`  | Structured clone.                                                                                                                                                     | Small payloads.                                                                                                   |
+| Direction            | Message Type         | Transfer Strategy                                                                                                                                        | Rationale                                                                                                                                                          |
+| -------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Main → Worklet       | `init`               | `wasmBytes`: structured clone (cloned, not transferred — main thread retains copy for recovery/reuse). `spcData`: **transferred** via transferable list. | SPC data can be 66 KiB+. Transfer avoids a copy. The main thread loses access to the buffer. WASM bytes are cloned so the main thread can resend them on recovery. |
+| Main → Worklet       | `load-spc`           | `spcData`: **transferred**.                                                                                                                              | Same rationale. Main thread doesn't need the buffer after sending.                                                                                                 |
+| Main → Worklet       | `restore-snapshot`   | `snapshotData`: **transferred**.                                                                                                                         | ~68 KiB snapshot. Transfer avoids copy.                                                                                                                            |
+| Main → Worklet       | All control messages | Structured clone.                                                                                                                                        | Small payloads (<100 bytes). Clone cost is negligible.                                                                                                             |
+| Worklet → Main       | `telemetry`          | Structured clone.                                                                                                                                        | Telemetry is a small object (~200 bytes). Structured clone at ~60 Hz is sustainable. No ArrayBuffers to transfer.                                                  |
+| Worklet → Main       | `snapshot`           | `snapshotData`: **transferred**.                                                                                                                         | ~68 KiB. Transfer avoids copy on the audio thread.                                                                                                                 |
+| Worklet → Main       | All other messages   | Structured clone.                                                                                                                                        | Small payloads.                                                                                                                                                    |
+| Main → Export Worker | `init`               | `wasmBytes`: structured clone (cloned, not transferred — main thread retains copy).                                                                      | Same as worklet init.                                                                                                                                              |
+| Main → Export Worker | `start-export`       | `spcData`: **transferred**.                                                                                                                              | Same rationale as worklet.                                                                                                                                         |
+| Export Worker → Main | `complete`           | `fileData`: **transferred**.                                                                                                                             | Encoded file can be several MiB. Transfer is essential.                                                                                                            |
+| Export Worker → Main | `progress`, `error`  | Structured clone.                                                                                                                                        | Small payloads.                                                                                                                                                    |
 
 ### 5.2 Transfer Code Patterns
 
@@ -1102,9 +1102,9 @@ audioContext.addEventListener('statechange', () => {
 
 ### 6.7 WASM Trap Recovery Sequence
 
-When a WASM trap occurs (`onprocessorerror` fires or `WASM_TRAP` error received), the main thread attempts to recover by rebuilding the AudioWorkletNode. The WASM module itself is fine (it's compiled code) — only the instance is corrupted.
+When a WASM trap occurs (`onprocessorerror` fires or `WASM_TRAP` error received), the main thread attempts to recover by rebuilding the AudioWorkletNode. The WASM binary bytes are fine (they're raw data) — only the instance is corrupted.
 
-Recovery is attempted up to 3 times. The cached `WebAssembly.Module` is reused (no recompilation needed).
+Recovery is attempted up to 3 times. The cached `ArrayBuffer` of WASM bytes is reused (resent to the worklet, which recompiles and instantiates).
 
 ```
 WASM trap detected
@@ -1116,8 +1116,8 @@ WASM trap detected
   │   │   ② Create new AudioWorkletNode(ctx, 'spc-processor', options)
   │   │         (AudioWorklet module is already registered — no re-registration needed)
   │   │   ③ Wire new node into audio graph: node → GainNode → AnalyserNode → destination
-  │   │   ④ Send init message with cached WebAssembly.Module + current SPC data
-  │   │         (Re-post the Module via structured clone — sender retains reference)
+  │   │   ④ Send init message with cached WASM bytes + current SPC data
+  │   │         (Re-send the bytes via structured clone — sender retains reference)
   │   │   ⑤ Wait for 'ready' response
   │   │   ⑥ Restore playback position from last known telemetry position
   │   │   ⑦ Send 'play' to resume
@@ -1158,13 +1158,13 @@ async function attemptWorkletRecovery(): Promise<void> {
   // ③ Wire into audio graph
   newNode.connect(gainNode);
 
-  // ④ Send init with cached module + current SPC data
+  // ④ Send init with cached WASM bytes + current SPC data
   const spcDataCopy = currentSpcData.slice(0); // Clone since original was transferred
   newNode.port.postMessage(
     {
       type: 'init',
       version: PROTOCOL_VERSION,
-      wasmModule: cachedWasmModule, // Structured clone, sender keeps reference
+      wasmBytes: cachedWasmBytes, // Structured clone, sender keeps reference
       spcData: spcDataCopy,
       outputSampleRate: audioContext.sampleRate,
       resamplerMode: currentResamplerMode,

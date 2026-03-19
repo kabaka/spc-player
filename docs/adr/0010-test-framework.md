@@ -17,7 +17,7 @@ Which combination of test frameworks should SPC Player use for unit, integration
 
 - **Vite-native test runner integration** — shared Vite config, transforms, module resolution, and plugin pipeline eliminate configuration duplication and ensure tests resolve modules identically to the production build
 - **React component testing with accessibility verification** — query-by-role pattern reinforces WCAG 2.2 AA compliance; tests that pass also validate ARIA semantics
-- **AudioWorklet and WASM testing challenges** — the DSP emulation core runs WASM in an AudioWorklet (ADR-0003, ADR-0007); tests must handle worker threads, binary module loading via `WebAssembly.compileStreaming`, and the Module-transfer pattern
+- **AudioWorklet and WASM testing challenges** — the DSP emulation core runs WASM in an AudioWorklet (ADR-0003, ADR-0007); tests must handle worker threads, binary module loading, and the bytes-transfer pattern (raw `ArrayBuffer` sent to worklet for compilation)
 - **E2E testing of audio playback** — verifying real Web Audio API output (non-silent audio, correct sample rate), SPC file uploads, and playback state transitions requires a real browser environment
 - **Cross-browser E2E coverage** — requirements specify Chrome, Safari (WebKit), and Firefox as P0/P1 targets; the E2E framework must support all three with a single test suite
 - **CI/CD integration with GitHub Actions** — headless browser execution, parallel test sharding across CI workers, and machine-readable output (JUnit XML, JSON) for status checks
@@ -49,7 +49,7 @@ Chosen option: **"Vitest + React Testing Library + Playwright"**, because it is 
 - Good, because Vitest provides built-in V8 and Istanbul coverage providers with source map support, integrating directly with CI coverage threshold enforcement without additional tooling.
 - Good, because both frameworks have excellent LLM training data representation — Vitest is the default test runner for Vite projects (established 2022+), and Playwright is the most widely adopted cross-browser E2E framework (Microsoft-backed, first-class TypeScript support).
 - Bad, because the project has two test runners with different APIs (`vitest` for unit/integration, `playwright test` for E2E), requiring developers and AI agents to understand both — though this is inherent in the unit-vs-E2E split and unavoidable with any combination.
-- Bad, because AudioWorklet and WASM testing in Vitest's Node.js environment requires mocking, as `AudioWorkletProcessor`, `WebAssembly.compileStreaming`, and `MessagePort` are not available — real AudioWorklet integration must be verified at the E2E layer or via Vitest's browser mode.
+- Bad, because AudioWorklet and WASM testing in Vitest's Node.js environment requires mocking, as `AudioWorkletProcessor`, `WebAssembly.instantiate` (from bytes), and `MessagePort` are not available — real AudioWorklet integration must be verified at the E2E layer or via Vitest's browser mode.
 - Bad, because Playwright E2E tests are inherently slower than unit tests (browser launch, page navigation, rendering) — the testing pyramid must be carefully maintained to keep the fast-feedback loop dominated by unit tests.
 
 ### Confirmation
@@ -79,7 +79,7 @@ Vitest (unit/integration) with React Testing Library for component testing and P
 - Good, because Playwright's test generator (`codegen`) and trace viewer (`show-trace`) provide powerful debugging tools for E2E test authoring and failure investigation.
 - Good, because both Vitest and Playwright have strong, growing representation in LLM training data — AI agents generate idiomatic test code in both frameworks with high consistency.
 - Neutral, because two separate test runners (`vitest` and `playwright test`) have different CLIs, configuration formats, and assertion APIs — but this is inherent in any non-monolithic test setup and both support standard `expect` assertions.
-- Bad, because Vitest's jsdom environment lacks real Web Audio API, `AudioWorkletProcessor`, `WebAssembly.compileStreaming`, and other browser APIs — testing the AudioWorklet-WASM integration path at the unit/integration layer requires mocking these APIs or using Vitest browser mode (which adds complexity).
+- Bad, because Vitest's jsdom environment lacks real Web Audio API, `AudioWorkletProcessor`, `WebAssembly.instantiate` (from bytes), and other browser APIs — testing the AudioWorklet-WASM integration path at the unit/integration layer requires mocking these APIs or using Vitest browser mode (which adds complexity).
 - Bad, because the Vitest + Playwright combination requires two dependency trees (vitest + @testing-library/react + jsdom for unit, @playwright/test for E2E), increasing `node_modules` size.
 
 ### Option 2: Jest + React Testing Library + Cypress

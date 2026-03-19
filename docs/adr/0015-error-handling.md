@@ -588,7 +588,7 @@ The most complex recovery is recovering from a WASM trap, AudioWorklet crash, or
 4. Disconnect the crashed `AudioWorkletNode` from the audio graph.
 5. Close and discard the crashed `AudioWorkletNode` (it cannot be reused).
 6. Create a new `AudioWorkletNode` via `new AudioWorkletNode(audioContext, 'spc-processor', options)`.
-7. Re-send the compiled `WebAssembly.Module` (cached in main-thread memory from initial `WebAssembly.compileStreaming()`) to the new worklet via `postMessage`. Note: `WebAssembly.Module` is structured-clonable (not transferable) — the browser shares the compiled code efficiently via shared backing store, and the sender retains its reference.
+7. Re-send the cached WASM bytes (`ArrayBuffer`, retained in main-thread memory from initial `fetch()`) to the new worklet via `postMessage`. The bytes are cloned (not transferred), so the main thread retains its copy for future recovery.
 8. Re-send the current SPC data to the new worklet.
 9. Seek to the stored playback position.
 10. Resume playback if the user was previously playing.

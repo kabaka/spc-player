@@ -112,4 +112,53 @@ test.describe('SPC file loading', () => {
       nowPlaying.getByRole('heading').or(nowPlaying.getByText('Untitled')),
     ).toBeVisible();
   });
+
+  test('no console errors during SPC load and playback', async ({ page }) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    await page.goto('/');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    await fileInput.setInputFiles(MINIMAL_SPC);
+
+    await expect(page.getByText('No track loaded')).not.toBeVisible();
+
+    const playBtn = page.getByRole('button', { name: 'Play' });
+    await expect(playBtn).toBeEnabled();
+    await playBtn.click();
+
+    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+
+    // Allow a brief settle for deferred console messages
+    await page.waitForTimeout(500);
+
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('playback position advances after clicking Play', async ({ page }) => {
+    await page.goto('/');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    await fileInput.setInputFiles(MINIMAL_SPC);
+    await expect(page.getByText('No track loaded')).not.toBeVisible();
+
+    const playBtn = page.getByRole('button', { name: 'Play' });
+    await expect(playBtn).toBeEnabled();
+    await playBtn.click();
+
+    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+
+    // Wait for the elapsed time to advance past 0:00
+    // The time display has aria-label="Playback position" and contains
+    // the elapsed time in M:SS format in its first <span>
+    const timeDisplay = page.getByLabel('Playback position');
+    await expect(timeDisplay).toBeVisible();
+
+    // Wait for the first span (elapsed time) to show something other than "0:00"
+    const elapsedSpan = timeDisplay.locator('span').first();
+    await expect(elapsedSpan).not.toHaveText('0:00', { timeout: 5000 });
+  });
 });

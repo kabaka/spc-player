@@ -148,7 +148,8 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
         );
       }
 
-      // Load SPC into the audio engine
+      // Load SPC into the audio engine.
+      // ⚠ loadSpc transfers buffer ownership — all reads must precede this call.
       await audioEngine.loadSpc(
         buffer,
         secondsToSamples(duration.playSeconds),
@@ -345,12 +346,14 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
         });
       }
 
-      audioEngine.play();
-      set(
-        { playbackStatus: 'playing' },
-        false,
-        'orchestration/playTrackAtIndex:play',
-      );
+      const started = audioEngine.play();
+      if (started) {
+        set(
+          { playbackStatus: 'playing' },
+          false,
+          'orchestration/playTrackAtIndex:play',
+        );
+      }
     } catch (error) {
       const detail =
         error instanceof Error ? error.message : 'Failed to play track';

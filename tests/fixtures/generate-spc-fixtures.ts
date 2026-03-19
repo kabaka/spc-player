@@ -111,7 +111,8 @@ function writeTextId666(
   if (opts.fadeLenMs) writeAscii(buf, OFF_FADE_LEN, opts.fadeLenMs, 5);
   if (opts.artist) writeAscii(buf, OFF_ARTIST, opts.artist, 32);
   buf[OFF_CHAN_DISABLES] = opts.channelDisables ?? 0;
-  buf[OFF_EMULATOR] = opts.emulator ?? 0;
+  const emu = opts.emulator ?? 0;
+  buf[OFF_EMULATOR] = emu === 0 ? 0 : 0x30 + emu;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +120,7 @@ function writeTextId666(
 // ---------------------------------------------------------------------------
 
 function generateMinimalValid(): Buffer {
-  const buf = Buffer.alloc(SPC_MIN_PLAYABLE_SIZE);
+  const buf = Buffer.alloc(SPC_MIN_FULL_SIZE);
   writeHeader(buf, {
     pc: 0x0400,
     a: 0xaa,
@@ -169,16 +170,14 @@ function generateBinaryId666(): Buffer {
   // Zero out rest of date area — the heuristic checks bytes 0xA2–0xA8 for zeros
   // buf[0xA2] through buf[0xA8] are already zero from alloc
 
-  // Binary song length: 24-bit LE at 0xA9 = 120 seconds
-  buf[OFF_SONG_LEN] = 120;
-  buf[OFF_SONG_LEN + 1] = 0;
-  buf[OFF_SONG_LEN + 2] = 0;
+  // Song length as text digits (Rust parser uses read_number which is text-based)
+  writeAscii(buf, OFF_SONG_LEN, '120', 3);
 
-  // Binary fade length: uint32 LE at 0xAC = 5000 ms
-  buf.writeUInt32LE(5000, OFF_FADE_LEN);
+  // Fade length as text digits (4 bytes in binary format)
+  writeAscii(buf, OFF_FADE_LEN, '5000', 4);
 
   buf[OFF_CHAN_DISABLES] = 0;
-  buf[OFF_EMULATOR] = 0x01; // ZSNES
+  buf[OFF_EMULATOR] = 0x31; // ASCII '1' = ZSNES
 
   return buf;
 }
