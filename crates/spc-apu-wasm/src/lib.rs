@@ -1,3 +1,6 @@
+extern crate alloc;
+use alloc::vec::Vec;
+
 use std::alloc::{alloc, dealloc, Layout};
 use std::io::Cursor;
 use std::ptr::addr_of_mut;
@@ -10,6 +13,7 @@ const MAX_RENDER_FRAMES: usize = 4096;
 const OUTPUT_BUF_LEN: usize = MAX_RENDER_FRAMES * 2;
 
 static mut APU: Option<Box<Apu>> = None;
+static mut SPC_DATA: Option<Vec<u8>> = None;
 static mut OUTPUT_BUF: [f32; OUTPUT_BUF_LEN] = [0.0; OUTPUT_BUF_LEN];
 
 // Scratch buffers for the separate L/R i16 samples the library produces.
@@ -37,6 +41,9 @@ pub extern "C" fn dsp_init(spc_data_ptr: *const u8, spc_data_len: u32) -> i32 {
     let result = std::panic::catch_unwind(|| {
         let data =
             unsafe { std::slice::from_raw_parts(spc_data_ptr, spc_data_len as usize) };
+        unsafe {
+            *addr_of_mut!(SPC_DATA) = Some(data.to_vec());
+        }
         let cursor = Cursor::new(data);
         let spc = match Spc::from_reader(cursor) {
             Ok(s) => s,
@@ -54,11 +61,28 @@ pub extern "C" fn dsp_init(spc_data_ptr: *const u8, spc_data_len: u32) -> i32 {
     }
 }
 
-/// Reset / tear down the current APU instance.
+/// Reinitialise the APU from the original SPC data stored during `dsp_init`.
+///
+/// Returns 0 on success, -1 on failure (no SPC data stored or parse error).
 #[no_mangle]
-pub extern "C" fn dsp_reset() {
-    unsafe {
-        *addr_of_mut!(APU) = None;
+pub extern "C" fn dsp_reset() -> i32 {
+    let result = std::panic::catch_unwind(|| unsafe {
+        let data = match (*addr_of_mut!(SPC_DATA)).as_ref() {
+            Some(d) => d,
+            None => return -1_i32,
+        };
+        let cursor = Cursor::new(data.as_slice());
+        let spc = match Spc::from_reader(cursor) {
+            Ok(s) => s,
+            Err(_) => return -1_i32,
+        };
+        let apu = Apu::from_spc(&spc);
+        *addr_of_mut!(APU) = Some(apu);
+        0_i32
+    });
+    match result {
+        Ok(code) => code,
+        Err(_) => -1,
     }
 }
 
@@ -113,41 +137,35 @@ pub extern "C" fn dsp_get_output_ptr() -> *mut f32 {
 // Voice control
 // ---------------------------------------------------------------------------
 
-/// Set the voice mute mask. Each bit 0-7 corresponds to a voice; bit set = muted.
+/// Set the voice enable mask. Each bit 0-7 corresponds to a voice;
+/// bit set = enabled, bit clear = muted. 0xFF = all enabled (default).
 #[no_mangle]
 pub extern "C" fn dsp_set_voice_mask(mask: u8) {
     unsafe {
         if let Some(apu) = get_apu() {
             if let Some(dsp) = apu.dsp.as_mut() {
                 for i in 0..8_usize {
-                    dsp.voices[i].is_muted = (mask & (1 << i)) != 0;
+                    dsp.voices[i].is_muted = (mask & (1 << i)) == 0;
                 }
             }
         }
     }
 }
 
-/// Write voice state data at `state_ptr` for the given `voice_index` (0-7).
+/// Write voice state as 6 × u32 (24 bytes, little-endian) at `state_ptr`.
 ///
-/// Layout (packed, little-endian):
-///   offset 0 : u8  source
-///   offset 1 : u8  muted (0/1)
-///   offset 2 : i32 envelope_level   (4 bytes)
-///   offset 6 : i8  volume_left
-///   offset 7 : i8  volume_right
-///   offset 8 : i32 amplitude_left   (4 bytes)
-///   offset 12: i32 amplitude_right  (4 bytes)
-///   offset 16: u16 pitch            (2 bytes)
-///   offset 18: u8  has_noise_clock  (0/1)
-///   offset 19: u8  noise_clock      (valid only if has_noise_clock=1)
-///   offset 20: u8  echo_on          (0/1)
-///   offset 21: u8  pitch_modulation (0/1)
-///   Total: 22 bytes
+/// Layout (Uint32Array from JS perspective):
+///   [0] envelopePhase  — 0=attack, 1=decay, 2=sustain, 3=release, 4=silent
+///   [1] envelopeLevel  — 0–2047
+///   [2] pitch          — 14-bit pitch register value
+///   [3] sampleSource   — BRR source index
+///   [4] keyOn          — 0 or 1
+///   [5] active         — 0 or 1 (non-zero envelope level)
 ///
-/// Returns the number of bytes written, or -1 if invalid.
+/// Returns 24 (bytes written) on success, or -1 if invalid.
 #[no_mangle]
 pub extern "C" fn dsp_get_voice_state(voice_index: u32, state_ptr: *mut u8) -> i32 {
-    const STATE_SIZE: usize = 22;
+    const STATE_SIZE: usize = 6 * 4; // 6 × u32 = 24 bytes
 
     if voice_index >= 8 || state_ptr.is_null() {
         return -1;
@@ -164,30 +182,29 @@ pub extern "C" fn dsp_get_voice_state(voice_index: u32, state_ptr: *mut u8) -> i
         };
         let voice = &dsp.voices[voice_index as usize];
 
-        let buf = std::slice::from_raw_parts_mut(state_ptr, STATE_SIZE);
+        let out = std::slice::from_raw_parts_mut(state_ptr as *mut u32, 6);
 
-        // source
-        buf[0] = voice.source;
-        // muted
-        buf[1] = voice.is_muted as u8;
-        // envelope_level (i32 LE)
-        buf[2..6].copy_from_slice(&voice.envelope.level.to_le_bytes());
-        // volume left/right (as i8, stored as u8)
-        buf[6] = *voice.volume.left() as i8 as u8;
-        buf[7] = *voice.volume.right() as i8 as u8;
-        // amplitude left/right (i32 LE)
-        buf[8..12].copy_from_slice(&voice.amplitude.into_inner_left().to_le_bytes());
-        buf[12..16].copy_from_slice(&voice.amplitude.into_inner_right().to_le_bytes());
-        // pitch (u16 LE)
-        buf[16..18].copy_from_slice(&voice.pitch().to_le_bytes());
-        // noise clock
-        let noise_on = voice.noise_on;
-        buf[18] = noise_on as u8;
-        buf[19] = if noise_on { dsp.noise_clock } else { 0 };
-        // echo on
-        buf[20] = voice.echo_on as u8;
-        // pitch modulation
-        buf[21] = voice.pitch_mod as u8;
+        let level = voice.envelope.level;
+
+        // envelopePhase: map from DSP envelope mode; use 4 (silent) when level is 0
+        // and the envelope is in release.
+        let phase = voice.envelope.phase(); // 0=A, 1=D, 2=S, 3=R
+        out[0] = if phase == 3 && level == 0 { 4 } else { phase };
+
+        // envelopeLevel: clamp to 0–2047 range
+        out[1] = level.clamp(0, 2047) as u32;
+
+        // pitch: 14-bit pitch register
+        out[2] = voice.pitch() as u32;
+
+        // sampleSource: BRR source index
+        out[3] = voice.source as u32;
+
+        // keyOn: whether the voice has a pending/active key-on
+        out[4] = voice.kon as u32;
+
+        // active: producing audible output (non-zero envelope)
+        out[5] = (level > 0) as u32;
 
         STATE_SIZE as i32
     }

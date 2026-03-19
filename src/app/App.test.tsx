@@ -4,12 +4,10 @@ import { describe, it, expect } from 'vitest';
 import { App } from './App';
 
 describe('App', () => {
-  it('renders without crashing and displays heading', async () => {
+  it('renders without crashing and displays player view', async () => {
     render(<App />);
 
-    expect(
-      await screen.findByRole('heading', { name: /spc player/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('No track loaded')).toBeInTheDocument();
   });
 
   it('renders navigation links', async () => {

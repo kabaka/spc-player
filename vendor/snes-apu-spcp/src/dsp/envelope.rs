@@ -41,6 +41,17 @@ impl Envelope {
         }
     }
 
+    /// Return the current envelope phase as a u32:
+    /// 0=Attack, 1=Decay, 2=Sustain, 3=Release.
+    pub fn phase(&self) -> u32 {
+        match self.mode {
+            Mode::Attack => 0,
+            Mode::Decay => 1,
+            Mode::Sustain => 2,
+            Mode::Release => 3,
+        }
+    }
+
     pub fn key_on(&mut self) {
         self.mode = Mode::Attack;
     }
