@@ -1,0 +1,65 @@
+/* VuMeter.module.css */
+
+.meter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 1rem;
+  min-height: 4rem;
+  background-color: var(--spc-color-vu-bg);
+  border-radius: var(--spc-radius-sm);
+  overflow: hidden;
+}
+
+.meter[data-orientation='horizontal'] {
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 0.5rem;
+  height: 0.5rem;
+}
+
+/* The fill bar — height driven by --vu-level custom property */
+.fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--vu-level, 0%);
+  background: linear-gradient(
+    to top,
+    var(--spc-color-vu-green) 0%,
+    var(--spc-color-vu-green) 60%,
+    var(--spc-color-vu-yellow) 60%,
+    var(--spc-color-vu-yellow) 85%,
+    var(--spc-color-vu-red) 85%,
+    var(--spc-color-vu-red) 100%
+  );
+  transition: height var(--spc-duration-fast) linear;
+}
+
+.meter[data-orientation='horizontal'] .fill {
+  bottom: 0;
+  top: 0;
+  right: auto;
+  height: 100%;
+  width: var(--vu-level, 0%);
+  background: linear-gradient(
+    to right,
+    var(--spc-color-vu-green) 0%,
+    var(--spc-color-vu-green) 60%,
+    var(--spc-color-vu-yellow) 60%,
+    var(--spc-color-vu-yellow) 85%,
+    var(--spc-color-vu-red) 85%,
+    var(--spc-color-vu-red) 100%
+  );
+  transition: width var(--spc-duration-fast) linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}

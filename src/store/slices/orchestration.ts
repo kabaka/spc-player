@@ -1,6 +1,6 @@
 import type { OrchestrationSlice, SliceCreator, PlaylistTrack } from '../types';
 import { computeTrackId } from '@/core/track-id';
-import { parseSpcFile } from '@/core/spc-parser';
+import { parseSpcFile, SPC_MAX_ACCEPTED_SIZE } from '@/core/spc-parser';
 import {
   calculateTrackDuration,
   secondsToSamples,
@@ -32,6 +32,16 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
         audioEngine.stop();
       }
 
+      // Reject files that exceed the maximum accepted SPC size
+      if (file.size > SPC_MAX_ACCEPTED_SIZE) {
+        set(
+          { isLoadingTrack: false, loadingError: 'File too large' },
+          false,
+          'orchestration/loadFile:tooLarge',
+        );
+        return;
+      }
+
       // Read and parse the SPC file
       const buffer = await file.arrayBuffer();
       const parseResult = parseSpcFile(new Uint8Array(buffer));
@@ -50,7 +60,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
       const { metadata } = spcFile;
 
       // Compute content-addressable track ID
-      const trackId = await computeTrackId(file);
+      const trackId = await computeTrackId(buffer);
 
       // Calculate track duration using the metadata cascade
       const current = get();

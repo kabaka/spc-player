@@ -1,0 +1,63 @@
+/* MetadataPanel.module.css */
+
+.panel {
+  padding: var(--spc-space-4);
+  background-color: var(--spc-color-surface);
+  border-radius: var(--spc-radius-md);
+  border: 1px solid var(--spc-color-border-subtle);
+}
+
+.heading {
+  margin: 0 0 var(--spc-space-3);
+  font-size: var(--spc-font-size-md);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spc-space-1) var(--spc-space-3);
+  margin: 0;
+  padding: 0;
+}
+
+.label {
+  margin: 0;
+  padding: var(--spc-space-1) 0;
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: var(--spc-leading-normal);
+}
+
+.value {
+  margin: 0;
+  padding: var(--spc-space-1) 0;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  line-height: var(--spc-leading-normal);
+  word-break: break-word;
+}
+
+.empty {
+  padding: var(--spc-space-4);
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-sm);
+  text-align: center;
+}
+
+/* xid6 section separator */
+.sectionLabel {
+  grid-column: 1 / -1;
+  margin: var(--spc-space-2) 0 0;
+  padding: var(--spc-space-1) 0;
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-top: 1px solid var(--spc-color-border-subtle);
+}

@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
-import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
+import type { ChangeEvent, KeyboardEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
+import { FileDropZone } from '@/components/FileDropZone/FileDropZone';
 import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
 import { audioEngine } from '@/audio/engine';
 
@@ -36,8 +37,13 @@ function formatSeekValueText(elapsedSec: number, durationSec: number): string {
 // ── Component ─────────────────────────────────────────────────────────
 
 export function PlayerView() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // ── Unique IDs for aria references ────────────────────────────────
+  const seekLabelId = useId();
+  const volumeSliderId = useId();
+  const speedSliderId = useId();
+  const announcementsId = useId();
 
   // ── Store selectors ───────────────────────────────────────────────
   const playbackStatus = useAppStore((s) => s.playbackStatus);
@@ -57,9 +63,6 @@ export function PlayerView() {
   const setVolume = useAppStore((s) => s.setVolume);
   const setSpeed = useAppStore((s) => s.setSpeed);
 
-  // ── Drag-and-drop state ───────────────────────────────────────────
-  const [isDragOver, setIsDragOver] = useState(false);
-
   // ── Roving tabindex state (toolbar pattern) ───────────────────────
   const [rovingIndex, setRovingIndex] = useState(1);
 
@@ -74,53 +77,14 @@ export function PlayerView() {
 
   // ── Handlers ──────────────────────────────────────────────────────
 
-  const handleFileChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
+  const handleFiles = useCallback(
+    (files: File[]) => {
+      const file = files[0];
       if (file) {
         loadFile(file);
       }
-      // Reset input so selecting the same file again triggers onChange
-      e.target.value = '';
     },
     [loadFile],
-  );
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file?.name.toLowerCase().endsWith('.spc')) {
-        loadFile(file);
-      }
-    },
-    [loadFile],
-  );
-
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsDragOver(false);
-    }
-  }, []);
-
-  const handleDropZoneClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleDropZoneKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        fileInputRef.current?.click();
-      }
-    },
-    [],
   );
 
   const handlePlayPause = useCallback(() => {
@@ -224,32 +188,7 @@ export function PlayerView() {
   return (
     <div className={styles.playerView}>
       {/* File Drop Zone */}
-      <div
-        className={`${styles.dropZone} ${isDragOver ? styles.dropZoneActive : ''}`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={handleDropZoneClick}
-        onKeyDown={handleDropZoneKeyDown}
-        role="button"
-        tabIndex={0}
-        aria-label="Drop SPC file here or click to browse"
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".spc"
-          onChange={handleFileChange}
-          className={styles.fileInput}
-          aria-hidden="true"
-          tabIndex={-1}
-        />
-        <span className={styles.dropZoneText}>
-          {isDragOver
-            ? 'Drop SPC file here'
-            : 'Drop an SPC file here, or click to browse'}
-        </span>
-      </div>
+      <FileDropZone onFilesSelected={handleFiles} />
 
       {/* Loading / Error States */}
       {isLoadingTrack && (
@@ -336,13 +275,13 @@ export function PlayerView() {
 
       {/* Seek Bar */}
       <div className={styles.seekBarContainer}>
-        <label id="seek-label" className={styles.visuallyHidden}>
+        <label id={seekLabelId} className={styles.visuallyHidden}>
           Seek
         </label>
         <input
           type="range"
           className={styles.seekBar}
-          aria-labelledby="seek-label"
+          aria-labelledby={seekLabelId}
           min={0}
           max={Math.floor(totalSeconds)}
           value={Math.min(currentSeconds, Math.floor(totalSeconds))}
@@ -369,11 +308,11 @@ export function PlayerView() {
 
       {/* Volume Control */}
       <div className={styles.controlGroup}>
-        <label htmlFor="volume-slider" className={styles.controlLabel}>
+        <label htmlFor={volumeSliderId} className={styles.controlLabel}>
           Volume
         </label>
         <input
-          id="volume-slider"
+          id={volumeSliderId}
           type="range"
           className={styles.slider}
           min={0}
@@ -388,11 +327,11 @@ export function PlayerView() {
 
       {/* Speed Control */}
       <div className={styles.controlGroup}>
-        <label htmlFor="speed-slider" className={styles.controlLabel}>
+        <label htmlFor={speedSliderId} className={styles.controlLabel}>
           Speed
         </label>
         <input
-          id="speed-slider"
+          id={speedSliderId}
           type="range"
           className={styles.slider}
           min={0.25}
@@ -410,7 +349,7 @@ export function PlayerView() {
         aria-live="polite"
         aria-atomic="true"
         className={styles.visuallyHidden}
-        id="playback-announcements"
+        id={announcementsId}
       >
         {announcement}
       </div>

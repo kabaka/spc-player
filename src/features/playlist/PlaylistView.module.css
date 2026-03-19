@@ -1,0 +1,191 @@
+/* PlaylistView.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+  height: 100%;
+  padding: var(--spc-space-4);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ── Listbox ─────────────────────────────────────────────────────── */
+
+.listbox {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  background: var(--spc-color-surface);
+  min-height: 120px;
+}
+
+.listbox:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  .listbox:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* ── Drop zone overlay ───────────────────────────────────────────── */
+
+.dropZone {
+  position: relative;
+}
+
+.dropZone.dragOver .listbox {
+  border-color: var(--spc-color-accent);
+  border-style: dashed;
+}
+
+/* ── Track rows ──────────────────────────────────────────────────── */
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-3);
+  padding: var(--spc-space-2) var(--spc-space-3);
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  transition: background-color var(--spc-duration-fast)
+    var(--spc-easing-default);
+}
+
+.track:last-child {
+  border-bottom: none;
+}
+
+.track:nth-child(even) {
+  background: var(--spc-color-bg-subtle);
+}
+
+.track:hover {
+  background: var(--spc-color-hover);
+}
+
+.track.focused {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: -2px;
+}
+
+.track.selected {
+  background: var(--spc-color-accent-subtle);
+}
+
+.track.nowPlaying {
+  border-left: 3px solid var(--spc-color-accent);
+}
+
+/* ── Drag handle ─────────────────────────────────────────────────── */
+
+.dragHandle {
+  cursor: grab;
+  color: var(--spc-color-text-muted);
+  font-size: var(--spc-font-size-md);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.dragHandle:hover {
+  color: var(--spc-color-text-secondary);
+}
+
+/* ── Track info columns ──────────────────────────────────────────── */
+
+.trackNumber {
+  font-variant-numeric: tabular-nums;
+  color: var(--spc-color-text-muted);
+  font-size: var(--spc-font-size-sm);
+  min-width: 2ch;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.trackTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--spc-color-text);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+}
+
+.trackGame {
+  flex: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-sm);
+}
+
+.trackDuration {
+  font-variant-numeric: tabular-nums;
+  color: var(--spc-color-text-muted);
+  font-size: var(--spc-font-size-sm);
+  flex-shrink: 0;
+}
+
+/* ── Drop indicator ──────────────────────────────────────────────── */
+
+.dropTarget {
+  border-top: 2px solid var(--spc-color-accent);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spc-space-8);
+  color: var(--spc-color-text-muted);
+  font-size: var(--spc-font-size-sm);
+  text-align: center;
+}
+
+/* ── Visually hidden ─────────────────────────────────────────────── */
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Pressed toggle styling ──────────────────────────────────────── */
+
+.toggleActive {
+  background: var(--spc-color-accent-subtle);
+  color: var(--spc-color-accent-text);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none;
+  }
+}

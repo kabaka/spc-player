@@ -1,0 +1,51 @@
+/* FileDropZone.module.css — Drag-and-drop file upload zone */
+
+.dropZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 2px dashed var(--spc-color-border);
+  border-radius: var(--spc-radius-lg);
+  background: var(--spc-color-surface);
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--spc-duration-fast) var(--spc-easing-default),
+    background-color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.dropZone:hover,
+.dropZone:focus-visible {
+  border-color: var(--spc-color-accent);
+  background: var(--spc-color-accent-subtle);
+}
+
+.dropZone:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.dropZoneActive {
+  border-color: var(--spc-color-accent);
+  background: var(--spc-color-accent-subtle);
+}
+
+.dropZoneText {
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.fileInput {
+  display: none;
+}
+
+/* ── Reduced Motion ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .dropZone {
+    transition: none;
+  }
+}

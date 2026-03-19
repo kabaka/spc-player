@@ -80,4 +80,36 @@ test.describe('SPC file loading', () => {
     // Track should NOT be loaded — "No track loaded" should remain
     await expect(page.getByText('No track loaded')).toBeVisible();
   });
+
+  test('play button is clickable after loading a track', async ({ page }) => {
+    await page.goto('/');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    await fileInput.setInputFiles(MINIMAL_SPC);
+
+    await expect(page.getByText('No track loaded')).not.toBeVisible();
+
+    const playBtn = page.getByRole('button', { name: 'Play' });
+    await expect(playBtn).toBeEnabled();
+    await playBtn.click();
+
+    // After clicking play, the button should change to Pause
+    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  });
+
+  test('metadata is displayed after file load', async ({ page }) => {
+    await page.goto('/');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    await fileInput.setInputFiles(MINIMAL_SPC);
+
+    await expect(page.getByText('No track loaded')).not.toBeVisible();
+
+    // Metadata region should be visible with content
+    const nowPlaying = page.getByLabel('Now playing');
+    await expect(nowPlaying).toBeVisible();
+
+    // Should display at least a title (or "Untitled" for minimal fixture)
+    await expect(
+      nowPlaying.getByRole('heading').or(nowPlaying.getByText('Untitled')),
+    ).toBeVisible();
+  });
 });

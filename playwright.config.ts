@@ -6,10 +6,16 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: process.env.CI
+    ? [
+        ['junit', { outputFile: 'playwright-report/results.xml' }],
+        ['html', { open: 'never' }],
+      ]
+    : [['html', { open: 'on-failure' }]],
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'http://localhost:4173/spc-player/',
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
@@ -19,7 +25,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run preview',
-    url: 'http://localhost:4173',
+    port: 4173,
     reuseExistingServer: !process.env.CI,
   },
 });

@@ -1,0 +1,191 @@
+/* MixerPanel.module.css */
+
+.mixer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spc-space-3);
+  padding: var(--spc-space-4);
+  background-color: var(--spc-color-surface);
+  border-radius: var(--spc-radius-md);
+  border: 1px solid var(--spc-color-border-subtle);
+}
+
+/* ── Voice strip ───────────────────────────────────────────────────── */
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-2);
+  border-radius: var(--spc-radius-sm);
+  background-color: var(--strip-color-subtle, transparent);
+  min-width: 3rem;
+}
+
+/* Voice color accent via --strip-color and --strip-color-subtle */
+.voice0 {
+  --strip-color: var(--spc-color-voice-0);
+  --strip-color-subtle: var(--spc-color-voice-0-subtle);
+}
+.voice1 {
+  --strip-color: var(--spc-color-voice-1);
+  --strip-color-subtle: var(--spc-color-voice-1-subtle);
+}
+.voice2 {
+  --strip-color: var(--spc-color-voice-2);
+  --strip-color-subtle: var(--spc-color-voice-2-subtle);
+}
+.voice3 {
+  --strip-color: var(--spc-color-voice-3);
+  --strip-color-subtle: var(--spc-color-voice-3-subtle);
+}
+.voice4 {
+  --strip-color: var(--spc-color-voice-4);
+  --strip-color-subtle: var(--spc-color-voice-4-subtle);
+}
+.voice5 {
+  --strip-color: var(--spc-color-voice-5);
+  --strip-color-subtle: var(--spc-color-voice-5-subtle);
+}
+.voice6 {
+  --strip-color: var(--spc-color-voice-6);
+  --strip-color-subtle: var(--spc-color-voice-6-subtle);
+}
+.voice7 {
+  --strip-color: var(--spc-color-voice-7);
+  --strip-color-subtle: var(--spc-color-voice-7-subtle);
+}
+
+/* ── Voice label ───────────────────────────────────────────────────── */
+
+.voiceLabel {
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--strip-color, var(--spc-color-text));
+  line-height: var(--spc-leading-none);
+}
+
+/* ── Toggle buttons ────────────────────────────────────────────────── */
+
+.toggleGroup {
+  display: flex;
+  gap: var(--spc-space-1);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--spc-space-1);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  background-color: transparent;
+  color: var(--spc-color-text-secondary);
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-semibold);
+  cursor: pointer;
+  transition:
+    background-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    border-color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  .toggle:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+.toggle:hover {
+  background-color: var(--spc-color-hover);
+}
+
+/* Mute active state */
+.muteActive {
+  background-color: var(--spc-color-error);
+  color: var(--spc-color-text-inverse);
+  border-color: var(--spc-color-error);
+}
+
+.muteActive:hover {
+  background-color: color-mix(in srgb, var(--spc-color-error) 85%, black);
+}
+
+/* Solo active state */
+.soloActive {
+  background-color: var(--spc-color-warning);
+  color: var(--spc-color-text-inverse);
+  border-color: var(--spc-color-warning);
+}
+
+.soloActive:hover {
+  background-color: color-mix(in srgb, var(--spc-color-warning) 85%, black);
+}
+
+/* ── Reset button ──────────────────────────────────────────────────── */
+
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--spc-space-1) var(--spc-space-3);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  background-color: transparent;
+  color: var(--spc-color-text-secondary);
+  font-family: var(--spc-font-sans);
+  font-size: var(--spc-font-size-xs);
+  cursor: pointer;
+  transition:
+    background-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default);
+  align-self: flex-end;
+}
+
+.resetButton:hover {
+  background-color: var(--spc-color-hover);
+  color: var(--spc-color-text);
+}
+
+.resetButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  .resetButton:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle,
+  .resetButton {
+    transition: none;
+  }
+}
+
+/* ── Visually hidden (SR-only) ─────────────────────────────────────── */
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
