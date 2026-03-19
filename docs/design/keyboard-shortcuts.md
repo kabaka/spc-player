@@ -13,8 +13,8 @@
 > - **R-KBD-1**: Fixed `??` → `||` in isMac detection (§6.3, §7.5) — `=== 'macOS'` returns boolean, so `??` never falls through.
 > - **R-KBD-2**: Fixed `useShortcut` hook to forward `preventDefault` and `allowRepeat` options to `manager.register()` (§7.4).
 > - Standardized terminology on "instrument mode" throughout (removed "instrument keyboard mode," "note input mode," etc.).
-> - Added Escape behavior context table (§2.9).
-> - Added notes: `Alt+Digit` macOS special characters (§2.3), `/` for search focus (§2.3), intentional `Digit1`/`Digit4` absence in upper octave (§3.2), browser tab unfocus behavior (§8).
+> - Added Escape behavior context table (§2.10).
+> - Added notes: `Alt+Digit` macOS special characters (§2.4), `/` for search focus (§2.4), intentional `Digit1`/`Digit4` absence in upper octave (§3.2), browser tab unfocus behavior (§8).
 
 ---
 
@@ -147,7 +147,16 @@ The default keymap follows conventions from established audio players (foobar200
 | Toggle repeat mode | `KeyR` | global | Cycles: off → all → one. |
 | Toggle shuffle | `KeyS` | global | |
 
-### 2.3 Navigation
+### 2.3 A-B Loop
+
+| Action | Default Binding | Scope | Notes |
+|---|---|---|---|
+| Set loop start (A) | `BracketLeft` | global | At current playback position. Shared with instrument velocity (§3.2) — instrument scope (5) takes priority when active. |
+| Set loop end (B) | `BracketRight` | global | At current playback position. Shared with instrument velocity (§3.2). |
+| Toggle A-B loop | `KeyL` | global | Requires both A and B to be set. |
+| Clear A-B loop | `Shift+KeyL` | global | Clears both loop points. |
+
+### 2.4 Navigation
 
 | Action | Default Binding | Scope | Notes |
 |---|---|---|---|
@@ -163,7 +172,7 @@ The default keymap follows conventions from established audio players (foobar200
 >
 > **Note (search alternative):** `/` (Slash) is a common "focus search" shortcut in web applications (GitHub, YouTube, Gmail). It is not bound by default to avoid conflict with browser Find (`Ctrl+F`). If user testing reveals demand, `/` could be added as a secondary binding for `navigation.search`. Be aware that binding `/` globally would conflict with the `?` (`Shift+Slash`) shortcut help — the unmodified `/` would need careful scoping.
 
-### 2.4 Playlist Actions
+### 2.5 Playlist Actions
 
 | Action | Default Binding | Scope | Notes |
 |---|---|---|---|
@@ -175,7 +184,7 @@ The default keymap follows conventions from established audio players (foobar200
 | Deselect all | `Ctrl+Shift+KeyA` | contextual:playlist | Mirrors `Ctrl+KeyA` for select all. |
 | Play selected track | `Enter` | contextual:playlist | Double-click equivalent. |
 
-### 2.5 Mixer / Voice Controls
+### 2.6 Mixer / Voice Controls
 
 | Action | Default Binding | Scope | Notes |
 |---|---|---|---|
@@ -197,7 +206,7 @@ The default keymap follows conventions from established audio players (foobar200
 | Solo voice 8 | `Shift+Digit8` | global | |
 | Unmute all voices | `Digit0` | global | Reset to all-voices-playing. |
 
-### 2.6 Analysis / Inspector
+### 2.7 Analysis / Inspector
 
 | Action | Default Binding | Scope | Notes |
 |---|---|---|---|
@@ -207,14 +216,14 @@ The default keymap follows conventions from established audio players (foobar200
 | Echo tab | `Alt+KeyE` | contextual:analysis | |
 | Toggle hex/decimal display | `KeyH` | contextual:analysis | |
 
-### 2.7 Export
+### 2.8 Export
 
 | Action | Default Binding | Scope | Notes |
 |---|---|---|---|
 | Open export dialog | `Ctrl+KeyE` | global | |
 | Quick export (last format) | `Ctrl+Shift+KeyE` | global | Uses the most recent export settings. |
 
-### 2.8 General
+### 2.9 General
 
 | Action | Default Binding | Scope | Notes |
 |---|---|---|---|
@@ -225,7 +234,7 @@ The default keymap follows conventions from established audio players (foobar200
 | Close dialog / cancel | `Escape` | global | Delegates to Radix when overlay is active. |
 | Toggle instrument mode | `Backquote` | global | `` ` `` key — top-left corner, easy to reach. |
 
-### 2.9 Reserved Keys (Never Remappable)
+### 2.10 Reserved Keys (Never Remappable)
 
 These bindings are hardcoded and cannot be overridden by user customization or instrument mode:
 
@@ -650,11 +659,12 @@ Pressing `?` (`Shift+Slash`) opens a modal overlay listing all active shortcuts.
 │                                   - / =      Octave ±        │
 │  GENERAL                          [ / ]      Velocity ±      │
 │  ┄┄┄┄┄┄┄                                                    │
-│  ⌘+O          Open file                                     │
-│  ⌘+E          Export                                        │
-│  ⌘+Z          Undo                                          │
-│  ?            This help                                      │
-│  Esc          Close / Exit mode                              │
+│  ⌘+O          Open file           A-B LOOP                  │
+│  ⌘+E          Export               ┄┄┄┄┄┄┄┄                 │
+│  ⌘+Z          Undo                [          Set loop start  │
+│  ?            This help            ]          Set loop end   │
+│  Esc          Close / Exit mode    L          Toggle loop    │
+│                                   Shift+L    Clear loop     │
 │                                                             │
 │         Press Escape to close. Edit in Settings.             │
 └─────────────────────────────────────────────────────────────┘
@@ -836,6 +846,12 @@ type GeneralAction =
   | 'general.close'
   | 'general.toggleInstrumentMode'
 
+type ABLoopAction =
+  | 'abLoop.setStart'
+  | 'abLoop.setEnd'
+  | 'abLoop.toggle'
+  | 'abLoop.clear'
+
 type ShortcutActionId =
   | PlaybackAction
   | NavigationAction
@@ -844,6 +860,7 @@ type ShortcutActionId =
   | AnalysisAction
   | ExportAction
   | GeneralAction
+  | ABLoopAction
 
 // ── Keymap Types ──
 
@@ -870,6 +887,7 @@ type ShortcutCategory =
   | 'Analysis'
   | 'Export'
   | 'General'
+  | 'A-B Loop'
   | 'Instrument'
 
 type CustomKeymap = Partial<Record<ShortcutActionId, KeyBinding>>
@@ -1289,6 +1307,12 @@ export const DEFAULT_KEYMAP: Record<ShortcutActionId, ShortcutDefinition> = {
   'export.open':  { id: 'export.open',  label: 'Export…',       category: 'Export', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyE' as KeyCombo },       reserved: false },
   'export.quick': { id: 'export.quick', label: 'Quick Export',  category: 'Export', scope: 'global', defaultBinding: { primary: 'Ctrl+Shift+KeyE' as KeyCombo }, reserved: false },
 
+  // ── A-B Loop ──
+  'abLoop.setStart':  { id: 'abLoop.setStart',  label: 'Set Loop Start (A)', category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'BracketLeft' as KeyCombo },  reserved: false },
+  'abLoop.setEnd':    { id: 'abLoop.setEnd',    label: 'Set Loop End (B)',   category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'BracketRight' as KeyCombo }, reserved: false },
+  'abLoop.toggle':    { id: 'abLoop.toggle',    label: 'Toggle A-B Loop',   category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'KeyL' as KeyCombo },         reserved: false },
+  'abLoop.clear':     { id: 'abLoop.clear',     label: 'Clear A-B Loop',    category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'Shift+KeyL' as KeyCombo },   reserved: false },
+
   // ── General ──
   'general.openFile':              { id: 'general.openFile',              label: 'Open File…',            category: 'General', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyO' as KeyCombo },       reserved: false },
   'general.undo':                  { id: 'general.undo',                  label: 'Undo',                  category: 'General', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyZ' as KeyCombo },       reserved: false },
@@ -1356,6 +1380,8 @@ This table documents key bindings where the same physical key serves different p
 | `ArrowLeft/Right` | Seek | Not mapped (instrument) | Falls through to global; seek works in instrument mode. |
 | `Escape` | Close/cancel | Exit instrument mode | Reserved — always exits mode first, then closes overlays. |
 | `Delete` | *Playlist:* remove track | Not mapped | Contextual scope; only active in playlist view. |
+| `BracketLeft` (`[`) | Set loop start (A) | Decrease velocity | Instrument mode (scope 5) claims; A-B loop set-start unavailable in instrument mode. |
+| `BracketRight` (`]`) | Set loop end (B) | Increase velocity | Instrument mode (scope 5) claims; A-B loop set-end unavailable in instrument mode. |
 | `Ctrl+KeyO` | *Global:* open file / *Playlist:* add files | Not mapped | Contextual scope wins when in playlist view; both trigger file picker, contextual version is playlist-aware. |
 
 ## Appendix D: Open Questions for Implementation

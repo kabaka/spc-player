@@ -20,6 +20,10 @@
 - Playlist support with shuffle, repeat, queue management, drag-to-reorder.
 - Gapless playback between tracks.
 - Fade-out detection and configurable fade duration.
+- A-B loop: define a loop region within a track and repeat it continuously.
+  - Set loop points via keyboard shortcut at current playback position, drag selection on waveform/progress bar, or manual timestamp entry.
+  - Loop region displayed as a visual overlay with draggable handles.
+  - Toggle looping on/off while preserving the defined region.
 
 ### Export
 - Full mix export: WAV (PCM 16/24-bit), FLAC, OGG Vorbis, MP3.

@@ -38,6 +38,14 @@ import type { StateCreator } from 'zustand'
 // Id666Tags, Xid6Tags    — from @/core/spc-parser
 // ExportDefaults          — from @/export/types
 // ExportJob, ExportOptions — from @/export/types (see export pipeline doc)
+// LoopRegion              — A-B loop region for segment repeat
+
+/** Defines an A-B loop region on the current track's timeline. */
+export interface LoopRegion {
+  startTime: number   // seconds, track time
+  endTime: number     // seconds, track time
+  active: boolean     // whether loop is currently enforced
+}
 
 // ── Slice Interfaces ──────────────────────────────────────────────
 
@@ -49,12 +57,21 @@ export interface PlaybackSlice {
   speed: number             // playback speed multiplier (1.0 = normal)
   volume: number            // 0.0 – 1.0
 
+  // A-B Loop state
+  loopRegion: LoopRegion | null   // null when no loop points are set
+
   // Slice-local actions
   setPlaybackStatus: (status: PlaybackSlice['playbackStatus']) => void
   setActiveTrackId: (id: string | null) => void
   setPosition: (position: number) => void
   setSpeed: (speed: number) => void
   setVolume: (volume: number) => void
+
+  // A-B Loop actions
+  setLoopStart: (time: number) => void
+  setLoopEnd: (time: number) => void
+  toggleLoop: () => void
+  clearLoop: () => void
 }
 
 export interface PlaylistSlice {
@@ -335,6 +352,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
             voiceMuted: Array(8).fill(false) as readonly boolean[],
             voiceSolo: Array(8).fill(false) as readonly boolean[],
             activeInstrumentIndex: null,
+            loopRegion: null,   // Clear A-B loop on track change
             isLoadingTrack: false,
             loadingError: null,
           },
@@ -352,6 +370,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
             voiceMuted: Array(8).fill(false) as readonly boolean[],
             voiceSolo: Array(8).fill(false) as readonly boolean[],
             activeInstrumentIndex: null,
+            loopRegion: null,   // Clear A-B loop on track change
             isLoadingTrack: false,
             loadingError: null,
           },
@@ -394,6 +413,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
       nextIndex = activeIndex + 1
     }
 
+    // Note: playTrackAtIndex clears loopRegion as part of its atomic update.
     await get().playTrackAtIndex(nextIndex)
   },
 
@@ -410,6 +430,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
     }
 
     const prevIndex = activeIndex > 0 ? activeIndex - 1 : tracks.length - 1
+    // Note: playTrackAtIndex clears loopRegion as part of its atomic update.
     await get().playTrackAtIndex(prevIndex)
   },
 
@@ -579,6 +600,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
         voiceMuted: Array(8).fill(false) as readonly boolean[],
         voiceSolo: Array(8).fill(false) as readonly boolean[],
         activeInstrumentIndex: null,
+        loopRegion: null,
         isLoadingTrack: false,
         loadingError: null,
       },
@@ -606,6 +628,7 @@ const INITIAL_PLAYBACK_STATE = {
   position: 0,
   speed: 1.0,
   volume: 1.0,
+  loopRegion: null,
 }
 
 export const createPlaybackSlice: SliceCreator<PlaybackSlice> = (set) => ({
@@ -621,6 +644,43 @@ export const createPlaybackSlice: SliceCreator<PlaybackSlice> = (set) => ({
     set({ speed }, false, 'playback/setSpeed'),
   setVolume: (volume) =>
     set({ volume }, false, 'playback/setVolume'),
+
+  // A-B Loop actions
+  setLoopStart: (time) =>
+    set(
+      (state) => ({
+        loopRegion: {
+          startTime: time,
+          endTime: state.loopRegion?.endTime ?? time,
+          active: state.loopRegion?.active ?? false,
+        },
+      }),
+      false,
+      'playback/setLoopStart',
+    ),
+  setLoopEnd: (time) =>
+    set(
+      (state) => ({
+        loopRegion: {
+          startTime: state.loopRegion?.startTime ?? 0,
+          endTime: time,
+          active: state.loopRegion?.active ?? false,
+        },
+      }),
+      false,
+      'playback/setLoopEnd',
+    ),
+  toggleLoop: () =>
+    set(
+      (state) =>
+        state.loopRegion
+          ? { loopRegion: { ...state.loopRegion, active: !state.loopRegion.active } }
+          : {},
+      false,
+      'playback/toggleLoop',
+    ),
+  clearLoop: () =>
+    set({ loopRegion: null }, false, 'playback/clearLoop'),
 })
 ```
 
@@ -846,6 +906,10 @@ export const selectVoiceMask = (s: AppStore): number => {
 }
 
 export const selectHasActiveTrack = (s: AppStore) => s.activeTrackId !== null
+
+// ── A-B Loop selectors ─────────────────────────────────────────────
+export const selectLoopRegion = (s: AppStore) => s.loopRegion
+export const selectIsLoopActive = (s: AppStore) => s.loopRegion?.active ?? false
 ```
 
 **Naming rules:**
@@ -1166,6 +1230,14 @@ export function initAudioSync(): () => void {
     useAppStore.subscribe(
       (s) => s.audioSampleRate,
       (sampleRate) => { audioEngine.reconfigure({ sampleRate }) },
+    ),
+  )
+
+  // A-B loop region changes → audio engine loop boundaries
+  unsubs.push(
+    useAppStore.subscribe(
+      (s) => s.loopRegion,
+      (loopRegion) => { audioEngine.setLoopRegion(loopRegion) },
     ),
   )
 
