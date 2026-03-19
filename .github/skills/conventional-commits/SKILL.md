@@ -48,6 +48,7 @@ Use the affected module or feature as scope:
 - Reference issues in footer: `Fixes #123` or `Refs #456`.
 - One logical change per commit. Don't bundle unrelated changes.
 - The commit message must make sense without looking at the diff.
+- Review the final message for garbled or repeated text before committing.
 
 ## Examples
 

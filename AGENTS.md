@@ -44,6 +44,7 @@ Commands will be configured during project setup. Placeholder:
 - **Lint fix:** `npm run lint -- --fix`
 - **Unit tests:** `npm test`
 - **E2E tests:** `npx playwright test`
+- **Full CI validation:** `npm run validate`
 - **Format:** `npm run format`
 
 ## Code Style
@@ -106,7 +107,7 @@ Key conventions:
 - Agents research before planning: gather evidence first, not write from assumptions.
 - Reviews require 3+ concurrent reviewers plus a researcher per round. Use more reviewers for complex changes.
 
-The workflow is adaptive — simple questions may skip most steps; complex features use all of them. Use judgment, not rigid procedure.
+The workflow is adaptive — simple questions may skip most steps; complex features use all of them. Implementation tasks always include peer review (steps 6–7). Use judgment, not rigid procedure.
 
 ## Boundaries
 
@@ -116,9 +117,9 @@ The workflow is adaptive — simple questions may skip most steps; complex featu
 - Write tests for new functionality.
 - Use `.ephemeral/` for scratch files, never `/tmp/`.
 - Follow existing code style and patterns.
-- Run full local CI validation (lint, typecheck, tests, build, E2E) before committing. Fix all errors, even in code not touched by the current task.
+- Run `npm run validate` (lint, typecheck, tests, build, E2E) before committing. Fix all errors, even in code not touched by the current task.
 - Validate SPC file input defensively (untrusted binary data).
-- Check CI status before committing.
+- Commit completed work. Do not end a task without committing.
 - Activate relevant skills when working in their domain.
 - Never use ephemeral review labels (e.g., UX-01, SEC-03) in code, commits, or permanent documentation.
 

@@ -41,7 +41,7 @@ Delegate implementation, tests, and documentation updates to the appropriate spe
 
 ### 6. Review Implementation
 
-Delegate code review to 3+ agents concurrently, none of whom wrote the code, plus a mandatory researcher for relevant external research. Use more reviewers for complex or high-risk changes. Follow the same concurrent review pattern used for plans.
+Mandatory for any implementation task — never skip this step. Delegate code review to 3+ agents concurrently, none of whom wrote the code, plus a mandatory researcher for relevant external research. Use more reviewers for complex or high-risk changes. Iterate until all blocking feedback is resolved, then run a final review to confirm.
 
 ### 7. Final Checks
 
@@ -55,7 +55,7 @@ Delegate a holistic readiness check to at least one agent:
 
 ### 8. Commit
 
-Activate **ephemeral-cleanup** skill. Review `.ephemeral/` — promote anything worth keeping, then clean the rest. Run full local CI validation (lint, typecheck, unit tests, build, E2E tests) and fix all errors before committing — delegate fixes to the relevant expert agent. Commit with a conventional commit message.
+Always commit completed work — do not end a task without committing unless the user says otherwise. Activate **ephemeral-cleanup** skill. Review `.ephemeral/` — promote anything worth keeping, then clean the rest. Run `npm run validate` and fix all errors before committing — delegate fixes to the relevant expert agent. Commit with a conventional commit message.
 
 ## Agent Roster
 
