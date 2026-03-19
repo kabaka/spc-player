@@ -49,7 +49,7 @@ Use this skill when conducting code reviews, design reviews, or plan reviews.
 
 When reviewing plans or designs through multiple cycles:
 
-- Require 3+ reviewers plus a researcher for relevant external research per round, running concurrently to surface consensus and divergence. Use more reviewers for complex changes.
+- Require 3+ reviewers plus a mandatory researcher for relevant external research per round, running concurrently to surface consensus and divergence. Use more reviewers for complex changes.
 - Each review round should provide fresh, independent feedback.
 - Don't repeat feedback already addressed — check the latest version.
 - Plans should be updated in-place, not made longer with each cycle.

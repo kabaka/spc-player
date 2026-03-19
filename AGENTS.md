@@ -53,6 +53,7 @@ Commands will be configured during project setup. Placeholder:
 - Named exports, no default exports.
 - Descriptive names. No abbreviations except well-known ones (e.g., `DSP`, `BRR`, `PCM`).
 - Functions over classes unless state encapsulation is needed.
+- Keep files small and focused. Code files should not exceed 1000 lines.
 - Early returns over nested conditionals.
 - Group imports: external libraries → internal modules → types.
 
@@ -112,10 +113,10 @@ The workflow is adaptive — simple questions may skip most steps; complex featu
 ### Always
 
 - Use conventional commits for every commit.
-- Run the full test suite before committing.
 - Write tests for new functionality.
 - Use `.ephemeral/` for scratch files, never `/tmp/`.
 - Follow existing code style and patterns.
+- Run full local CI validation (lint, typecheck, tests, build, E2E) before committing. Fix all errors, even in code not touched by the current task.
 - Validate SPC file input defensively (untrusted binary data).
 - Check CI status before committing.
 - Activate relevant skills when working in their domain.

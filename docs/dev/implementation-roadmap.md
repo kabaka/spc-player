@@ -571,7 +571,7 @@ No CI structural changes. Existing lint → typecheck → test → build → dep
 
 ### Deferred from Prior Phases
 
-The following items were scoped for Phase 2 or Phase 4 but deferred during implementation. They must be completed in this phase before new Phase 5 deliverables.
+The following items were scoped for Phases 2–4 but deferred during implementation. They must be completed in this phase before new Phase 5 deliverables.
 
 #### WASM Resampler (Phase 2 carry-over)
 
@@ -583,6 +583,18 @@ The following items were scoped for Phase 2 or Phase 4 but deferred during imple
 
 - [ ] Replace hardcoded element IDs in `PlayerView.tsx` with React `useId()` for proper accessibility — avoids ID collisions if multiple instances ever mount.
 - [ ] Optimize `computeTrackId()` in `src/core/track-id.ts` to avoid reading the file twice — currently the file is read once for SPC parsing and a second time for SHA-256 hashing. Accept an `ArrayBuffer` parameter instead of `File` to reuse the already-read buffer.
+
+#### Testing & CI Gaps (Phase 2–4 carry-over)
+
+- [ ] CI WASM export surface validation — a CI step that parses the `.wasm` binary's export section and compares against the TypeScript `DspExports` interface, failing on drift. Specified in Phases 2 and 4 but never implemented.
+- [ ] AudioWorklet unit tests (`src/audio/spc-worklet.test.ts`) — specified in Phase 4 but not created. Must test fade ramp accuracy, `PlaybackEnded` timing, `SetPlaybackConfig` mid-playback updates, and infinite mode.
+- [ ] Persistence round-trip integration test — specified in Phase 3 but not implemented. Verify settings persist to IndexedDB and restore correctly after simulated tab close.
+- [ ] Extract `FileDropZone.tsx` component — Phase 4 specified a standalone `src/components/FileDropZone.tsx`, but drag-and-drop is currently inline in `PlayerView.tsx`. Extract for reuse in playlist view.
+
+#### Known Deviations
+
+- **WASM binary size**: ADR-0007 targets < 150 KB; actual optimized binary is ~258 KB. CI was relaxed to 300 KB. Adding the resampler will increase this further. Revisit size budget in Phase 8 performance optimization.
+- **`dsp_load_spc` renamed to `dsp_reset`**: Functionally equivalent — reinitializes APU from stored SPC data. No action needed.
 
 ### Deliverables
 

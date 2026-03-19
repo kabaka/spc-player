@@ -30,7 +30,7 @@ The `.ephemeral/` directory is a gitignored scratch space for temporary artifact
 4. **Name descriptively**: `research/brr-decode-comparison.md`, not `notes.txt`.
 5. **Promote or delete**: if content is valuable, move it to a proper location (docs, code). Otherwise, delete it.
 6. **No secrets**: don't store credentials, tokens, or sensitive data in ephemeral files.
-7. **Subagent output**: when producing deliverables (plans, reviews, research), write to `.ephemeral/` and return the file path to the orchestrator. The orchestrator passes paths — not content — to downstream agents.
+7. **Subagent output**: write code and tests directly to their final locations. Write plans, research, and reviews to `.ephemeral/` and return the file path to the orchestrator. The orchestrator passes paths — not content — to downstream agents.
 
 ## Common Use Cases
 

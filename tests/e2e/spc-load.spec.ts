@@ -1,7 +1,9 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { test, expect } from '@playwright/test';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, '..', 'fixtures');
 const MINIMAL_SPC = path.join(FIXTURES_DIR, 'minimal-valid.spc');
 const CORRUPT_SPC = path.join(FIXTURES_DIR, 'corrupt-header.spc');
