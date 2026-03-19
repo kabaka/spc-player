@@ -21,10 +21,10 @@ Reference implementations: bsnes/higan `SPC_DSP::run()`, blargg's `SPC_DSP.cpp`.
 
 | Filter | Coefficient 1 | Coefficient 2 |
 | ------ | ------------- | ------------- |
-| 0 | 0 | 0 |
-| 1 | 15/16 | 0 |
-| 2 | 61/32 | -15/16 |
-| 3 | 115/64 | -13/16 |
+| 0      | 0             | 0             |
+| 1      | 15/16         | 0             |
+| 2      | 61/32         | -15/16        |
+| 3      | 115/64        | -13/16        |
 
 Applied as: `sample = (nibble << shift) + (prev1 * c1) + (prev2 * c2)`
 

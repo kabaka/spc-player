@@ -16,12 +16,12 @@ Use this skill when working with audio data, sample rate conversion, bit depth, 
 
 ## Key Sample Rates
 
-| Rate | Use |
-| ---- | --- |
-| 32,000 Hz | SNES DSP native output |
-| 44,100 Hz | CD quality, common web default |
+| Rate      | Use                             |
+| --------- | ------------------------------- |
+| 32,000 Hz | SNES DSP native output          |
+| 44,100 Hz | CD quality, common web default  |
 | 48,000 Hz | DVD, most modern audio hardware |
-| 96,000 Hz | High-resolution audio |
+| 96,000 Hz | High-resolution audio           |
 
 ## Resampling
 

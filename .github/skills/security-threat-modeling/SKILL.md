@@ -9,14 +9,14 @@ Use this skill when analyzing the attack surface, identifying threats, and desig
 
 ## Framework: STRIDE
 
-| Threat | Relevant to SPC Player? | Primary Concern |
-| ------ | ----------------------- | --------------- |
-| **S**poofing | Low | No authentication/identity system |
-| **T**ampering | Medium | IndexedDB data, service worker cache, SPC file modification |
-| **R**epudiation | Low | No audit trail needed for single-user app |
-| **I**nformation Disclosure | Low | No sensitive data; SPC files are not private |
-| **D**enial of Service | Medium | Malformed SPC causing infinite loop, memory exhaustion |
-| **E**levation of Privilege | Medium | XSS via metadata display, prototype pollution |
+| Threat                     | Relevant to SPC Player? | Primary Concern                                             |
+| -------------------------- | ----------------------- | ----------------------------------------------------------- |
+| **S**poofing               | Low                     | No authentication/identity system                           |
+| **T**ampering              | Medium                  | IndexedDB data, service worker cache, SPC file modification |
+| **R**epudiation            | Low                     | No audit trail needed for single-user app                   |
+| **I**nformation Disclosure | Low                     | No sensitive data; SPC files are not private                |
+| **D**enial of Service      | Medium                  | Malformed SPC causing infinite loop, memory exhaustion      |
+| **E**levation of Privilege | Medium                  | XSS via metadata display, prototype pollution               |
 
 ## Attack Surface
 

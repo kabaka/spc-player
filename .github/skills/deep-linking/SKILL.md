@@ -27,13 +27,13 @@ Design clean, human-readable URLs:
 
 Encode playback state in the URL so links can reproduce a specific configuration:
 
-| Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| `src` | URL | Remote SPC file URL |
-| `t` | number | Start time in seconds |
-| `ch` | string | Active channels (comma-separated: 1-8) |
-| `vol` | number | Volume (0-100) |
-| `speed` | number | Playback speed (percentage) |
+| Parameter | Type   | Description                            |
+| --------- | ------ | -------------------------------------- |
+| `src`     | URL    | Remote SPC file URL                    |
+| `t`       | number | Start time in seconds                  |
+| `ch`      | string | Active channels (comma-separated: 1-8) |
+| `vol`     | number | Volume (0-100)                         |
+| `speed`   | number | Playback speed (percentage)            |
 
 ### Rules
 

@@ -38,12 +38,12 @@ for (const input of midi.inputs.values()) {
 
 ## MIDI Messages (relevant subset)
 
-| Status | Type | Data |
-| ------ | ---- | ---- |
-| 0x80-0x8F | Note Off | note, velocity |
-| 0x90-0x9F | Note On | note, velocity |
+| Status    | Type           | Data              |
+| --------- | -------------- | ----------------- |
+| 0x80-0x8F | Note Off       | note, velocity    |
+| 0x90-0x9F | Note On        | note, velocity    |
 | 0xB0-0xBF | Control Change | controller, value |
-| 0xE0-0xEF | Pitch Bend | LSB, MSB |
+| 0xE0-0xEF | Pitch Bend     | LSB, MSB          |
 
 Channel is encoded in the lower nibble (0x90 = note on channel 1, 0x91 = channel 2).
 

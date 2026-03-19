@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: 'proposed'
 date: 2026-03-18
 ---
 
@@ -93,24 +93,24 @@ Error codes align with the SPC parsing specification's error types. These repres
 ```typescript
 interface SpcParseError {
   readonly code:
-    | 'SPC_INVALID_MAGIC'          // Magic bytes don't match "SNES-SPC700 Sound File Data v0.30"
-    | 'SPC_FILE_TOO_SMALL'         // File smaller than minimum valid SPC size (65,920 bytes)
-    | 'SPC_FILE_TOO_LARGE'         // File exceeds maximum allowed size (safety limit)
-    | 'SPC_CORRUPT_DATA'           // SPC RAM or DSP register region fails validation
+    | 'SPC_INVALID_MAGIC' // Magic bytes don't match "SNES-SPC700 Sound File Data v0.30"
+    | 'SPC_FILE_TOO_SMALL' // File smaller than minimum valid SPC size (65,920 bytes)
+    | 'SPC_FILE_TOO_LARGE' // File exceeds maximum allowed size (safety limit)
+    | 'SPC_CORRUPT_DATA' // SPC RAM or DSP register region fails validation
     | 'SPC_METADATA_DECODE_ERROR' // ID666 or xid6 tag data is malformed (fatal only when decode prevents playback)
-    | 'SPC_INVALID_DATA';          // SPC data rejected by the DSP emulator (e.g., dsp_init returns error)
-  readonly message: string;        // User-facing, non-technical
+    | 'SPC_INVALID_DATA'; // SPC data rejected by the DSP emulator (e.g., dsp_init returns error)
+  readonly message: string; // User-facing, non-technical
   readonly context: {
-    readonly offset?: number;      // Byte offset where the error occurred
-    readonly expected?: string;    // What was expected
-    readonly actual?: string;      // What was found
-    readonly fileName?: string;    // Original file name if available
-    readonly fileSize?: number;    // Actual file size in bytes
+    readonly offset?: number; // Byte offset where the error occurred
+    readonly expected?: string; // What was expected
+    readonly actual?: string; // What was found
+    readonly fileName?: string; // Original file name if available
+    readonly fileSize?: number; // Actual file size in bytes
   };
 }
 ```
 
-**Note on metadata warnings:** Metadata issues that do not prevent playback (ambiguous encoding, unparseable date, truncated tag) are *warnings*, not errors. Warnings are carried in the `SpcFile` value itself (via `SpcFile.warnings`), not in the `SpcParseError` union. A file with unreadable metadata but valid RAM/DSP data is still playable. The `SPC_METADATA_DECODE_ERROR` code is reserved for the rare case where metadata decoding catastrophically fails (e.g., xid6 parsing causes an out-of-bounds read that corrupts the parse state).
+**Note on metadata warnings:** Metadata issues that do not prevent playback (ambiguous encoding, unparseable date, truncated tag) are _warnings_, not errors. Warnings are carried in the `SpcFile` value itself (via `SpcFile.warnings`), not in the `SpcParseError` union. A file with unreadable metadata but valid RAM/DSP data is still playable. The `SPC_METADATA_DECODE_ERROR` code is reserved for the rare case where metadata decoding catastrophically fails (e.g., xid6 parsing causes an out-of-bounds read that corrupts the parse state).
 
 #### Audio Pipeline Errors
 
@@ -119,16 +119,16 @@ Covers WASM, AudioWorklet, Web Audio API, and audio codec failures.
 ```typescript
 interface AudioPipelineError {
   readonly code:
-    | 'AUDIO_WASM_TRAP'              // WASM unreachable instruction (Rust panic)
-    | 'AUDIO_WASM_INIT_FAILED'       // WASM module instantiation failure
-    | 'AUDIO_WASM_RENDER_ERROR'      // dsp_render returned negative error code (controlled failure)
-    | 'AUDIO_WASM_RENDER_OVERRUN'    // 5+ consecutive render overruns — see escalation policy
-    | 'AUDIO_WORKLET_CRASHED'        // AudioWorklet process() threw or was terminated
-    | 'AUDIO_CONTEXT_SUSPENDED'      // AudioContext entered 'suspended' state (autoplay, tab background)
-    | 'AUDIO_CONTEXT_CLOSED'         // AudioContext was closed and cannot be reused
-    | 'AUDIO_OUTPUT_CHANGED'         // Audio output device changed (sink ID changed)
-    | 'AUDIO_WORKLET_LOAD_FAILED'    // addModule() failed for the worklet script
-    | 'AUDIO_CODEC_ERROR'            // Export encoder (FLAC/OGG/MP3) failure
+    | 'AUDIO_WASM_TRAP' // WASM unreachable instruction (Rust panic)
+    | 'AUDIO_WASM_INIT_FAILED' // WASM module instantiation failure
+    | 'AUDIO_WASM_RENDER_ERROR' // dsp_render returned negative error code (controlled failure)
+    | 'AUDIO_WASM_RENDER_OVERRUN' // 5+ consecutive render overruns — see escalation policy
+    | 'AUDIO_WORKLET_CRASHED' // AudioWorklet process() threw or was terminated
+    | 'AUDIO_CONTEXT_SUSPENDED' // AudioContext entered 'suspended' state (autoplay, tab background)
+    | 'AUDIO_CONTEXT_CLOSED' // AudioContext was closed and cannot be reused
+    | 'AUDIO_OUTPUT_CHANGED' // Audio output device changed (sink ID changed)
+    | 'AUDIO_WORKLET_LOAD_FAILED' // addModule() failed for the worklet script
+    | 'AUDIO_CODEC_ERROR' // Export encoder (FLAC/OGG/MP3) failure
     | 'AUDIO_RENDER_OVERRUN_CRITICAL' // 5+ consecutive render overruns — worklet requests tear-down and rebuild
     | 'AUDIO_PROTOCOL_VERSION_MISMATCH'; // Worker/worklet protocol version incompatible with main thread
   readonly message: string;
@@ -149,12 +149,12 @@ interface AudioPipelineError {
 ```typescript
 interface StorageError {
   readonly code:
-    | 'STORAGE_QUOTA_EXCEEDED'       // Storage quota full
-    | 'STORAGE_VERSION_CONFLICT'     // DB version mismatch (multiple tabs)
-    | 'STORAGE_TRANSACTION_FAILED'   // Transaction aborted
-    | 'STORAGE_UNAVAILABLE'          // IndexedDB not available (private browsing in some browsers)
-    | 'STORAGE_CORRUPTED'            // Stored data fails validation on read
-    | 'STORAGE_READ_FAILED';         // Failed to read from IndexedDB (transaction error, missing data)
+    | 'STORAGE_QUOTA_EXCEEDED' // Storage quota full
+    | 'STORAGE_VERSION_CONFLICT' // DB version mismatch (multiple tabs)
+    | 'STORAGE_TRANSACTION_FAILED' // Transaction aborted
+    | 'STORAGE_UNAVAILABLE' // IndexedDB not available (private browsing in some browsers)
+    | 'STORAGE_CORRUPTED' // Stored data fails validation on read
+    | 'STORAGE_READ_FAILED'; // Failed to read from IndexedDB (transaction error, missing data)
   readonly message: string;
   readonly context: {
     readonly storeName?: string;
@@ -171,10 +171,10 @@ interface StorageError {
 ```typescript
 interface MidiError {
   readonly code:
-    | 'MIDI_PERMISSION_DENIED'       // User denied MIDI access
-    | 'MIDI_NOT_SUPPORTED'           // Browser doesn't support Web MIDI
-    | 'MIDI_DEVICE_DISCONNECTED'     // Active MIDI device was disconnected
-    | 'MIDI_DEVICE_ERROR';           // MIDI device reported an error
+    | 'MIDI_PERMISSION_DENIED' // User denied MIDI access
+    | 'MIDI_NOT_SUPPORTED' // Browser doesn't support Web MIDI
+    | 'MIDI_DEVICE_DISCONNECTED' // Active MIDI device was disconnected
+    | 'MIDI_DEVICE_ERROR'; // MIDI device reported an error
   readonly message: string;
   readonly context: {
     readonly deviceName?: string;
@@ -189,9 +189,9 @@ interface MidiError {
 ```typescript
 interface NetworkError {
   readonly code:
-    | 'NETWORK_FETCH_FAILED'         // Service Worker fetch failure
-    | 'NETWORK_SW_UPDATE_FAILED'     // Service Worker update check failed
-    | 'NETWORK_WASM_FETCH_FAILED';   // Failed to download WASM binary
+    | 'NETWORK_FETCH_FAILED' // Service Worker fetch failure
+    | 'NETWORK_SW_UPDATE_FAILED' // Service Worker update check failed
+    | 'NETWORK_WASM_FETCH_FAILED'; // Failed to download WASM binary
   readonly message: string;
   readonly context: {
     readonly url?: string;
@@ -208,13 +208,13 @@ This domain captures errors originating in the React component tree or other mai
 ```typescript
 interface UiError {
   readonly code:
-    | 'UI_RENDER_ERROR'              // React component threw during render (caught by error boundary)
-    | 'UI_UNEXPECTED_ERROR';         // Truly unknown error caught by global safety nets
+    | 'UI_RENDER_ERROR' // React component threw during render (caught by error boundary)
+    | 'UI_UNEXPECTED_ERROR'; // Truly unknown error caught by global safety nets
   readonly message: string;
   readonly context: {
     readonly componentName?: string; // For render errors: name of the failing component/view
-    readonly detail?: string;        // Raw error message for diagnostics
-    readonly stack?: string;         // Stack trace (dev builds only, stripped in production)
+    readonly detail?: string; // Raw error message for diagnostics
+    readonly stack?: string; // Stack trace (dev builds only, stripped in production)
   };
 }
 ```
@@ -228,10 +228,10 @@ Covers errors arising during offline audio export (rendering, encoding, and pack
 ```typescript
 interface ExportError {
   readonly code:
-    | 'EXPORT_CANCELLED'           // User cancelled the export job
-    | 'EXPORT_OUT_OF_MEMORY'       // Export worker ran out of memory during rendering or encoding
-    | 'EXPORT_ENCODING_FAILED'     // Codec encoding failed (corrupt output, encoder internal error)
-    | 'EXPORT_CODEC_LOAD_FAILED';  // Failed to load codec WASM module (network error, instantiation failure)
+    | 'EXPORT_CANCELLED' // User cancelled the export job
+    | 'EXPORT_OUT_OF_MEMORY' // Export worker ran out of memory during rendering or encoding
+    | 'EXPORT_ENCODING_FAILED' // Codec encoding failed (corrupt output, encoder internal error)
+    | 'EXPORT_CODEC_LOAD_FAILED'; // Failed to load codec WASM module (network error, instantiation failure)
   readonly message: string;
   readonly context: {
     readonly jobId?: string;
@@ -272,6 +272,7 @@ function Err<E>(error: E): Result<never, E> {
 **Domain-specific Result extensions:** The SPC parsing layer defines `SpcParseResult` as `Result<SpcFile, SpcParseError>`. Parsing warnings are carried in the `SpcFile` value itself (via `SpcFile.warnings`), not on the Result type. This keeps the generic `Result<T, E>` shape unchanged and avoids a `warnings` field on the success variant that other domains don't need.
 
 **Where Result types are used:**
+
 - SPC file parsing functions
 - IndexedDB read/write operations
 - MIDI device connection attempts
@@ -279,6 +280,7 @@ function Err<E>(error: E): Result<never, E> {
 - Audio export encoding
 
 **Where Result types are NOT used:**
+
 - The AudioWorklet `process()` method — zero overhead on the hot path
 - React component render methods — React expects throw-based errors for error boundaries
 - Global event handlers (`window.onerror`, `unhandledrejection`) — these receive exceptions
@@ -323,9 +325,11 @@ The worklet sends error messages for recoverable conditions (e.g., `dsp_render` 
 ```typescript
 // Main thread: AudioWorklet error detection
 workletNode.onprocessorerror = (event) => {
-  reportError(audioPipelineError('AUDIO_WORKLET_CRASHED', {
-    detail: String(event),
-  }));
+  reportError(
+    audioPipelineError('AUDIO_WORKLET_CRASHED', {
+      detail: String(event),
+    }),
+  );
   // Trigger recovery: tear down audio graph, re-initialize
   useAppStore.getState().recoverAudioPipeline();
 };
@@ -437,7 +441,11 @@ function reportError(error: AppError, options?: { silent?: boolean }): void {
     case 'NETWORK_SW_UPDATE_FAILED':
     case 'STORAGE_QUOTA_EXCEEDED':
     case 'AUDIO_OUTPUT_CHANGED':
-      showToast({ message: error.message, severity: 'warning', autoDismissMs: 5000 });
+      showToast({
+        message: error.message,
+        severity: 'warning',
+        autoDismissMs: 5000,
+      });
       break;
 
     // — Toasts: SPC parse errors (file is unusable) —
@@ -447,7 +455,11 @@ function reportError(error: AppError, options?: { silent?: boolean }): void {
     case 'SPC_CORRUPT_DATA':
     case 'SPC_METADATA_DECODE_ERROR':
     case 'SPC_INVALID_DATA':
-      showToast({ message: error.message, severity: 'error', autoDismissMs: 8000 });
+      showToast({
+        message: error.message,
+        severity: 'error',
+        autoDismissMs: 8000,
+      });
       break;
 
     // — Silent: error boundary already displays fallback UI —
@@ -475,7 +487,11 @@ function reportError(error: AppError, options?: { silent?: boolean }): void {
     case 'EXPORT_OUT_OF_MEMORY':
     case 'EXPORT_ENCODING_FAILED':
     case 'EXPORT_CODEC_LOAD_FAILED':
-      showToast({ message: error.message, severity: 'error', autoDismissMs: 5000 });
+      showToast({
+        message: error.message,
+        severity: 'error',
+        autoDismissMs: 5000,
+      });
       break;
 
     // — Export cancellation: silent (user initiated) —
@@ -486,7 +502,11 @@ function reportError(error: AppError, options?: { silent?: boolean }): void {
     // — Exhaustiveness check: TypeScript will error here if a code is missing —
     default: {
       const _exhaustive: never = error;
-      showToast({ message: (_exhaustive as AppError).message, severity: 'error', autoDismissMs: 5000 });
+      showToast({
+        message: (_exhaustive as AppError).message,
+        severity: 'error',
+        autoDismissMs: 5000,
+      });
     }
   }
 }
@@ -498,11 +518,11 @@ function reportError(error: AppError, options?: { silent?: boolean }): void {
 
 Errors are displayed to users through three distinct UI patterns, selected based on severity and recoverability:
 
-| Display Pattern | When Used | Dismissal | Examples |
-|---|---|---|---|
-| **Toast notification** | Recoverable errors that don't interrupt core functionality | Auto-dismiss after configured duration, or manual dismiss | MIDI device disconnected, export format warning, storage nearing quota |
-| **Action banner** | Recoverable errors that require user action to resolve | Persists until resolved or dismissed | AudioContext suspended (needs tap to resume), audio pipeline crashed (tap to retry) |
-| **Error boundary fallback** | Unrecoverable errors in a UI region; partial page remains functional | Provides "Try Again" button that remounts the failed subtree | React component crash in mixer panel, metadata viewer crash |
+| Display Pattern             | When Used                                                            | Dismissal                                                    | Examples                                                                            |
+| --------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| **Toast notification**      | Recoverable errors that don't interrupt core functionality           | Auto-dismiss after configured duration, or manual dismiss    | MIDI device disconnected, export format warning, storage nearing quota              |
+| **Action banner**           | Recoverable errors that require user action to resolve               | Persists until resolved or dismissed                         | AudioContext suspended (needs tap to resume), audio pipeline crashed (tap to retry) |
+| **Error boundary fallback** | Unrecoverable errors in a UI region; partial page remains functional | Provides "Try Again" button that remounts the failed subtree | React component crash in mixer panel, metadata viewer crash                         |
 
 **No modal dialogs for errors.** Modals interrupt the user's flow and require an explicit dismiss action. Audio playback errors should never block the user from navigating or accessing other features.
 
@@ -526,37 +546,37 @@ interface ToastState {
 
 ### Recovery Strategies by Error Domain
 
-| Error Domain | Error Code | Recoverable | Recovery Strategy | Automatic? | Retry Limit |
-|---|---|---|---|---|---|
-| **WASM / AudioWorklet** | `AUDIO_WASM_TRAP` | Yes | Tear down AudioWorkletNode → re-instantiate WASM from cached Module → re-initialize worklet → reload SPC data → resume playback position | Automatic attempt, surface banner if retries exhausted | 3 |
-| | `AUDIO_WORKLET_CRASHED` | Yes | Same as WASM trap recovery | Automatic attempt | 3 |
-| | `AUDIO_WASM_RENDER_OVERRUN` | Yes | Same as WASM trap recovery (triggered after 5 consecutive render failures) | Automatic | 3 |
-| | `AUDIO_WASM_INIT_FAILED` | Yes | Re-try WASM instantiation. If repeated failure, display "browser unsupported" banner | Automatic | 2 |
-| | `AUDIO_WASM_RENDER_ERROR` | Yes | Log error, output silence for affected quantum, increment consecutive failure counter. If counter ≥ 5, escalate to `AUDIO_WASM_RENDER_OVERRUN` | Automatic | N/A (escalates) |
-| | `AUDIO_WORKLET_LOAD_FAILED` | Yes | Retry `addModule()`. If fails, show "browser unsupported" banner | Automatic | 2 |
-| **Web Audio API** | `AUDIO_CONTEXT_SUSPENDED` | Yes | Call `audioContext.resume()` on next user gesture. Display action banner | Semi-automatic — needs user tap | N/A |
-| | `AUDIO_CONTEXT_CLOSED` | Yes | Create new AudioContext → re-initialize audio graph. Note: new context may start suspended if not within a user gesture; follow same autoplay handling as initial startup | Automatic | 1 |
-| | `AUDIO_OUTPUT_CHANGED` | Yes | Reconnect to new output device via `AudioContext.setSinkId()` where supported (Chrome 110+). On unsupported browsers, do nothing (system mixer handles routing). Log for diagnostics | Automatic | N/A |
-| | `AUDIO_CODEC_ERROR` | No | Show toast with export failure message. User can retry export manually | N/A | N/A |
-| **SPC Parsing** | `SPC_INVALID_MAGIC` | No | File is not an SPC — show toast, remove from queue if queued | N/A | N/A |
-| | `SPC_FILE_TOO_SMALL` | No | File is incomplete — show toast | N/A | N/A |
-| | `SPC_FILE_TOO_LARGE` | No | File exceeds safety limit — show toast | N/A | N/A |
-| | `SPC_CORRUPT_DATA` | No | RAM/DSP data is invalid — show toast | N/A | N/A |
-| | `SPC_METADATA_DECODE_ERROR` | No | Metadata decode caused fatal parse failure — show toast | N/A | N/A |
-| **IndexedDB** | `STORAGE_QUOTA_EXCEEDED` | Yes | 1. Prompt user to clear cached SPC files. 2. Attempt without caching. 3. Degrade to in-memory operation | Interactive | N/A |
-| | `STORAGE_VERSION_CONFLICT` | Yes | Close other tabs and reload, or delete and recreate the database | Interactive | N/A |
-| | `STORAGE_TRANSACTION_FAILED` | Yes | Retry transaction. If repeated, log and continue without persistence | Automatic | 1 |
-| | `STORAGE_UNAVAILABLE` | Yes | Degrade gracefully — all features work, settings reset on refresh. Show once-per-session info toast | Automatic degradation | N/A |
-| | `STORAGE_CORRUPTED` | Yes | Delete corrupted entry, continue with defaults | Automatic | N/A |
-| **Web MIDI** | `MIDI_PERMISSION_DENIED` | No | Disable MIDI features, show toast explaining how to re-enable in browser settings | N/A | N/A |
-| | `MIDI_NOT_SUPPORTED` | No | Disable MIDI features, hide MIDI UI | N/A | N/A |
-| | `MIDI_DEVICE_DISCONNECTED` | Yes | Remove device from active input list, show toast. Automatically reconnect if device reappears (via `onstatechange`) | Semi-automatic | N/A |
-| | `MIDI_DEVICE_ERROR` | Yes | Log error, attempt to re-open MIDI port | Automatic | 1 |
-| **Network** | `NETWORK_WASM_FETCH_FAILED` | Yes | Retry with exponential backoff. Check Service Worker cache. Show offline banner if all fail | Automatic | 3 |
-| | `NETWORK_SW_UPDATE_FAILED` | Yes | Log warning. Continue with cached version. Retry on next page load | Automatic | N/A |
-| | `NETWORK_FETCH_FAILED` | Yes | Show toast. Continue with cached content if available | Automatic | N/A |
-| **UI** | `UI_RENDER_ERROR` | Yes | Error boundary displays fallback with "Try Again" button that remounts the subtree | Automatic (boundary catches) | N/A |
-| | `UI_UNEXPECTED_ERROR` | No | Log error, show toast. No automatic recovery for truly unknown errors | N/A | N/A |
+| Error Domain            | Error Code                   | Recoverable | Recovery Strategy                                                                                                                                                                    | Automatic?                                             | Retry Limit     |
+| ----------------------- | ---------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | --------------- |
+| **WASM / AudioWorklet** | `AUDIO_WASM_TRAP`            | Yes         | Tear down AudioWorkletNode → re-instantiate WASM from cached Module → re-initialize worklet → reload SPC data → resume playback position                                             | Automatic attempt, surface banner if retries exhausted | 3               |
+|                         | `AUDIO_WORKLET_CRASHED`      | Yes         | Same as WASM trap recovery                                                                                                                                                           | Automatic attempt                                      | 3               |
+|                         | `AUDIO_WASM_RENDER_OVERRUN`  | Yes         | Same as WASM trap recovery (triggered after 5 consecutive render failures)                                                                                                           | Automatic                                              | 3               |
+|                         | `AUDIO_WASM_INIT_FAILED`     | Yes         | Re-try WASM instantiation. If repeated failure, display "browser unsupported" banner                                                                                                 | Automatic                                              | 2               |
+|                         | `AUDIO_WASM_RENDER_ERROR`    | Yes         | Log error, output silence for affected quantum, increment consecutive failure counter. If counter ≥ 5, escalate to `AUDIO_WASM_RENDER_OVERRUN`                                       | Automatic                                              | N/A (escalates) |
+|                         | `AUDIO_WORKLET_LOAD_FAILED`  | Yes         | Retry `addModule()`. If fails, show "browser unsupported" banner                                                                                                                     | Automatic                                              | 2               |
+| **Web Audio API**       | `AUDIO_CONTEXT_SUSPENDED`    | Yes         | Call `audioContext.resume()` on next user gesture. Display action banner                                                                                                             | Semi-automatic — needs user tap                        | N/A             |
+|                         | `AUDIO_CONTEXT_CLOSED`       | Yes         | Create new AudioContext → re-initialize audio graph. Note: new context may start suspended if not within a user gesture; follow same autoplay handling as initial startup            | Automatic                                              | 1               |
+|                         | `AUDIO_OUTPUT_CHANGED`       | Yes         | Reconnect to new output device via `AudioContext.setSinkId()` where supported (Chrome 110+). On unsupported browsers, do nothing (system mixer handles routing). Log for diagnostics | Automatic                                              | N/A             |
+|                         | `AUDIO_CODEC_ERROR`          | No          | Show toast with export failure message. User can retry export manually                                                                                                               | N/A                                                    | N/A             |
+| **SPC Parsing**         | `SPC_INVALID_MAGIC`          | No          | File is not an SPC — show toast, remove from queue if queued                                                                                                                         | N/A                                                    | N/A             |
+|                         | `SPC_FILE_TOO_SMALL`         | No          | File is incomplete — show toast                                                                                                                                                      | N/A                                                    | N/A             |
+|                         | `SPC_FILE_TOO_LARGE`         | No          | File exceeds safety limit — show toast                                                                                                                                               | N/A                                                    | N/A             |
+|                         | `SPC_CORRUPT_DATA`           | No          | RAM/DSP data is invalid — show toast                                                                                                                                                 | N/A                                                    | N/A             |
+|                         | `SPC_METADATA_DECODE_ERROR`  | No          | Metadata decode caused fatal parse failure — show toast                                                                                                                              | N/A                                                    | N/A             |
+| **IndexedDB**           | `STORAGE_QUOTA_EXCEEDED`     | Yes         | 1. Prompt user to clear cached SPC files. 2. Attempt without caching. 3. Degrade to in-memory operation                                                                              | Interactive                                            | N/A             |
+|                         | `STORAGE_VERSION_CONFLICT`   | Yes         | Close other tabs and reload, or delete and recreate the database                                                                                                                     | Interactive                                            | N/A             |
+|                         | `STORAGE_TRANSACTION_FAILED` | Yes         | Retry transaction. If repeated, log and continue without persistence                                                                                                                 | Automatic                                              | 1               |
+|                         | `STORAGE_UNAVAILABLE`        | Yes         | Degrade gracefully — all features work, settings reset on refresh. Show once-per-session info toast                                                                                  | Automatic degradation                                  | N/A             |
+|                         | `STORAGE_CORRUPTED`          | Yes         | Delete corrupted entry, continue with defaults                                                                                                                                       | Automatic                                              | N/A             |
+| **Web MIDI**            | `MIDI_PERMISSION_DENIED`     | No          | Disable MIDI features, show toast explaining how to re-enable in browser settings                                                                                                    | N/A                                                    | N/A             |
+|                         | `MIDI_NOT_SUPPORTED`         | No          | Disable MIDI features, hide MIDI UI                                                                                                                                                  | N/A                                                    | N/A             |
+|                         | `MIDI_DEVICE_DISCONNECTED`   | Yes         | Remove device from active input list, show toast. Automatically reconnect if device reappears (via `onstatechange`)                                                                  | Semi-automatic                                         | N/A             |
+|                         | `MIDI_DEVICE_ERROR`          | Yes         | Log error, attempt to re-open MIDI port                                                                                                                                              | Automatic                                              | 1               |
+| **Network**             | `NETWORK_WASM_FETCH_FAILED`  | Yes         | Retry with exponential backoff. Check Service Worker cache. Show offline banner if all fail                                                                                          | Automatic                                              | 3               |
+|                         | `NETWORK_SW_UPDATE_FAILED`   | Yes         | Log warning. Continue with cached version. Retry on next page load                                                                                                                   | Automatic                                              | N/A             |
+|                         | `NETWORK_FETCH_FAILED`       | Yes         | Show toast. Continue with cached content if available                                                                                                                                | Automatic                                              | N/A             |
+| **UI**                  | `UI_RENDER_ERROR`            | Yes         | Error boundary displays fallback with "Try Again" button that remounts the subtree                                                                                                   | Automatic (boundary catches)                           | N/A             |
+|                         | `UI_UNEXPECTED_ERROR`        | No          | Log error, show toast. No automatic recovery for truly unknown errors                                                                                                                | N/A                                                    | N/A             |
 
 **Audio pipeline recovery sequence (detailed):**
 
@@ -627,13 +647,18 @@ function push(entry: ErrorLogEntry): void {
 ```typescript
 if (import.meta.env.DEV) {
   (window as Record<string, unknown>).__spcErrors = {
-    get entries() { return getRecentErrors(); },
-    get count() { return entryCount; },
+    get entries() {
+      return getRecentErrors();
+    },
+    get count() {
+      return entryCount;
+    },
   };
 }
 ```
 
 **No external error reporting service.** SPC Player has no backend. Error telemetry is limited to:
+
 1. **Console output** — always, for developer diagnostics.
 2. **In-memory ring buffer** — last 100 errors, accessible via debug panel in dev builds.
 3. **Optional future extension** — if a client-side analytics service (e.g., Sentry's client-only mode) is added, the `logError()` function is the single integration point.
@@ -647,23 +672,29 @@ Two global handlers catch errors that escape all other handling. These are **saf
 ```typescript
 // Catches unhandled thrown errors (sync)
 window.addEventListener('error', (event) => {
-  reportError(uiError('UI_UNEXPECTED_ERROR', {
-    detail: event.message,
-    stack: import.meta.env.DEV ? event.error?.stack : undefined,
-  }));
+  reportError(
+    uiError('UI_UNEXPECTED_ERROR', {
+      detail: event.message,
+      stack: import.meta.env.DEV ? event.error?.stack : undefined,
+    }),
+  );
 });
 
 // Catches unhandled Promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault(); // Prevent default console error (we log it ourselves)
-  reportError(uiError('UI_UNEXPECTED_ERROR', {
-    detail: event.reason instanceof Error
-      ? event.reason.message
-      : String(event.reason),
-    stack: import.meta.env.DEV && event.reason instanceof Error
-      ? event.reason.stack
-      : undefined,
-  }));
+  reportError(
+    uiError('UI_UNEXPECTED_ERROR', {
+      detail:
+        event.reason instanceof Error
+          ? event.reason.message
+          : String(event.reason),
+      stack:
+        import.meta.env.DEV && event.reason instanceof Error
+          ? event.reason.stack
+          : undefined,
+    }),
+  );
 });
 ```
 
@@ -676,7 +707,8 @@ function classifyUncaughtError(error: unknown): AppError {
   // Otherwise, classify as unexpected
   return uiError('UI_UNEXPECTED_ERROR', {
     detail: error instanceof Error ? error.message : String(error),
-    stack: import.meta.env.DEV && error instanceof Error ? error.stack : undefined,
+    stack:
+      import.meta.env.DEV && error instanceof Error ? error.stack : undefined,
   });
 }
 
@@ -725,6 +757,7 @@ Error boundaries are placed at view-level granularity to isolate failures in one
 ```
 
 **Boundary placement rationale:**
+
 - **Per-view boundaries** catch crashes in individual views without affecting the persistent player bar or navigation. A crash in the mixer panel shows a "Something went wrong" fallback in the mixer area while the rest of the app remains functional.
 - **The player bar has no boundary** because it is always visible and contains the transport controls. A crash here is critical — it falls through to the global boundary.
 - **The global boundary** catches everything else. Its fallback shows a full-page error message with a "Reload" button. This is the nuclear option that should rarely trigger.
@@ -784,17 +817,22 @@ function audioPipelineError(
 ): AudioPipelineError {
   const messages: Record<AudioPipelineError['code'], string> = {
     AUDIO_WASM_TRAP: 'Audio playback stopped unexpectedly. Tap to retry.',
-    AUDIO_WASM_INIT_FAILED: 'The audio engine failed to start. Your browser may not support this feature.',
+    AUDIO_WASM_INIT_FAILED:
+      'The audio engine failed to start. Your browser may not support this feature.',
     AUDIO_WASM_RENDER_ERROR: 'A brief audio glitch occurred.',
-    AUDIO_WASM_RENDER_OVERRUN: 'Audio playback stopped due to repeated errors. Tap to retry.',
+    AUDIO_WASM_RENDER_OVERRUN:
+      'Audio playback stopped due to repeated errors. Tap to retry.',
     AUDIO_WORKLET_CRASHED: 'Audio playback stopped unexpectedly. Tap to retry.',
     AUDIO_CONTEXT_SUSPENDED: 'Audio is paused. Tap anywhere to resume.',
     AUDIO_CONTEXT_CLOSED: 'Audio output was lost. Reconnecting…',
     AUDIO_OUTPUT_CHANGED: 'Audio output device changed.',
-    AUDIO_WORKLET_LOAD_FAILED: 'The audio engine failed to load. Your browser may not support this feature.',
+    AUDIO_WORKLET_LOAD_FAILED:
+      'The audio engine failed to load. Your browser may not support this feature.',
     AUDIO_CODEC_ERROR: 'Audio export failed. Please try a different format.',
-    AUDIO_RENDER_OVERRUN_CRITICAL: 'Audio playback stopped due to repeated errors. Tap to retry.',
-    AUDIO_PROTOCOL_VERSION_MISMATCH: 'Audio engine version mismatch. Please reload the page.',
+    AUDIO_RENDER_OVERRUN_CRITICAL:
+      'Audio playback stopped due to repeated errors. Tap to retry.',
+    AUDIO_PROTOCOL_VERSION_MISMATCH:
+      'Audio engine version mismatch. Please reload the page.',
   };
   return { code, message: messages[code], context };
 }
@@ -805,11 +843,15 @@ function storageError(
 ): StorageError {
   const messages: Record<StorageError['code'], string> = {
     STORAGE_QUOTA_EXCEEDED: 'Storage is full. Try removing some saved files.',
-    STORAGE_VERSION_CONFLICT: 'Another tab is using a different data version. Please close other tabs and reload.',
-    STORAGE_TRANSACTION_FAILED: 'A storage operation failed. Some changes may not be saved.',
-    STORAGE_UNAVAILABLE: 'Offline storage is not available. Your settings will not persist across sessions.',
+    STORAGE_VERSION_CONFLICT:
+      'Another tab is using a different data version. Please close other tabs and reload.',
+    STORAGE_TRANSACTION_FAILED:
+      'A storage operation failed. Some changes may not be saved.',
+    STORAGE_UNAVAILABLE:
+      'Offline storage is not available. Your settings will not persist across sessions.',
     STORAGE_CORRUPTED: 'Stored data was corrupted and has been reset.',
-    STORAGE_READ_FAILED: 'Failed to read saved data. Some information may be unavailable.',
+    STORAGE_READ_FAILED:
+      'Failed to read saved data. Some information may be unavailable.',
   };
   return { code, message: messages[code], context };
 }
@@ -819,7 +861,8 @@ function midiError(
   context: MidiError['context'] = {},
 ): MidiError {
   const messages: Record<MidiError['code'], string> = {
-    MIDI_PERMISSION_DENIED: 'MIDI access was denied. Enable it in your browser settings to use MIDI input.',
+    MIDI_PERMISSION_DENIED:
+      'MIDI access was denied. Enable it in your browser settings to use MIDI input.',
     MIDI_NOT_SUPPORTED: 'Your browser does not support MIDI input.',
     MIDI_DEVICE_DISCONNECTED: 'MIDI device disconnected.',
     MIDI_DEVICE_ERROR: 'MIDI device reported an error.',
@@ -832,9 +875,12 @@ function networkError(
   context: NetworkError['context'] = {},
 ): NetworkError {
   const messages: Record<NetworkError['code'], string> = {
-    NETWORK_FETCH_FAILED: 'A network request failed. Some features may be unavailable.',
-    NETWORK_SW_UPDATE_FAILED: 'Could not check for updates. You are using a cached version.',
-    NETWORK_WASM_FETCH_FAILED: 'Failed to download the audio engine. Check your connection and try again.',
+    NETWORK_FETCH_FAILED:
+      'A network request failed. Some features may be unavailable.',
+    NETWORK_SW_UPDATE_FAILED:
+      'Could not check for updates. You are using a cached version.',
+    NETWORK_WASM_FETCH_FAILED:
+      'Failed to download the audio engine. Check your connection and try again.',
   };
   return { code, message: messages[code], context };
 }
@@ -857,8 +903,10 @@ function exportError(
   const messages: Record<ExportError['code'], string> = {
     EXPORT_CANCELLED: 'Export was cancelled.',
     EXPORT_OUT_OF_MEMORY: 'Export failed due to insufficient memory.',
-    EXPORT_ENCODING_FAILED: 'Audio encoding failed. Please try a different format.',
-    EXPORT_CODEC_LOAD_FAILED: 'Failed to load the audio encoder. Check your connection and try again.',
+    EXPORT_ENCODING_FAILED:
+      'Audio encoding failed. Please try a different format.',
+    EXPORT_CODEC_LOAD_FAILED:
+      'Failed to load the audio encoder. Check your connection and try again.',
   };
   return { code, message: messages[code], context };
 }
@@ -1003,6 +1051,6 @@ A functional effect system (`Effect-TS` or `neverthrow`) models all operations a
 
 ### Future Considerations
 
-- **`FileError` domain: File API failures (e.g., `File.arrayBuffer()` rejecting with `NotReadableError` when a file is deleted between selection and read) are not currently covered. If file drag-and-drop or directory handle operations become common, a `FileError` domain with `FILE_READ_FAILED` may be needed. For now, these are caught at the parsing boundary and reported as `SPC_CORRUPT_DATA` with descriptive context.
+- \*\*`FileError` domain: File API failures (e.g., `File.arrayBuffer()` rejecting with `NotReadableError` when a file is deleted between selection and read) are not currently covered. If file drag-and-drop or directory handle operations become common, a `FileError` domain with `FILE_READ_FAILED` may be needed. For now, these are caught at the parsing boundary and reported as `SPC_CORRUPT_DATA` with descriptive context.
 - **Error ring buffer persistence:** Persisting the ring buffer to `sessionStorage` would survive page reloads. This is deferred because writing to `sessionStorage` on every error adds latency to the error path and risks recursive errors if storage is the failing subsystem.
 - **External error reporting:** If a client-side analytics service (e.g., Sentry's tunnel mode) is added, `logError()` is the single integration point. No other code needs to change.

@@ -46,6 +46,7 @@ Delegate code review to 3+ agents concurrently, none of whom wrote the code, plu
 ### 7. Final Checks
 
 Delegate a holistic readiness check to at least one agent:
+
 - Does the implementation match the original request?
 - Are tests passing?
 - Are there stray files, debug artifacts, or incomplete changes?

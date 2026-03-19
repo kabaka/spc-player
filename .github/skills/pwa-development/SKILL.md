@@ -20,16 +20,21 @@ Use this skill when implementing service worker, manifest, install experience, o
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
-  "file_handlers": [
-    { "action": "/", "accept": { "audio/x-spc": [".spc"] } }
-  ],
+  "file_handlers": [{ "action": "/", "accept": { "audio/x-spc": [".spc"] } }],
   "share_target": {
     "action": "/share",
     "method": "POST",
     "enctype": "multipart/form-data",
-    "params": { "files": [{ "name": "spc", "accept": [".spc", "audio/x-spc"] }] }
+    "params": {
+      "files": [{ "name": "spc", "accept": [".spc", "audio/x-spc"] }]
+    }
   }
 }
 ```
@@ -47,15 +52,19 @@ Use this skill when implementing service worker, manifest, install experience, o
 ```typescript
 // Use workbox or manual SW. Key events:
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open('v1').then(cache => cache.addAll(APP_SHELL)));
+  e.waitUntil(caches.open('v1').then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting(); // Activate immediately
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== 'v1').map(k => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k !== 'v1').map((k) => caches.delete(k)),
+        ),
+      ),
   );
   self.clients.claim();
 });

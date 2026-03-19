@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -148,15 +148,15 @@ Do not write any custom WASM modules. Implement the resampler and dithering in J
 
 After this ADR, the project has two distinct WASM compilation approaches serving different architectural roles:
 
-| Aspect | Rust → `wasm32-unknown-unknown` | C → Emscripten (pre-compiled) |
-| ------ | ------------------------------- | ----------------------------- |
-| **Scope** | DSP emulation core, resampler, dithering, custom audio processing | Audio export codecs (libFLAC, libvorbisenc, LAME) |
-| **Authored by** | This project | External library authors / Emscripten port maintainers |
-| **Build responsibility** | Project CI (ADR-0007) | npm package maintainers (ADR-0006) |
-| **Build tool** | `cargo` + `wasm-opt` | Emscripten (performed by package maintainer, not project CI) |
-| **Runtime context** | AudioWorklet (real-time, 2.67ms budget) | Web Worker (offline export, no real-time constraint) |
-| **Binary count** | Single `.wasm` (spc-apu-wasm crate) | One `.wasm` per codec (lazy-loaded per format) |
-| **ADRs** | ADR-0001, ADR-0003, ADR-0007, this ADR | ADR-0006 |
+| Aspect                   | Rust → `wasm32-unknown-unknown`                                   | C → Emscripten (pre-compiled)                                |
+| ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Scope**                | DSP emulation core, resampler, dithering, custom audio processing | Audio export codecs (libFLAC, libvorbisenc, LAME)            |
+| **Authored by**          | This project                                                      | External library authors / Emscripten port maintainers       |
+| **Build responsibility** | Project CI (ADR-0007)                                             | npm package maintainers (ADR-0006)                           |
+| **Build tool**           | `cargo` + `wasm-opt`                                              | Emscripten (performed by package maintainer, not project CI) |
+| **Runtime context**      | AudioWorklet (real-time, 2.67ms budget)                           | Web Worker (offline export, no real-time constraint)         |
+| **Binary count**         | Single `.wasm` (spc-apu-wasm crate)                               | One `.wasm` per codec (lazy-loaded per format)               |
+| **ADRs**                 | ADR-0001, ADR-0003, ADR-0007, this ADR                            | ADR-0006                                                     |
 
 This dual-approach is not a compromise — it reflects two genuinely different use cases. The DSP pipeline is project-authored, latency-critical, tightly integrated code that benefits from a single compilation unit and maximal control. The codecs are stable, third-party reference implementations where consuming pre-compiled artifacts is pragmatically superior to compiling from source (as argued in ADR-0006).
 

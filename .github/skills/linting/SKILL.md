@@ -36,7 +36,7 @@ Use this skill when configuring lint rules, fixing lint issues, or reviewing lin
 - If a rule produces false positives on valid code, disable per-line with a comment:
   ```typescript
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- validated above
-  const value = map.get(key)!
+  const value = map.get(key)!;
   ```
 
 ## CI Integration

@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -68,6 +68,7 @@ crates/
 ```
 
 The wrapper crate:
+
 - Sets `crate-type = ["cdylib"]` to produce a standalone `.wasm` binary.
 - Configures `panic = "abort"` and `opt-level = "z"` in the release profile.
 - Imports `snes-apu-spcp` as a path dependency.
@@ -111,7 +112,7 @@ The loading flow implements ADR-0003's Module-transfer pattern in concrete detai
 // 1. Fetch and compile WASM (compileStreaming uses streaming compilation
 //    for faster startup than fetch → arrayBuffer → compile)
 const wasmModule = await WebAssembly.compileStreaming(
-  fetch(dspWasmUrl)  // dspWasmUrl from Vite's ?url import with content hash
+  fetch(dspWasmUrl), // dspWasmUrl from Vite's ?url import with content hash
 );
 
 // 2. Register the AudioWorklet processor script
@@ -127,7 +128,7 @@ const node = new AudioWorkletNode(audioContext, 'spc-processor', {
 // 4. Transfer the compiled Module and SPC data to the worklet
 node.port.postMessage(
   { type: 'init', wasmModule, spcData: spcDataArray },
-  [spcDataArray.buffer]  // Transfer the SPC ArrayBuffer (zero-copy)
+  [spcDataArray.buffer], // Transfer the SPC ArrayBuffer (zero-copy)
 );
 ```
 
@@ -160,6 +161,7 @@ case 'init': {
 ```
 
 The `importObject` is `{}` because:
+
 - `wasm32-unknown-unknown` + `#![no_std]` + `panic = "abort"` produces a self-contained WASM binary with no imported functions.
 - Panics compile to the `unreachable` WASM instruction, which traps and terminates the instance. No `env.abort` or similar import is needed.
 - The Rust code performs no I/O and no system calls.
@@ -171,20 +173,24 @@ This is the simplest possible instantiation path: one function call, no import r
 WASM and worklet assets integrate with Vite using standard asset import patterns — no WASM-specific Vite plugin is required:
 
 **WASM file (`dsp.wasm`):**
+
 - The optimized `.wasm` file is placed in `src/wasm/` (or `public/wasm/` for the simplest approach).
 - Imported via `import dspWasmUrl from './wasm/dsp.wasm?url'` — Vite resolves this to the final asset path with content-based hash for cache busting (e.g., `/assets/dsp-a1b2c3d4.wasm`).
 - The `?url` suffix tells Vite to treat the file as a static asset and return its URL, not attempt to parse it as a module.
 - Alternatively, the `.wasm` file can be placed in `public/` and fetched by a known path — this avoids the `?url` import but loses automatic content hashing.
 
 **AudioWorklet script (`spc-worklet.ts`):**
+
 - Imported via `new URL('./audio/spc-worklet.ts', import.meta.url)` — Vite resolves and bundles the worklet script as a separate entry point with content-based hashing.
 - The worklet script must be a self-contained module: no imports from the main application bundle (AudioWorklet isolation). Shared types are duplicated or extracted into a types-only module that Vite tree-shakes to zero runtime code.
 
 **Dev vs. Production:**
+
 - **Development**: `npm run build:wasm:dev` compiles with `cargo build --target wasm32-unknown-unknown` (debug profile, no wasm-opt). The unoptimized `.wasm` is larger (~500 KB–1 MB) but builds in seconds and includes DWARF debug info accessible via browser WASM debugging tools.
 - **Production**: `npm run build:wasm` compiles with `--release` and runs `wasm-opt -Oz`. The optimized `.wasm` targets under 150 KB (per ADR-0001 confirmation criteria).
 
 **Build Order:**
+
 1. `npm run build:wasm` — produces `dist/dsp.wasm` (or `src/wasm/dsp.wasm` depending on pipeline)
 2. `npm run build` — Vite processes the application, discovers `dsp.wasm` via `?url` import, copies it to the output directory with content hash
 
@@ -212,7 +218,7 @@ GitHub Actions workflow additions for WASM compilation:
 - name: Cache Rust compilation
   uses: Swatinem/rust-cache@v2
   with:
-    workspaces: "crates/spc-apu-wasm -> target"
+    workspaces: 'crates/spc-apu-wasm -> target'
 
 - name: Build WASM (release)
   run: cargo build --target wasm32-unknown-unknown --release -p spc-apu-wasm
@@ -367,10 +373,10 @@ Strategy 2 is preferred for routine debugging. Strategy 1 is available for deep 
 
 The project produces two kinds of WASM artifacts:
 
-| Artifact | Source | Toolchain | Context | Loading |
-| -------- | ------ | --------- | ------- | ------- |
-| DSP emulation (`dsp.wasm`) | Rust (snes-apu-spcp) | cargo + wasm-opt | AudioWorklet | Module-transfer via postMessage |
-| Audio encoders (FLAC, Vorbis, MP3) | C (libFLAC, libvorbisenc, LAME) | Emscripten (pre-compiled npm packages) | Web Worker | Dynamic `import()` per format |
+| Artifact                           | Source                          | Toolchain                              | Context      | Loading                         |
+| ---------------------------------- | ------------------------------- | -------------------------------------- | ------------ | ------------------------------- |
+| DSP emulation (`dsp.wasm`)         | Rust (snes-apu-spcp)            | cargo + wasm-opt                       | AudioWorklet | Module-transfer via postMessage |
+| Audio encoders (FLAC, Vorbis, MP3) | C (libFLAC, libvorbisenc, LAME) | Emscripten (pre-compiled npm packages) | Web Worker   | Dynamic `import()` per format   |
 
 These two categories have completely separate build pipelines, loading mechanisms, and execution contexts:
 

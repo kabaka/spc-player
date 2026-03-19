@@ -18,11 +18,15 @@ All major browsers require a user gesture before audio can play.
 ### Pattern
 
 ```typescript
-document.addEventListener('click', async () => {
-  if (audioContext.state === 'suspended') {
-    await audioContext.resume();
-  }
-}, { once: true });
+document.addEventListener(
+  'click',
+  async () => {
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+  },
+  { once: true },
+);
 ```
 
 Always show a visible play/start button. Never try to auto-play audio on page load.
@@ -52,8 +56,12 @@ navigator.mediaSession.metadata = new MediaMetadata({
   title: trackTitle,
   artist: gameTitle,
 });
-navigator.mediaSession.setActionHandler('play', () => { /* resume */ });
-navigator.mediaSession.setActionHandler('pause', () => { /* pause */ });
+navigator.mediaSession.setActionHandler('play', () => {
+  /* resume */
+});
+navigator.mediaSession.setActionHandler('pause', () => {
+  /* pause */
+});
 ```
 
 - Media Session enables lock screen / notification controls on mobile.

@@ -9,18 +9,18 @@ Use this skill when evaluating API support across browsers, choosing polyfills, 
 
 ## Key APIs and Support
 
-| API | Chrome | Firefox | Safari | Notes |
-| --- | ------ | ------- | ------ | ----- |
-| AudioWorklet | 66+ | 76+ | 14.5+ | Core requirement |
-| WebAssembly | 57+ | 52+ | 11+ | Core requirement |
-| SharedArrayBuffer | 68+ | 79+ | 15.2+ | Needs COOP/COEP |
-| IndexedDB | 24+ | 16+ | 10+ | Universal support |
-| Service Worker | 40+ | 44+ | 11.1+ | Universal support |
-| Web MIDI | 43+ | Behind flag | No | Progressive enhancement |
-| File System Access | 86+ | No | No | Progressive enhancement |
-| File Handling | 102+ | No | No | Progressive enhancement |
-| Media Session | 73+ | 82+ | 15+ | Progressive enhancement |
-| WebCodecs | 94+ | 130+ | 16.4+ | For future audio encoding |
+| API                | Chrome | Firefox     | Safari | Notes                     |
+| ------------------ | ------ | ----------- | ------ | ------------------------- |
+| AudioWorklet       | 66+    | 76+         | 14.5+  | Core requirement          |
+| WebAssembly        | 57+    | 52+         | 11+    | Core requirement          |
+| SharedArrayBuffer  | 68+    | 79+         | 15.2+  | Needs COOP/COEP           |
+| IndexedDB          | 24+    | 16+         | 10+    | Universal support         |
+| Service Worker     | 40+    | 44+         | 11.1+  | Universal support         |
+| Web MIDI           | 43+    | Behind flag | No     | Progressive enhancement   |
+| File System Access | 86+    | No          | No     | Progressive enhancement   |
+| File Handling      | 102+   | No          | No     | Progressive enhancement   |
+| Media Session      | 73+    | 82+         | 15+    | Progressive enhancement   |
+| WebCodecs          | 94+    | 130+        | 16.4+  | For future audio encoding |
 
 ## Checking Compatibility
 
@@ -39,12 +39,12 @@ Use this skill when evaluating API support across browsers, choosing polyfills, 
 
 Based on required APIs (AudioWorklet + WASM):
 
-| Browser | Minimum Version |
-| ------- | --------------- |
-| Chrome | 66 |
-| Firefox | 76 |
-| Safari | 14.5 |
-| Edge | 79 (Chromium-based) |
+| Browser | Minimum Version     |
+| ------- | ------------------- |
+| Chrome  | 66                  |
+| Firefox | 76                  |
+| Safari  | 14.5                |
+| Edge    | 79 (Chromium-based) |
 
 Display a clear message for unsupported browsers: "SPC Player requires a modern browser. Please update to the latest version of Chrome, Firefox, Safari, or Edge."
 

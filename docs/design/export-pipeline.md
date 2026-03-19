@@ -13,6 +13,7 @@
 > - **m-EXP-1:** Added rationale comment for `URL.revokeObjectURL` 10-second delay.
 > - **Suggestions:** Added fflate rationale note. Noted estimated time remaining as a future enhancement.
 > - **NEW-1/NEW-2 (Revision 3):** Replaced duplicate Worker Message Protocol type definitions with a cross-reference to the authoritative Worker and AudioWorklet Message Protocol document. This eliminates conflicting discriminators (`'export:progress'` vs `'progress'`), field name mismatches (`error` vs `message`, `data` vs `fileData`), and the missing `context` field on error messages.
+> - **NEW-3 (Revision 4):** Added loop-aware export duration computation. §2.1 duration determination now covers xid6 timing (intro + loop × count + end + fade), ID666 flat duration, and no-metadata fallback. `ExportOptions.loopCount` field added. Export dialog section added with loop-aware controls. Cross-reference to `StartExport` computation clarified — the export worker receives pre-computed durations, not loop parameters.
 
 ---
 
@@ -30,15 +31,15 @@ Export runs in a **dedicated Web Worker**, not in the AudioWorklet and not via `
 
 ### How Export Differs from Real-Time Playback
 
-| Aspect | Real-Time Path | Export Path |
-|--------|---------------|-------------|
-| Execution context | AudioWorklet (audio thread) | Web Worker (background thread) |
-| Timing | Synchronized to hardware clock | Maximum CPU speed |
-| Resampler | Linear interpolation (WASM) | Windowed sinc / Lanczos-3 (WASM) |
-| Output rate | 48 kHz (AudioContext rate) | Configurable: 32k, 44.1k, 48k, 96k |
-| Dithering | None (float32 output to Web Audio) | TPDF dithering (float32 → int16) |
-| Consumer | AudioWorklet → GainNode → destination | Encoder (WAV/FLAC/OGG/MP3) → Blob |
-| Concurrency | Exclusive (one SPC loaded at a time) | Independent (can run during playback) |
+| Aspect            | Real-Time Path                        | Export Path                           |
+| ----------------- | ------------------------------------- | ------------------------------------- |
+| Execution context | AudioWorklet (audio thread)           | Web Worker (background thread)        |
+| Timing            | Synchronized to hardware clock        | Maximum CPU speed                     |
+| Resampler         | Linear interpolation (WASM)           | Windowed sinc / Lanczos-3 (WASM)      |
+| Output rate       | 48 kHz (AudioContext rate)            | Configurable: 32k, 44.1k, 48k, 96k    |
+| Dithering         | None (float32 output to Web Audio)    | TPDF dithering (float32 → int16)      |
+| Consumer          | AudioWorklet → GainNode → destination | Encoder (WAV/FLAC/OGG/MP3) → Blob     |
+| Concurrency       | Exclusive (one SPC loaded at a time)  | Independent (can run during playback) |
 
 ### DSP Emulator in Export Mode
 
@@ -104,7 +105,22 @@ SPC data → WASM DSP (voice mask 0xFF, 32 kHz)
   → Blob → Download
 ```
 
-**Duration determination:** The SPC file's ID666 tag contains a play length (in seconds) and fade length. The export renders `playLength + fadeLength` seconds of audio. If no duration tag exists, the user must specify a duration or the export uses a configurable default (e.g., 180 seconds). During the fade portion, a linear gain ramp from 1.0 to 0.0 is applied to the PCM output before encoding.
+**Duration determination:** The export duration depends on the SPC file's timing metadata and the user's loop configuration:
+
+- **xid6 timing present** (intro length, loop length, end length, fade length): The export renders `introSeconds + (loopSeconds × loopCount) + endSeconds` of audio at full volume, then applies a linear gain ramp from 1.0 to 0.0 over `fadeSeconds`. The loop count defaults to the xid6 tag 0x35 value (or the user's global default if absent), but can be overridden in the export dialog.
+- **ID666 song length only**: The export renders `songLengthSeconds` of audio, then fades for `fadeLengthMs / 1000` seconds. Loop count configuration is unavailable — the duration is a flat value with no loop structure.
+- **No timing metadata**: The user must specify a duration in the export dialog. The default is the global default play duration (180 seconds) + default fade duration (10 seconds).
+
+During the fade portion, a linear gain ramp from 1.0 to 0.0 is applied to the PCM output before encoding.
+
+**Loop count → duration computation:** When xid6 timing is available, the main thread computes the export duration before sending `StartExport`:
+
+    durationSamples = Math.round(
+      (introSeconds + loopSeconds * loopCount + endSeconds) * DSP_SAMPLE_RATE
+    );
+    fadeOutSamples = Math.round(fadeSeconds * DSP_SAMPLE_RATE);
+
+The export worker receives pre-computed `durationSamples` and `fadeOutSamples` — it has no loop-related logic. All loop count resolution happens on the main thread.
 
 ### 2.2 Per-Track Export
 
@@ -184,11 +200,13 @@ The export queue is managed by a dedicated `ExportQueueManager` class on the mai
 **ExportSlice vs. ExportQueueManager boundary (per ADR-0005):**
 
 The Zustand `export` slice holds **only user-visible, reactive state** needed to render the export UI:
+
 - Job descriptors: `id`, `status`, `progress`, `error`, `label`, `sourceFilename`, output metadata
 - Batch-level summary: total/completed/failed counts, current job ID
 - Derived flags: `isExporting`, `queueSize`
 
 The `ExportQueueManager` service owns **operational, non-reactive state** that the UI does not observe directly:
+
 - Queue ordering (the FIFO array of pending `ExportJobDescriptor` objects)
 - Worker lifecycle (creation, termination, message routing)
 - `AbortController` instances for cancellation
@@ -248,16 +266,16 @@ For large batch exports, the queue manager **does not** hold all SPC file data i
 ```typescript
 // Internal to ExportQueueManager — NOT in Zustand
 interface InternalQueueState {
-  pending: ExportJobDescriptor[];   // Jobs waiting to start
+  pending: ExportJobDescriptor[]; // Jobs waiting to start
   activeJob: ExportJobDescriptor | null; // Currently processing
-  workerId: number | null;          // Active worker reference
+  workerId: number | null; // Active worker reference
 }
 
 // Published to Zustand export slice — observable by UI
 interface ExportSliceState {
-  jobs: ExportJob[];                // All jobs with current status
-  isExporting: boolean;             // True if any job is active
-  queueSize: number;                // Number of pending jobs
+  jobs: ExportJob[]; // All jobs with current status
+  isExporting: boolean; // True if any job is active
+  queueSize: number; // Number of pending jobs
 }
 ```
 
@@ -286,12 +304,12 @@ Progress messages use the `ExportWorkerToMain.Progress` type from the Worker Pro
 
 Overall job progress is computed from weighted phase progress. The weights reflect typical execution time distribution:
 
-| Phase | Weight | Description |
-|-------|--------|-------------|
-| `rendering` | 0.20 | DSP emulation + sinc resampling + dithering |
-| `encoding` | 0.70 | Codec encoding (CPU-intensive for FLAC/OGG/MP3) |
-| `metadata` | 0.05 | Tag embedding |
-| `packaging` | 0.05 | Blob creation / ZIP append |
+| Phase       | Weight | Description                                     |
+| ----------- | ------ | ----------------------------------------------- |
+| `rendering` | 0.20   | DSP emulation + sinc resampling + dithering     |
+| `encoding`  | 0.70   | Codec encoding (CPU-intensive for FLAC/OGG/MP3) |
+| `metadata`  | 0.05   | Tag embedding                                   |
+| `packaging` | 0.05   | Blob creation / ZIP append                      |
 
 WAV encoding is trivial (raw PCM copy), so for WAV exports the weights shift: `rendering` = 0.80, `encoding` = 0.10, `metadata` = 0.05, `packaging` = 0.05.
 
@@ -323,7 +341,7 @@ Progress updates are high-frequency (up to 20/sec). The Zustand store updates on
 
 ```typescript
 const progress = useExportStore(
-  (s) => s.jobs.find((j) => j.id === jobId)?.progress ?? 0
+  (s) => s.jobs.find((j) => j.id === jobId)?.progress ?? 0,
 );
 ```
 
@@ -345,6 +363,39 @@ The export progress UI follows WCAG 2.2 AA patterns:
 - **Batch progress announcements:** At file boundaries during batch export, announce `"Exporting file {n} of {total}"` via the same `aria-live="polite"` region. These announcements are coalesced — if multiple files complete in rapid succession, only the latest is announced.
 - **Cancel button:** Each job's cancel button has `aria-label="Cancel export: {label}"` for unambiguous identification.
 
+### Export Dialog: Duration & Loop Controls
+
+The export dialog displays duration information and loop controls that adapt to the available timing metadata:
+
+**When xid6 timing is available:**
+
+| Field          | Behavior                                                                                                                |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Intro duration | Read-only display (from xid6 intro length)                                                                              |
+| Loop duration  | Read-only display (from xid6 loop length)                                                                               |
+| Loop count     | Editable spinner (min 0, max 99). Defaults to resolved loop count (per-file override → xid6 tag 0x35 → global default). |
+| End duration   | Read-only display (from xid6 end length)                                                                                |
+| Fade duration  | Editable (seconds). Defaults to xid6 fade length.                                                                       |
+| Total duration | Read-only, auto-computes: `intro + (loop × loopCount) + end + fade`. Updates live when loop count or fade changes.      |
+
+**When ID666 song length only (no xid6):**
+
+| Field          | Behavior                                                |
+| -------------- | ------------------------------------------------------- |
+| Total duration | Editable (seconds). Initialized from ID666 song length. |
+| Fade duration  | Editable (seconds). Initialized from ID666 fade length. |
+| Loop count     | Hidden — the flat ID666 duration has no loop structure. |
+
+**When no timing metadata:**
+
+| Field          | Behavior                                                             |
+| -------------- | -------------------------------------------------------------------- |
+| Total duration | Editable (seconds). Defaults to global default play duration (180s). |
+| Fade duration  | Editable (seconds). Defaults to global default fade duration (10s).  |
+| Loop count     | Hidden.                                                              |
+
+In all cases, the dialog displays the **computed total duration** (play duration + fade) before the user confirms export. This is the value used to compute `durationSeconds` and `fadeDurationSeconds` in `ExportOptions`.
+
 ---
 
 ## 5. Cancellation
@@ -352,6 +403,7 @@ The export progress UI follows WCAG 2.2 AA patterns:
 ### User-Initiated Cancellation
 
 The user can cancel:
+
 - A single export job (via a cancel button on the job's progress row).
 - The entire batch (via a "Cancel All" button).
 
@@ -402,6 +454,7 @@ The `CHUNK_SIZE` of 4096 samples (~128ms at 32 kHz) provides sub-200ms cancellat
 ### Cleanup on Cancellation
 
 When a job is cancelled:
+
 1. The encoder's in-progress state is discarded (no finalization call).
 2. Any partial Blob data is released (no references retained).
 3. The WASM DSP instance remains valid — it can be reloaded with the next SPC file.
@@ -410,6 +463,7 @@ When a job is cancelled:
 ### "Cancel All" for Batches
 
 "Cancel All" sets the cancellation flag on the active worker **and** clears the pending queue. The queue manager:
+
 1. Sends `cancel-export` to the active worker.
 2. Sets all pending jobs' status to `'cancelled'` in the Zustand store.
 3. Clears the internal pending queue.
@@ -426,7 +480,7 @@ Each codec library is **lazy-loaded** via dynamic `import()` when the user first
 async function getEncoder(format: ExportFormat): Promise<Encoder> {
   switch (format) {
     case 'wav':
-      return new WavEncoder();  // No WASM — pure TypeScript
+      return new WavEncoder(); // No WASM — pure TypeScript
     case 'flac': {
       const { createFlacEncoder } = await import('./codecs/flac-adapter');
       return createFlacEncoder();
@@ -454,7 +508,7 @@ The export worker is instantiated as a **module worker**:
 ```typescript
 const exportWorker = new Worker(
   new URL('./export-worker.ts', import.meta.url),
-  { type: 'module' }
+  { type: 'module' },
 );
 ```
 
@@ -463,6 +517,7 @@ Module workers support top-level `import` declarations, dynamic `import()` for l
 **Minimum browser support:** Safari 15+ (module workers landed in Safari 15). All Chromium and Firefox versions that support AudioWorklet also support module workers.
 
 Rationale for a single shared worker:
+
 - The PCM data produced by the DSP render loop is already in the worker's memory. Transferring it to a separate encoder worker would require copying or transferring large `ArrayBuffer`s across threads.
 - Only one export runs at a time (sequential queue), so there is no benefit to parallelizing codec workers.
 - Each codec's WASM module is loaded inside the worker via dynamic `import()`. The codec WASM is instantiated on first use and cached for subsequent exports of the same format.
@@ -495,24 +550,24 @@ Codec libraries are wrapped in a common `Encoder` interface that supports **stre
 interface Encoder {
   /** Initialize the encoder with output parameters */
   init(config: EncoderConfig): void;
-  
+
   /** Feed a chunk of interleaved int16 PCM samples */
   encode(samples: Int16Array): void;
-  
+
   /** Finalize encoding and return the complete encoded file */
   finalize(): Uint8Array;
-  
+
   /** Release all resources */
   dispose(): void;
 }
 
 interface EncoderConfig {
-  sampleRate: number;     // e.g., 48000
-  channels: number;       // 1 (mono) or 2 (stereo)
-  bitsPerSample: number;  // 16
+  sampleRate: number; // e.g., 48000
+  channels: number; // 1 (mono) or 2 (stereo)
+  bitsPerSample: number; // 16
   // Codec-specific
-  quality?: number;       // OGG: -1 to 10. MP3: VBR 0–9.
-  compression?: number;   // FLAC: 0–8
+  quality?: number; // OGG: -1 to 10. MP3: VBR 0–9.
+  compression?: number; // FLAC: 0–8
   metadata?: ExportMetadata;
 }
 ```
@@ -533,35 +588,35 @@ This streaming approach keeps peak memory usage proportional to the chunk size (
 
 **Per-codec streaming support:**
 
-| Codec | Streaming | Notes |
-|-------|-----------|-------|
-| WAV | Yes (trivial) | Write header placeholder, append PCM chunks, seek back to fix header sizes at finalize |
-| FLAC | Yes | libflac.js supports incremental `encode()` calls |
-| OGG Vorbis | Yes | libvorbisenc natively produces OGG pages incrementally |
-| MP3 | Yes | LAME's `encodeBuffer()` accepts chunks; `flush()` at end |
+| Codec      | Streaming     | Notes                                                                                  |
+| ---------- | ------------- | -------------------------------------------------------------------------------------- |
+| WAV        | Yes (trivial) | Write header placeholder, append PCM chunks, seek back to fix header sizes at finalize |
+| FLAC       | Yes           | libflac.js supports incremental `encode()` calls                                       |
+| OGG Vorbis | Yes           | libvorbisenc natively produces OGG pages incrementally                                 |
+| MP3        | Yes           | LAME's `encodeBuffer()` accepts chunks; `flush()` at end                               |
 
 ### Metadata Embedding
 
 Metadata is embedded **by the encoder adapter** during initialization or finalization, depending on the format:
 
-| Format | Metadata System | When Applied | Fields |
-|--------|----------------|--------------|--------|
-| WAV | RIFF LIST/INFO chunk | After `data` chunk at finalize | INAM (title), IART (artist), ICMT (comment) |
-| FLAC | Vorbis comments | At init (in STREAMINFO) | TITLE, ARTIST, ALBUM (game), COMMENT |
-| OGG | Vorbis comments | At init (comment header packet) | TITLE, ARTIST, ALBUM (game), COMMENT |
-| MP3 | ID3v2.3 tag | Prepended at finalize | TIT2 (title), TPE1 (artist), TALB (game), COMM |
+| Format | Metadata System      | When Applied                    | Fields                                         |
+| ------ | -------------------- | ------------------------------- | ---------------------------------------------- |
+| WAV    | RIFF LIST/INFO chunk | After `data` chunk at finalize  | INAM (title), IART (artist), ICMT (comment)    |
+| FLAC   | Vorbis comments      | At init (in STREAMINFO)         | TITLE, ARTIST, ALBUM (game), COMMENT           |
+| OGG    | Vorbis comments      | At init (comment header packet) | TITLE, ARTIST, ALBUM (game), COMMENT           |
+| MP3    | ID3v2.3 tag          | Prepended at finalize           | TIT2 (title), TPE1 (artist), TALB (game), COMM |
 
 The `ExportMetadata` type maps SPC ID666/xid6 fields to format-neutral metadata keys:
 
 ```typescript
 interface ExportMetadata {
-  title: string;         // ID666 song title
-  artist: string;        // ID666 artist
-  game: string;          // ID666 game title
-  year?: string;         // xid6 or ID666 date dumped
-  comment: string;       // "Exported by SPC Player" + ID666 comments
-  trackNumber?: number;  // Voice number for per-track exports
-  duration?: number;     // Seconds, for formats that support it
+  title: string; // ID666 song title
+  artist: string; // ID666 artist
+  game: string; // ID666 game title
+  year?: string; // xid6 or ID666 date dumped
+  comment: string; // "Exported by SPC Player" + ID666 comments
+  trackNumber?: number; // Voice number for per-track exports
+  duration?: number; // Seconds, for formats that support it
 }
 ```
 
@@ -576,7 +631,11 @@ interface ExportMetadata {
 Individual exports use the standard Blob URL + anchor click pattern:
 
 ```typescript
-function downloadBlob(data: Uint8Array, filename: string, mimeType: string): void {
+function downloadBlob(
+  data: Uint8Array,
+  filename: string,
+  mimeType: string,
+): void {
   const blob = new Blob([data], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -600,13 +659,13 @@ function downloadBlob(data: Uint8Array, filename: string, mimeType: string): voi
 
 **MIME types:**
 
-| Format | MIME Type |
-|--------|-----------|
-| WAV | `audio/wav` |
-| FLAC | `audio/flac` |
-| OGG | `audio/ogg` |
-| MP3 | `audio/mpeg` |
-| ZIP | `application/zip` |
+| Format | MIME Type         |
+| ------ | ----------------- |
+| WAV    | `audio/wav`       |
+| FLAC   | `audio/flac`      |
+| OGG    | `audio/ogg`       |
+| MP3    | `audio/mpeg`      |
+| ZIP    | `application/zip` |
 
 ### File System Access API (Progressive Enhancement)
 
@@ -647,15 +706,11 @@ function generateFilename(
   const game = sanitizeFilename(metadata.game || 'Unknown Game');
 
   if (sampleIndex !== undefined) {
-    const name = instrumentName
-      ? ` (${sanitizeFilename(instrumentName)})`
-      : '';
+    const name = instrumentName ? ` (${sanitizeFilename(instrumentName)})` : '';
     return `${game} - ${title} - Sample ${String(sampleIndex + 1).padStart(2, '0')}${name}.${ext}`;
   }
   if (voiceIndex !== undefined) {
-    const name = instrumentName
-      ? ` (${sanitizeFilename(instrumentName)})`
-      : '';
+    const name = instrumentName ? ` (${sanitizeFilename(instrumentName)})` : '';
     return `${game} - ${title} - Voice ${voiceIndex + 1}${name}.${ext}`;
   }
   return `${game} - ${title}.${ext}`;
@@ -663,10 +718,10 @@ function generateFilename(
 
 function sanitizeFilename(name: string): string {
   return name
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')  // Remove illegal chars
-    .replace(/\s+/g, ' ')                       // Collapse whitespace
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_') // Remove illegal chars
+    .replace(/\s+/g, ' ') // Collapse whitespace
     .trim()
-    .slice(0, 200);                              // Length limit
+    .slice(0, 200); // Length limit
 }
 ```
 
@@ -729,11 +784,18 @@ interface ExportOptions {
   /** Metadata derived from SPC ID666/xid6 tags */
   metadata: ExportMetadata;
 
-  /** Duration to render in seconds (playLength + fadeLength) */
+  /** Duration to render in seconds (playLength + fadeLength).
+   *  When xid6 timing is present and loopCount is set, this is computed as
+   *  introSeconds + (loopSeconds × loopCount) + endSeconds. */
   durationSeconds: number;
 
   /** Fade-out duration in seconds (last N seconds ramp to silence) */
   fadeDurationSeconds: number;
+
+  /** Loop count for this export. Only meaningful when xid6 timing is present.
+   *  When set, overrides the xid6/default loop count and recomputes durationSeconds.
+   *  null = use default resolution (per-file override → xid6 → global default). */
+  readonly loopCount: number | null;
 
   /** Codec-specific settings */
   codecOptions: CodecOptions;
@@ -878,9 +940,19 @@ interface ExportSliceState {
 
 interface ExportSliceActions {
   /** Add a job to the queue and start processing if idle */
-  enqueueExport(options: ExportOptions, spcData: ArrayBuffer, label: string): string;
+  enqueueExport(
+    options: ExportOptions,
+    spcData: ArrayBuffer,
+    label: string,
+  ): string;
   /** Add multiple jobs for batch export */
-  enqueueBatch(files: Array<{ options: ExportOptions; spcData: ArrayBuffer; label: string }>): string[];
+  enqueueBatch(
+    files: Array<{
+      options: ExportOptions;
+      spcData: ArrayBuffer;
+      label: string;
+    }>,
+  ): string[];
   /** Cancel a specific job */
   cancelExport(jobId: string): void;
   /** Cancel all pending and active jobs */
@@ -901,22 +973,22 @@ interface ExportSliceActions {
 
 ## Summary of Key Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Export execution context | Dedicated Web Worker (module worker) | Faster-than-real-time rendering; no AudioWorklet timing constraints |
-| Not OfflineAudioContext | Confirmed | Cannot use different resampler; platform audio session restrictions |
-| Worker type | Module worker (`{ type: 'module' }`) | Dynamic `import()` for lazy codec loading; Safari 15+ minimum |
-| Queue processing | Sequential (one job at a time) | Memory constraints; CPU saturation; simplicity |
-| Queue state | ExportQueueManager class (main thread) | Owns worker lifecycle, abort controllers, codec cache; publishes to Zustand for UI per ADR-0005 |
-| Progress reporting | Worker → main thread postMessage (≤20/sec) | Non-blocking; phased progress with weighted overall % |
-| Progress phases | `rendering → encoding → metadata → packaging` | Resampling is a sub-step of rendering, not a user-visible phase |
-| Cancellation | Cooperative flag checked every 4096 samples | Sub-200ms responsiveness; clean resource release |
-| Codec loading | Lazy `import()` per format (in module worker) | Users only download codecs they use |
-| Codec worker architecture | Single shared worker (all codecs in same worker) | Avoids PCM transfer overhead; only one export at a time |
-| Encoding mode | Streaming (chunk-based) | Bounded memory usage; enables progress reporting |
-| Bit depth (v1) | 16-bit only (float32 → TPDF → int16) | 24-bit deferred; architecture extensible |
-| Metadata embedding | Per-codec adapter; ID3v2 in TypeScript | Consistent interface; no dependency on codec's tag support |
-| Download mechanism | Blob URL + anchor (fallback) / File System Access API (progressive) | Universal support with progressive enhancement |
-| Batch packaging | Streaming ZIP via fflate | Files appended as completed; bounded memory; small bundle size |
-| WASM instance reuse | Same instance, reset via `dsp_load_spc()` | Avoids re-instantiation cost for batch |
-| Error codes | UPPER_SNAKE_CASE per ADR-0015 | Cross-document consistency |
+| Decision                  | Choice                                                              | Rationale                                                                                       |
+| ------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Export execution context  | Dedicated Web Worker (module worker)                                | Faster-than-real-time rendering; no AudioWorklet timing constraints                             |
+| Not OfflineAudioContext   | Confirmed                                                           | Cannot use different resampler; platform audio session restrictions                             |
+| Worker type               | Module worker (`{ type: 'module' }`)                                | Dynamic `import()` for lazy codec loading; Safari 15+ minimum                                   |
+| Queue processing          | Sequential (one job at a time)                                      | Memory constraints; CPU saturation; simplicity                                                  |
+| Queue state               | ExportQueueManager class (main thread)                              | Owns worker lifecycle, abort controllers, codec cache; publishes to Zustand for UI per ADR-0005 |
+| Progress reporting        | Worker → main thread postMessage (≤20/sec)                          | Non-blocking; phased progress with weighted overall %                                           |
+| Progress phases           | `rendering → encoding → metadata → packaging`                       | Resampling is a sub-step of rendering, not a user-visible phase                                 |
+| Cancellation              | Cooperative flag checked every 4096 samples                         | Sub-200ms responsiveness; clean resource release                                                |
+| Codec loading             | Lazy `import()` per format (in module worker)                       | Users only download codecs they use                                                             |
+| Codec worker architecture | Single shared worker (all codecs in same worker)                    | Avoids PCM transfer overhead; only one export at a time                                         |
+| Encoding mode             | Streaming (chunk-based)                                             | Bounded memory usage; enables progress reporting                                                |
+| Bit depth (v1)            | 16-bit only (float32 → TPDF → int16)                                | 24-bit deferred; architecture extensible                                                        |
+| Metadata embedding        | Per-codec adapter; ID3v2 in TypeScript                              | Consistent interface; no dependency on codec's tag support                                      |
+| Download mechanism        | Blob URL + anchor (fallback) / File System Access API (progressive) | Universal support with progressive enhancement                                                  |
+| Batch packaging           | Streaming ZIP via fflate                                            | Files appended as completed; bounded memory; small bundle size                                  |
+| WASM instance reuse       | Same instance, reset via `dsp_load_spc()`                           | Avoids re-instantiation cost for batch                                                          |
+| Error codes               | UPPER_SNAKE_CASE per ADR-0015                                       | Cross-document consistency                                                                      |

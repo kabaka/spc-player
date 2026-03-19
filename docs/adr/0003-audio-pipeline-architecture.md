@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -223,11 +223,11 @@ Both real-time playback and export use the Web Audio API. Export uses `OfflineAu
 At a 3:2 ratio, each 128-frame AudioWorklet quantum at 48 kHz requires 128 × (2/3) ≈ 85.33 DSP samples at 32 kHz. The fractional accumulator produces a repeating pattern:
 
 | Quantum | DSP Samples | Fractional Remainder |
-|---------|-------------|---------------------|
-| 1 | 86 | 0.67 |
-| 2 | 85 | 0.33 |
-| 3 | 85 | 0.00 |
-| 4 | 86 | 0.67 |
+| ------- | ----------- | -------------------- |
+| 1       | 86          | 0.67                 |
+| 2       | 85          | 0.33                 |
+| 3       | 85          | 0.00                 |
+| 4       | 86          | 0.67                 |
 
 This 86-85-85 pattern repeats every 3 quanta (256 DSP samples produce exactly 384 output samples: 256 × 3/2 = 384 = 3 × 128).
 

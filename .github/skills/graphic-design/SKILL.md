@@ -54,7 +54,7 @@ Use CSS custom properties for runtime theming:
   --color-primary: #3b82f6;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --color-bg: #0f0f0f;
   --color-text: #e5e5e5;
   --color-primary: #60a5fa;

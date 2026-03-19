@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -177,7 +177,9 @@ const playerRoute = createRoute({
 const playlistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/playlist',
-  component: lazyRouteComponent(() => import('./features/playlist/PlaylistView')),
+  component: lazyRouteComponent(
+    () => import('./features/playlist/PlaylistView'),
+  ),
 });
 
 // ... inspector, instrument, settings routes similarly lazy-loaded
@@ -204,13 +206,13 @@ The `manualChunks` configuration is deliberately narrow — only `react` and `re
 
 `build.target: 'esnext'` instructs esbuild to output modern JavaScript without transpilation. This is appropriate because SPC Player's hard requirements (AudioWorklet, WebAssembly, Service Worker, CSS custom properties) already exclude all legacy browsers:
 
-| Feature | Minimum Browser Support |
-| ------- | ----------------------- |
-| AudioWorklet | Chrome 66, Safari 14.1, Firefox 76 |
-| WebAssembly | Chrome 57, Safari 11, Firefox 52 |
-| CSS Modules | All modern browsers (build-time feature) |
-| Dynamic `import()` | Chrome 63, Safari 11.1, Firefox 67 |
-| `import.meta.url` | Chrome 64, Safari 12, Firefox 62 |
+| Feature            | Minimum Browser Support                  |
+| ------------------ | ---------------------------------------- |
+| AudioWorklet       | Chrome 66, Safari 14.1, Firefox 76       |
+| WebAssembly        | Chrome 57, Safari 11, Firefox 52         |
+| CSS Modules        | All modern browsers (build-time feature) |
+| Dynamic `import()` | Chrome 63, Safari 11.1, Firefox 67       |
+| `import.meta.url`  | Chrome 64, Safari 12, Firefox 62         |
 
 Any browser that supports AudioWorklet supports all ES2022+ syntax features. Transpiling to a lower target would increase bundle size for browsers that cannot run the application regardless.
 
@@ -248,16 +250,16 @@ css: {
 
 ### Dev vs. Production Build Differences
 
-| Concern | Development | Production |
-| ------- | ----------- | ---------- |
-| WASM binary | Debug build (no `wasm-opt`), ~500 KB–1 MB | Release build + `wasm-opt -Oz`, target < 150 KB |
-| TypeScript | On-the-fly transform, no bundling | Full bundle, tree-shake, minify |
-| CSS Modules | Scoped class names, no minification | Scoped class names, minified, extracted to `.css` files |
-| Source maps | Inline (default for dev) | Separate `.map` files |
-| Code splitting | No splitting (modules served individually) | Dynamic `import()` boundaries produce separate chunks |
-| Asset hashing | No hashing (dev server URLs) | Content-based hashes on all assets |
-| HMR | React Fast Refresh for TSX/CSS changes | N/A |
-| WASM changes | Manual rebuild (`npm run build:wasm:dev`) + page refresh | `npm run build:wasm` runs before `vite build` |
+| Concern        | Development                                              | Production                                              |
+| -------------- | -------------------------------------------------------- | ------------------------------------------------------- |
+| WASM binary    | Debug build (no `wasm-opt`), ~500 KB–1 MB                | Release build + `wasm-opt -Oz`, target < 150 KB         |
+| TypeScript     | On-the-fly transform, no bundling                        | Full bundle, tree-shake, minify                         |
+| CSS Modules    | Scoped class names, no minification                      | Scoped class names, minified, extracted to `.css` files |
+| Source maps    | Inline (default for dev)                                 | Separate `.map` files                                   |
+| Code splitting | No splitting (modules served individually)               | Dynamic `import()` boundaries produce separate chunks   |
+| Asset hashing  | No hashing (dev server URLs)                             | Content-based hashes on all assets                      |
+| HMR            | React Fast Refresh for TSX/CSS changes                   | N/A                                                     |
+| WASM changes   | Manual rebuild (`npm run build:wasm:dev`) + page refresh | `npm run build:wasm` runs before `vite build`           |
 
 **Build order** (per ADR-0007):
 
@@ -390,16 +392,16 @@ rollupOptions: {
 
 The following Vite options are intentionally not configured, because the defaults are correct:
 
-| Option | Default | Why Default Is Correct |
-| ------ | ------- | ---------------------- |
-| `build.minify` | `'esbuild'` | esbuild minification is fast and produces small output; Terser is unnecessary |
-| `build.cssMinify` | `'esbuild'` | Consistent with JS minification |
-| `build.assetsInlineLimit` | `4096` (4 KB) | Small assets (icons, tiny images) are inlined as data URLs; WASM files (> 4 KB) are never inlined |
-| `build.chunkSizeWarningLimit` | `500` (kB) | Appropriate warning threshold; codec chunks may exceed this, which is acceptable and expected |
-| `build.outDir` | `'dist'` | Standard output directory for CI/CD |
-| `build.assetsDir` | `'assets'` | Standard assets subdirectory |
-| `server.port` | `5173` | No port conflicts expected |
-| `resolve.alias` | none | The project uses relative imports; path aliases add indirection without clear benefit at current project size |
+| Option                        | Default       | Why Default Is Correct                                                                                        |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| `build.minify`                | `'esbuild'`   | esbuild minification is fast and produces small output; Terser is unnecessary                                 |
+| `build.cssMinify`             | `'esbuild'`   | Consistent with JS minification                                                                               |
+| `build.assetsInlineLimit`     | `4096` (4 KB) | Small assets (icons, tiny images) are inlined as data URLs; WASM files (> 4 KB) are never inlined             |
+| `build.chunkSizeWarningLimit` | `500` (kB)    | Appropriate warning threshold; codec chunks may exceed this, which is acceptable and expected                 |
+| `build.outDir`                | `'dist'`      | Standard output directory for CI/CD                                                                           |
+| `build.assetsDir`             | `'assets'`    | Standard assets subdirectory                                                                                  |
+| `server.port`                 | `5173`        | No port conflicts expected                                                                                    |
+| `resolve.alias`               | none          | The project uses relative imports; path aliases add indirection without clear benefit at current project size |
 
 ### Codec WASM Compatibility Considerations
 

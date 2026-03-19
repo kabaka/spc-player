@@ -9,11 +9,11 @@ Use this skill when designing or implementing layouts that adapt to different sc
 
 ## Breakpoints
 
-| Name | Range | Target Devices |
-| ---- | ----- | -------------- |
-| Phone | < 640px | Mobile phones (portrait and landscape) |
-| Tablet | 640–1024px | Tablets, small laptops |
-| Desktop | > 1024px | Laptops, desktops, large monitors |
+| Name    | Range      | Target Devices                         |
+| ------- | ---------- | -------------------------------------- |
+| Phone   | < 640px    | Mobile phones (portrait and landscape) |
+| Tablet  | 640–1024px | Tablets, small laptops                 |
+| Desktop | > 1024px   | Laptops, desktops, large monitors      |
 
 ## Layout Strategy
 

@@ -41,9 +41,9 @@ Use this skill during planning, review, and any situation that benefits from str
 
 When comparing options:
 
-| Criterion | Weight | Option A | Option B | Option C |
-| --------- | ------ | -------- | -------- | -------- |
-| {criterion} | {1-5} | {1-5} | {1-5} | {1-5} |
+| Criterion   | Weight | Option A | Option B | Option C |
+| ----------- | ------ | -------- | -------- | -------- |
+| {criterion} | {1-5}  | {1-5}    | {1-5}    | {1-5}    |
 
 Multiply weight × score, sum per option. Highest score wins, but inspect the result — if it doesn't feel right, a criterion is probably missing or mispriced.
 

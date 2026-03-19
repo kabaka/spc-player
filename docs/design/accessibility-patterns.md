@@ -38,10 +38,10 @@
 
 SPC Player uses a two-tier rendering strategy:
 
-| Tier | Rendering | Update Frequency | Examples |
-|------|-----------|-------------------|----------|
-| Tier 1 (Radix) | React reconciler | Interactive (user events) | Dialogs, sliders, tabs, toggles, transport controls |
-| Tier 2 (Custom) | Direct DOM via refs + rAF | Up to 60fps | VU meters, waveforms, register viewer |
+| Tier            | Rendering                 | Update Frequency          | Examples                                            |
+| --------------- | ------------------------- | ------------------------- | --------------------------------------------------- |
+| Tier 1 (Radix)  | React reconciler          | Interactive (user events) | Dialogs, sliders, tabs, toggles, transport controls |
+| Tier 2 (Custom) | Direct DOM via refs + rAF | Up to 60fps               | VU meters, waveforms, register viewer               |
 
 **Critical constraint:** ARIA attributes on Tier 2 components must never update at 60fps. All assistive technology updates are throttled using the shared `createThrottledAnnouncer` utility (§12.2) at ≤ 4 Hz (250ms minimum interval) to prevent screen reader flooding.
 
@@ -78,17 +78,11 @@ The player transport bar provides standard media playback controls: play/pause, 
     <!-- icon -->
   </button>
 
-  <button
-    aria-label="Repeat"
-    aria-pressed="false"
-  >
+  <button aria-label="Repeat" aria-pressed="false">
     <!-- icon; aria-pressed reflects state -->
   </button>
 
-  <button
-    aria-label="Shuffle"
-    aria-pressed="false"
-  >
+  <button aria-label="Shuffle" aria-pressed="false">
     <!-- icon; aria-pressed reflects state -->
   </button>
 </div>
@@ -96,33 +90,38 @@ The player transport bar provides standard media playback controls: play/pause, 
 
 #### Attribute Details
 
-| Element | Attribute | Value | Notes |
-|---------|-----------|-------|-------|
-| Container | `role` | `"toolbar"` | Groups transport controls as a single composite widget. |
-| Container | `aria-label` | `"Playback controls"` | Identifies the toolbar purpose. |
-| Play/Pause | `aria-label` | `"Play"` or `"Pause"` | **Changes with state.** When stopped/paused, label is "Play". When playing, label is "Pause". A single toggle button — do not use two separate buttons. |
-| Repeat | `aria-pressed` | `"true"` / `"false"` | Reflects whether repeat mode is on. For tri-state repeat (off / repeat all / repeat one), use `aria-label` to describe: `"Repeat: off"`, `"Repeat all"`, `"Repeat one"`. |
-| Shuffle | `aria-pressed` | `"true"` / `"false"` | Reflects shuffle state. |
+| Element    | Attribute      | Value                 | Notes                                                                                                                                                                    |
+| ---------- | -------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Container  | `role`         | `"toolbar"`           | Groups transport controls as a single composite widget.                                                                                                                  |
+| Container  | `aria-label`   | `"Playback controls"` | Identifies the toolbar purpose.                                                                                                                                          |
+| Play/Pause | `aria-label`   | `"Play"` or `"Pause"` | **Changes with state.** When stopped/paused, label is "Play". When playing, label is "Pause". A single toggle button — do not use two separate buttons.                  |
+| Repeat     | `aria-pressed` | `"true"` / `"false"`  | Reflects whether repeat mode is on. For tri-state repeat (off / repeat all / repeat one), use `aria-label` to describe: `"Repeat: off"`, `"Repeat all"`, `"Repeat one"`. |
+| Shuffle    | `aria-pressed` | `"true"` / `"false"`  | Reflects shuffle state.                                                                                                                                                  |
 
 ### Keyboard Navigation
 
 Transport controls use the toolbar keyboard pattern per WAI-ARIA APG:
 
-| Key | Behavior |
-|-----|----------|
-| Tab | Focus enters the toolbar (first button, or last-focused button). Next Tab exits the toolbar. |
-| Left Arrow | Move focus to the previous button in the toolbar. Wraps from first to last. |
-| Right Arrow | Move focus to the next button in the toolbar. Wraps from last to first. |
-| Home | Move focus to the first button. |
-| End | Move focus to the last button. |
-| Enter / Space | Activate the focused button. |
+| Key           | Behavior                                                                                     |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| Tab           | Focus enters the toolbar (first button, or last-focused button). Next Tab exits the toolbar. |
+| Left Arrow    | Move focus to the previous button in the toolbar. Wraps from first to last.                  |
+| Right Arrow   | Move focus to the next button in the toolbar. Wraps from last to first.                      |
+| Home          | Move focus to the first button.                                                              |
+| End           | Move focus to the last button.                                                               |
+| Enter / Space | Activate the focused button.                                                                 |
 
 ### State Change Announcements
 
 Buttons announce their own state changes via native ARIA semantics — no additional `aria-live` region is needed for direct button presses. When playback state changes via global keyboard shortcuts (e.g., Space for play/pause while no control is focused), announce the result via a polite live region:
 
 ```html
-<div aria-live="polite" aria-atomic="true" class="visually-hidden" id="playback-announcements">
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="playback-announcements"
+>
   <!-- "Playing: Song Title" / "Paused" / "Stopped" -->
 </div>
 ```
@@ -170,37 +169,37 @@ A horizontal slider representing playback position within the current track. All
 
 #### Attribute Details
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| `role` | `"slider"` | Standard ARIA slider role. |
-| `aria-labelledby` | Points to label | `"Seek"` — concise label for the control. |
-| `aria-valuemin` | `0` | Start of track (seconds). |
-| `aria-valuemax` | Total duration in seconds | e.g., `225` for a 3:45 track. |
-| `aria-valuenow` | Elapsed seconds (integer) | e.g., `83` for 1:23. Throttled to ≤ 4 Hz during passive playback. Updated immediately during user scrubbing. |
-| `aria-valuetext` | Formatted time string | `"1 minute 23 seconds of 3 minutes 45 seconds"`. Provides human-readable position that screen readers speak instead of raw seconds. |
+| Attribute         | Value                     | Notes                                                                                                                               |
+| ----------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `role`            | `"slider"`                | Standard ARIA slider role.                                                                                                          |
+| `aria-labelledby` | Points to label           | `"Seek"` — concise label for the control.                                                                                           |
+| `aria-valuemin`   | `0`                       | Start of track (seconds).                                                                                                           |
+| `aria-valuemax`   | Total duration in seconds | e.g., `225` for a 3:45 track.                                                                                                       |
+| `aria-valuenow`   | Elapsed seconds (integer) | e.g., `83` for 1:23. Throttled to ≤ 4 Hz during passive playback. Updated immediately during user scrubbing.                        |
+| `aria-valuetext`  | Formatted time string     | `"1 minute 23 seconds of 3 minutes 45 seconds"`. Provides human-readable position that screen readers speak instead of raw seconds. |
 
 ### Keyboard Interaction
 
-| Key | Behavior |
-|-----|----------|
-| Right Arrow | Seek forward 5 seconds. |
-| Left Arrow | Seek backward 5 seconds. |
-| Up Arrow | Seek forward 5 seconds (alternate axis, per slider convention). |
-| Down Arrow | Seek backward 5 seconds. |
-| Page Up | Seek forward 15 seconds. |
-| Page Down | Seek backward 15 seconds. |
-| Home | Seek to beginning of track (0:00). |
-| End | Seek to end of track (duration). |
+| Key         | Behavior                                                        |
+| ----------- | --------------------------------------------------------------- |
+| Right Arrow | Seek forward 5 seconds.                                         |
+| Left Arrow  | Seek backward 5 seconds.                                        |
+| Up Arrow    | Seek forward 5 seconds (alternate axis, per slider convention). |
+| Down Arrow  | Seek backward 5 seconds.                                        |
+| Page Up     | Seek forward 15 seconds.                                        |
+| Page Down   | Seek backward 15 seconds.                                       |
+| Home        | Seek to beginning of track (0:00).                              |
+| End         | Seek to end of track (duration).                                |
 
 ### `aria-valuetext` Formatting
 
 Convert seconds to spoken-friendly format:
 
-| Elapsed | Duration | `aria-valuetext` |
-|---------|----------|-----------------|
-| 0 | 225 | `"0 seconds of 3 minutes 45 seconds"` |
-| 83 | 225 | `"1 minute 23 seconds of 3 minutes 45 seconds"` |
-| 225 | 225 | `"3 minutes 45 seconds of 3 minutes 45 seconds"` |
+| Elapsed | Duration | `aria-valuetext`                                 |
+| ------- | -------- | ------------------------------------------------ |
+| 0       | 225      | `"0 seconds of 3 minutes 45 seconds"`            |
+| 83      | 225      | `"1 minute 23 seconds of 3 minutes 45 seconds"`  |
+| 225     | 225      | `"3 minutes 45 seconds of 3 minutes 45 seconds"` |
 
 ```typescript
 function formatSeekValueText(elapsedSec: number, durationSec: number): string {
@@ -211,8 +210,10 @@ function formatSpokenTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const parts: string[] = [];
-  if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
-  if (seconds > 0 || minutes === 0) parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+  if (minutes > 0)
+    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+  if (seconds > 0 || minutes === 0)
+    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
   return parts.join(' ');
 }
 ```
@@ -278,40 +279,45 @@ Use `role="listbox"` with `role="option"` items. Listbox is preferred over a pla
 
 #### Attribute Details
 
-| Element | Attribute | Value | Notes |
-|---------|-----------|-------|-------|
-| Container | `role` | `"listbox"` | Selectable list of options. |
-| Container | `aria-label` | `"Playlist"` | Identifies the widget. |
-| Container | `aria-multiselectable` | `"true"` | Enables multi-select for batch operations. |
-| Container | `aria-activedescendant` | ID of focused track | Manages focus without moving DOM focus. |
-| Track | `role` | `"option"` | Individual selectable item. |
-| Track | `aria-selected` | `"true"` / `"false"` | Selection state for batch operations. |
-| Playing track | `aria-current` | `"true"` | Marks the currently playing track. Distinct from `aria-selected` (selection vs. current). |
-| Track | `aria-label` | Full track info | `"Track N: Title, Game, Duration"`. Append `". Now playing."` for the active track. |
+| Element       | Attribute               | Value                | Notes                                                                                     |
+| ------------- | ----------------------- | -------------------- | ----------------------------------------------------------------------------------------- |
+| Container     | `role`                  | `"listbox"`          | Selectable list of options.                                                               |
+| Container     | `aria-label`            | `"Playlist"`         | Identifies the widget.                                                                    |
+| Container     | `aria-multiselectable`  | `"true"`             | Enables multi-select for batch operations.                                                |
+| Container     | `aria-activedescendant` | ID of focused track  | Manages focus without moving DOM focus.                                                   |
+| Track         | `role`                  | `"option"`           | Individual selectable item.                                                               |
+| Track         | `aria-selected`         | `"true"` / `"false"` | Selection state for batch operations.                                                     |
+| Playing track | `aria-current`          | `"true"`             | Marks the currently playing track. Distinct from `aria-selected` (selection vs. current). |
+| Track         | `aria-label`            | Full track info      | `"Track N: Title, Game, Duration"`. Append `". Now playing."` for the active track.       |
 
 ### Keyboard Interaction
 
-| Key | Behavior |
-|-----|----------|
-| Tab | Focus enters the playlist (active descendant receives visual focus). Next Tab exits. |
-| Down Arrow | Move focus to the next track. |
-| Up Arrow | Move focus to the previous track. |
-| Home | Move focus to the first track. |
-| End | Move focus to the last track. |
-| Enter | Play the focused track. |
-| Space | Toggle selection of the focused track. |
-| Ctrl+A / Cmd+A | Select all tracks. |
-| Shift+Down / Shift+Up | Extend selection range. |
-| Delete / Backspace | Remove selected track(s) from playlist. Announce removal. |
-| Alt+Up Arrow | Move selected track up (reorder). Announce new position. |
-| Alt+Down Arrow | Move selected track down (reorder). Announce new position. |
+| Key                   | Behavior                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| Tab                   | Focus enters the playlist (active descendant receives visual focus). Next Tab exits. |
+| Down Arrow            | Move focus to the next track.                                                        |
+| Up Arrow              | Move focus to the previous track.                                                    |
+| Home                  | Move focus to the first track.                                                       |
+| End                   | Move focus to the last track.                                                        |
+| Enter                 | Play the focused track.                                                              |
+| Space                 | Toggle selection of the focused track.                                               |
+| Ctrl+A / Cmd+A        | Select all tracks.                                                                   |
+| Shift+Down / Shift+Up | Extend selection range.                                                              |
+| Delete / Backspace    | Remove selected track(s) from playlist. Announce removal.                            |
+| Alt+Up Arrow          | Move selected track up (reorder). Announce new position.                             |
+| Alt+Down Arrow        | Move selected track down (reorder). Announce new position.                           |
 
 ### Reorder Announcements
 
 Keyboard reorder operations announce the result via a polite live region:
 
 ```html
-<div aria-live="polite" aria-atomic="true" class="visually-hidden" id="playlist-announcements">
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="playlist-announcements"
+>
   <!-- "Moved Aquatic Ambiance to position 2 of 10" -->
   <!-- "Removed Terra's Theme from playlist. 9 tracks remaining." -->
   <!-- "3 tracks selected" -->
@@ -323,11 +329,7 @@ Keyboard reorder operations announce the result via a polite live region:
 For mouse/touch drag-and-drop reorder, provide equivalent keyboard access (Alt+Arrow as above). Drag operations are invisible to screen readers — the keyboard alternative is the accessible path. The drag handle element should have:
 
 ```html
-<span
-  role="img"
-  aria-label="Drag to reorder"
-  class="drag-handle"
->⠿</span>
+<span role="img" aria-label="Drag to reorder" class="drag-handle">⠿</span>
 ```
 
 Or hide the drag handle from the accessibility tree entirely (`aria-hidden="true"`) since keyboard reorder provides the equivalent functionality.
@@ -338,7 +340,10 @@ When the playlist is empty:
 
 ```html
 <div role="listbox" aria-label="Playlist">
-  <p role="status">No tracks in playlist. Drop SPC files here or use the file picker to add tracks.</p>
+  <p role="status">
+    No tracks in playlist. Drop SPC files here or use the file picker to add
+    tracks.
+  </p>
 </div>
 ```
 
@@ -375,7 +380,11 @@ The export pipeline processes single or batched file exports through multiple ph
 #### Batch Export
 
 ```html
-<div class="export-batch-progress" role="group" aria-label="Batch export progress">
+<div
+  class="export-batch-progress"
+  role="group"
+  aria-label="Batch export progress"
+>
   <!-- Overall batch progress -->
   <div
     role="progressbar"
@@ -404,44 +413,53 @@ The export pipeline processes single or batched file exports through multiple ph
 
 #### Attribute Details
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| `role` | `"progressbar"` | Standard ARIA progressbar. Universally supported. |
-| `aria-valuemin` | `0` | Progress start. |
-| `aria-valuemax` | `100` (single) or total file count (batch) | Upper bound of progress. |
-| `aria-valuenow` | Current progress integer | Throttled to ≤ 4 Hz (250ms) via the shared throttle utility (§12.2). |
-| `aria-valuetext` | Phase + percentage or batch position | e.g., `"Encoding: 45 percent"` or `"Exporting file 3 of 10: Terra's Theme"`. Provides context beyond the raw number. |
+| Attribute        | Value                                      | Notes                                                                                                                |
+| ---------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `role`           | `"progressbar"`                            | Standard ARIA progressbar. Universally supported.                                                                    |
+| `aria-valuemin`  | `0`                                        | Progress start.                                                                                                      |
+| `aria-valuemax`  | `100` (single) or total file count (batch) | Upper bound of progress.                                                                                             |
+| `aria-valuenow`  | Current progress integer                   | Throttled to ≤ 4 Hz (250ms) via the shared throttle utility (§12.2).                                                 |
+| `aria-valuetext` | Phase + percentage or batch position       | e.g., `"Encoding: 45 percent"` or `"Exporting file 3 of 10: Terra's Theme"`. Provides context beyond the raw number. |
 
 ### Milestone Announcements
 
 Use `aria-live="polite"` announcements at meaningful milestones to avoid flooding. Do not announce every percentage change.
 
 ```html
-<div aria-live="polite" aria-atomic="true" class="visually-hidden" id="export-announcements">
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="export-announcements"
+>
   <!-- Milestone announcements inserted here -->
 </div>
 ```
 
 #### Announcement Rules
 
-| Event | Announcement | Throttled? |
-|-------|-------------|-----------|
-| Export started | `"Exporting Terra's Theme as WAV"` | No (once) |
-| 25% complete | `"Export 25 percent complete"` | No (milestone) |
-| 50% complete | `"Export 50 percent complete"` | No (milestone) |
-| 75% complete | `"Export 75 percent complete"` | No (milestone) |
-| Export complete | `"Export complete: Terra's Theme.wav"` | No (once) |
-| Export failed | `"Export failed: Terra's Theme. Error: insufficient storage"` | No (once) |
-| Export cancelled | `"Export cancelled: Terra's Theme"` | No (once) |
-| Batch file boundary | `"Exporting file 3 of 10: Terra's Theme"` | No (per-file, infrequent) |
-| Batch complete | `"Batch export complete. 10 files exported."` | No (once) |
+| Event               | Announcement                                                  | Throttled?                |
+| ------------------- | ------------------------------------------------------------- | ------------------------- |
+| Export started      | `"Exporting Terra's Theme as WAV"`                            | No (once)                 |
+| 25% complete        | `"Export 25 percent complete"`                                | No (milestone)            |
+| 50% complete        | `"Export 50 percent complete"`                                | No (milestone)            |
+| 75% complete        | `"Export 75 percent complete"`                                | No (milestone)            |
+| Export complete     | `"Export complete: Terra's Theme.wav"`                        | No (once)                 |
+| Export failed       | `"Export failed: Terra's Theme. Error: insufficient storage"` | No (once)                 |
+| Export cancelled    | `"Export cancelled: Terra's Theme"`                           | No (once)                 |
+| Batch file boundary | `"Exporting file 3 of 10: Terra's Theme"`                     | No (per-file, infrequent) |
+| Batch complete      | `"Batch export complete. 10 files exported."`                 | No (once)                 |
 
 ```typescript
 // Pseudocode: milestone-based announcement
 const MILESTONES = [25, 50, 75];
 let announcedMilestones = new Set<number>();
 
-function onProgressUpdate(progress: number, phase: string, announce: (msg: string) => void): void {
+function onProgressUpdate(
+  progress: number,
+  phase: string,
+  announce: (msg: string) => void,
+): void {
   const percent = Math.round(progress * 100);
 
   for (const milestone of MILESTONES) {
@@ -458,17 +476,22 @@ function onProgressUpdate(progress: number, phase: string, announce: (msg: strin
 Export errors and cancellations are announced immediately via `aria-live="assertive"` for errors (blocking user attention) and `aria-live="polite"` for cancellations (user-initiated, no urgency).
 
 ```html
-<div aria-live="assertive" aria-atomic="true" class="visually-hidden" id="export-errors">
+<div
+  aria-live="assertive"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="export-errors"
+>
   <!-- "Export failed: Terra's Theme. Error: encoding failed." -->
 </div>
 ```
 
 ### Keyboard Interaction
 
-| Key | Behavior |
-|-----|----------|
-| Escape | Cancel the active export. Announce cancellation. |
-| Tab | Focus moves to the cancel button (if export is in progress). |
+| Key    | Behavior                                                     |
+| ------ | ------------------------------------------------------------ |
+| Escape | Cancel the active export. Announce cancellation.             |
+| Tab    | Focus moves to the cancel button (if export is in progress). |
 
 ---
 
@@ -484,12 +507,12 @@ Use `role="meter"` with a documented fallback strategy. `role="meter"` is the se
 
 #### Screen Reader Support for `role="meter"`
 
-| Screen Reader | Support Status | Behavior |
-|---------------|---------------|----------|
-| VoiceOver (macOS, Safari 16+) | Supported | Announces as "level indicator" with value. |
-| NVDA (Chrome/Firefox) | Partial | May announce as "progress bar" or with no role. `aria-valuenow` and `aria-valuetext` are still read. |
-| JAWS | Varies by version | Support improving; may require `aria-roledescription` fallback. |
-| TalkBack (Android) | Partial | Generally reads value attributes regardless of role support. |
+| Screen Reader                 | Support Status    | Behavior                                                                                             |
+| ----------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- |
+| VoiceOver (macOS, Safari 16+) | Supported         | Announces as "level indicator" with value.                                                           |
+| NVDA (Chrome/Firefox)         | Partial           | May announce as "progress bar" or with no role. `aria-valuenow` and `aria-valuetext` are still read. |
+| JAWS                          | Varies by version | Support improving; may require `aria-roledescription` fallback.                                      |
+| TalkBack (Android)            | Partial           | Generally reads value attributes regardless of role support.                                         |
 
 #### Fallback Strategy
 
@@ -505,7 +528,6 @@ If automated testing (axe-core) flags `role="meter"` as unsupported, add the exp
 ```html
 <!-- Container for all 8 channel meters -->
 <div role="group" aria-label="Channel levels">
-
   <!-- Single channel meter -->
   <div
     role="meter"
@@ -528,7 +550,11 @@ If automated testing (axe-core) flags `role="meter"` as unsupported, add the exp
 </div>
 
 <!-- Numeric readout panel (always accessible, provides full fallback) -->
-<div role="status" aria-label="Channel levels readout" class="vu-numeric-readout">
+<div
+  role="status"
+  aria-label="Channel levels readout"
+  class="vu-numeric-readout"
+>
   <span>Ch 1: 72%</span>
   <span>Ch 2: 45%</span>
   <!-- ... Ch 3–8 ... -->
@@ -539,24 +565,24 @@ If automated testing (axe-core) flags `role="meter"` as unsupported, add the exp
 
 The fallback ensures usable behavior at every support level:
 
-| Screen reader capability | User experience |
-|--------------------------|-----------------|
-| Full `role="meter"` support | Announced as "Channel 1 level, level meter, 72 percent" — ideal. |
+| Screen reader capability                     | User experience                                                                                            |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Full `role="meter"` support                  | Announced as "Channel 1 level, level meter, 72 percent" — ideal.                                           |
 | Partial support (reads attributes, not role) | Announced with value "72 percent" but no role context. `aria-roledescription="level meter"` fills the gap. |
-| No role support | `aria-label` and `aria-valuetext` still provide "Channel 1 level: 72 percent". |
-| Screen reader ignores the element entirely | Numeric readout panel (`role="status"`) provides the same data as plain text. |
+| No role support                              | `aria-label` and `aria-valuetext` still provide "Channel 1 level: 72 percent".                             |
+| Screen reader ignores the element entirely   | Numeric readout panel (`role="status"`) provides the same data as plain text.                              |
 
 #### Attribute Details
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| `role` | `"meter"` | WAI-ARIA 1.2 meter role. Forward-compatible. |
-| `aria-roledescription` | `"level meter"` | Fallback for screen readers that don't announce `role="meter"`. |
-| `aria-label` | `"Channel N level"` | Identifies which channel. Format: "Channel 1 level" through "Channel 8 level". |
-| `aria-valuemin` | `0` | Silence. |
-| `aria-valuemax` | `100` | Maximum output. Maps to S-DSP clipping threshold. |
-| `aria-valuenow` | `0`–`100` (integer) | Current level as a percentage. Updated at ≤ 4 Hz, **not** at 60fps. |
-| `aria-valuetext` | `"72 percent"` or `"silent"` | Human-readable level. Use `"silent"` when value is 0, `"clipping"` when at 100. |
+| Attribute              | Value                        | Notes                                                                           |
+| ---------------------- | ---------------------------- | ------------------------------------------------------------------------------- |
+| `role`                 | `"meter"`                    | WAI-ARIA 1.2 meter role. Forward-compatible.                                    |
+| `aria-roledescription` | `"level meter"`              | Fallback for screen readers that don't announce `role="meter"`.                 |
+| `aria-label`           | `"Channel N level"`          | Identifies which channel. Format: "Channel 1 level" through "Channel 8 level".  |
+| `aria-valuemin`        | `0`                          | Silence.                                                                        |
+| `aria-valuemax`        | `100`                        | Maximum output. Maps to S-DSP clipping threshold.                               |
+| `aria-valuenow`        | `0`–`100` (integer)          | Current level as a percentage. Updated at ≤ 4 Hz, **not** at 60fps.             |
+| `aria-valuetext`       | `"72 percent"` or `"silent"` | Human-readable level. Use `"silent"` when value is 0, `"clipping"` when at 100. |
 
 ### Update Throttling
 
@@ -578,7 +604,11 @@ function updateVuMeter(element: HTMLElement, level: number): void {
     element.setAttribute('aria-valuenow', String(rounded));
     element.setAttribute(
       'aria-valuetext',
-      rounded === 0 ? 'silent' : rounded >= 100 ? 'clipping' : `${rounded} percent`
+      rounded === 0
+        ? 'silent'
+        : rounded >= 100
+          ? 'clipping'
+          : `${rounded} percent`,
     );
     // Update visible numeric readout
     const numeric = element.querySelector('.vu-numeric') as HTMLElement;
@@ -591,14 +621,15 @@ function updateVuMeter(element: HTMLElement, level: number): void {
 
 VU meters are **not interactive** — they display information only. They do not receive keyboard focus individually. The group container is focusable only if the user tabs to it; arrow keys do not navigate between individual meters.
 
-| Key | Behavior |
-|-----|----------|
-| Tab | Focus moves to the VU meter group as a whole, then past it to the next focusable element. |
-| None | Meters are read-only. No key activates or modifies them. |
+| Key  | Behavior                                                                                  |
+| ---- | ----------------------------------------------------------------------------------------- |
+| Tab  | Focus moves to the VU meter group as a whole, then past it to the next focusable element. |
+| None | Meters are read-only. No key activates or modifies them.                                  |
 
 ### Reduced Motion
 
 When `prefers-reduced-motion: reduce` is active:
+
 - Disable smooth bar animation. Bars snap to current level instantly (no CSS transitions).
 - Optionally switch to a static numeric-only display.
 
@@ -615,7 +646,12 @@ When `prefers-reduced-motion: reduce` is active:
 When a channel clips (reaches maximum), announce it once via a polite live region — but **debounce** to avoid repeated announcements. Do not announce again for the same channel until it drops below the clipping threshold and clips again.
 
 ```html
-<div aria-live="polite" aria-atomic="true" class="visually-hidden" id="vu-announcements">
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="vu-announcements"
+>
   <!-- Dynamically set: "Channel 3 clipping" -->
 </div>
 ```
@@ -627,6 +663,7 @@ When a channel clips (reaches maximum), announce it once via a polite live regio
 ### Component Description
 
 A playable piano keyboard. Users trigger notes via:
+
 - Mouse/touch (click/tap keys)
 - Computer keyboard (configurable key-to-note mapping)
 - MIDI input (Web MIDI API)
@@ -657,7 +694,9 @@ Use `role="group"` on the container and individual `<button>` elements for each 
       data-midi="48"
       class="key white"
       tabindex="-1"
-    >C3</button>
+    >
+      C3
+    </button>
     <button
       aria-label="C sharp 3"
       aria-pressed="false"
@@ -665,7 +704,9 @@ Use `role="group"` on the container and individual `<button>` elements for each 
       data-midi="49"
       class="key black"
       tabindex="-1"
-    >C#3</button>
+    >
+      C#3
+    </button>
     <!-- ... remaining keys ... -->
   </div>
 </div>
@@ -673,32 +714,32 @@ Use `role="group"` on the container and individual `<button>` elements for each 
 
 #### Attribute Details
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| `role="group"` | Container | Groups all keys as a single widget. |
-| `aria-roledescription` | `"piano keyboard"` | Custom role description for screen readers. Overrides generic "group" announcement. |
-| `aria-label` | `"Virtual keyboard, 2 octaves from C3 to B4"` | Provides range context. Update dynamically when octave range changes. |
-| `aria-pressed` | `"true"` / `"false"` | On each `<button>`. Indicates whether the note is currently sounding. |
-| `aria-label` (per key) | `"C3"`, `"C sharp 3"`, `"D3"`, etc. | Note name. Use words for accidentals ("C sharp", "E flat") rather than symbols for screen reader pronunciation. |
+| Attribute              | Value                                         | Notes                                                                                                           |
+| ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `role="group"`         | Container                                     | Groups all keys as a single widget.                                                                             |
+| `aria-roledescription` | `"piano keyboard"`                            | Custom role description for screen readers. Overrides generic "group" announcement.                             |
+| `aria-label`           | `"Virtual keyboard, 2 octaves from C3 to B4"` | Provides range context. Update dynamically when octave range changes.                                           |
+| `aria-pressed`         | `"true"` / `"false"`                          | On each `<button>`. Indicates whether the note is currently sounding.                                           |
+| `aria-label` (per key) | `"C3"`, `"C sharp 3"`, `"D3"`, etc.           | Note name. Use words for accidentals ("C sharp", "E flat") rather than symbols for screen reader pronunciation. |
 
 ### Keyboard Navigation
 
 The virtual keyboard uses **roving tabindex** for internal navigation. Only one key has `tabindex="0"` at a time; all others have `tabindex="-1"`.
 
-| Key | Behavior |
-|-----|----------|
-| Tab | Moves focus into the keyboard (lands on the currently selected key). Next Tab moves focus out of the keyboard entirely. |
-| Right Arrow | Move focus to the next higher semitone (e.g., C3 → C#3 → D3). Wrap: last key → first key. |
-| Left Arrow | Move focus to the next lower semitone. Wrap: first key → last key. |
-| Up Arrow | Move focus up one octave on the same note (e.g., C3 → C4). No-op if already at the highest octave. |
-| Down Arrow | Move focus down one octave on the same note (e.g., C4 → C3). No-op if already at the lowest octave. |
-| Home | Move focus to the first key (lowest note). |
-| End | Move focus to the last key (highest note). |
-| Enter / Space | Press (trigger) the focused key. Note sounds while held; releases on key-up. |
+| Key           | Behavior                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Tab           | Moves focus into the keyboard (lands on the currently selected key). Next Tab moves focus out of the keyboard entirely. |
+| Right Arrow   | Move focus to the next higher semitone (e.g., C3 → C#3 → D3). Wrap: last key → first key.                               |
+| Left Arrow    | Move focus to the next lower semitone. Wrap: first key → last key.                                                      |
+| Up Arrow      | Move focus up one octave on the same note (e.g., C3 → C4). No-op if already at the highest octave.                      |
+| Down Arrow    | Move focus down one octave on the same note (e.g., C4 → C3). No-op if already at the lowest octave.                     |
+| Home          | Move focus to the first key (lowest note).                                                                              |
+| End           | Move focus to the last key (highest note).                                                                              |
+| Enter / Space | Press (trigger) the focused key. Note sounds while held; releases on key-up.                                            |
 
 ### Instrument Mode Input
 
-When the virtual keyboard has focus *and* instrument mode is active, letter keys (e.g., A, S, D, F for C, D, E, F) trigger notes directly. This is a **separate input mode** from the navigation keys above.
+When the virtual keyboard has focus _and_ instrument mode is active, letter keys (e.g., A, S, D, F for C, D, E, F) trigger notes directly. This is a **separate input mode** from the navigation keys above.
 
 **Mode indicator**: When instrument mode is active, announce it:
 
@@ -709,6 +750,7 @@ When the virtual keyboard has focus *and* instrument mode is active, letter keys
 ```
 
 **Conflict resolution with navigation keys:**
+
 - Arrow keys always navigate (never mapped to notes).
 - Letter keys trigger notes only when the virtual keyboard has focus.
 - Escape exits instrument mode and returns to standard navigation.
@@ -723,7 +765,12 @@ When a note is triggered (by any input method), update `aria-pressed="true"` on 
 For chord announcements (multiple simultaneous notes), provide an optional status region:
 
 ```html
-<div aria-live="polite" aria-atomic="true" class="visually-hidden" id="active-notes">
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="active-notes"
+>
   <!-- Updated at 250ms throttle: "Playing C3, E3, G3" or "No notes playing" -->
 </div>
 ```
@@ -754,12 +801,14 @@ Piano key press animations (key depression visual) are disabled under `prefers-r
 ### Component Description
 
 Two related visualizations:
+
 1. **Waveform display**: Time-domain PCM waveform rendered on a `<canvas>` at 60fps via `AnalyserNode.getTimeDomainData()`.
 2. **Spectrum analyzer**: Frequency-domain bar chart rendered on a `<canvas>` at 60fps via `AnalyserNode.getFrequencyData()`.
 
 ### Classification: Decorative vs. Informational
 
 **These visualizations are primarily decorative.** The information they convey (waveform shape, frequency distribution) is:
+
 - Not actionable — the user cannot interact with or modify the display.
 - Redundant — the audio itself conveys the same information to users who can hear it.
 - Not essential — no feature depends on reading the waveform.
@@ -782,11 +831,11 @@ Therefore: mark them as decorative with `role="img"` and a descriptive `aria-lab
 
 #### Attribute Details
 
-| Attribute | Value | Notes |
-|-----------|-------|-------|
-| `role` | `"img"` | Marks the container as a single image-like element. |
-| `aria-label` | `"Audio waveform visualization"` / `"Frequency spectrum visualization"` | Brief description of what the visualization shows. |
-| `aria-hidden` | `"true"` on `<canvas>` | Canvas content is not accessible to screen readers. The parent `role="img"` provides the accessible name. |
+| Attribute     | Value                                                                   | Notes                                                                                                     |
+| ------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `role`        | `"img"`                                                                 | Marks the container as a single image-like element.                                                       |
+| `aria-label`  | `"Audio waveform visualization"` / `"Frequency spectrum visualization"` | Brief description of what the visualization shows.                                                        |
+| `aria-hidden` | `"true"` on `<canvas>`                                                  | Canvas content is not accessible to screen readers. The parent `role="img"` provides the accessible name. |
 
 ### Non-Visual Alternative
 
@@ -795,7 +844,8 @@ No real-time text alternative is provided for the waveform or spectrum — the a
 ```html
 <!-- Optional: summary that updates when playback starts/stops -->
 <p class="visually-hidden" aria-live="off" id="viz-description">
-  Waveform showing stereo audio output at 48 kHz. Spectrum analyzer showing frequency distribution.
+  Waveform showing stereo audio output at 48 kHz. Spectrum analyzer showing
+  frequency distribution.
 </p>
 ```
 
@@ -805,13 +855,14 @@ This description is static and does not update during playback. It exists for co
 
 Waveform and spectrum visualizations are **not interactive**. They do not receive keyboard focus.
 
-| Key | Behavior |
-|-----|----------|
+| Key | Behavior                                                            |
+| --- | ------------------------------------------------------------------- |
 | Tab | Focus skips past the visualization to the next interactive element. |
 
 ### Reduced Motion
 
 Under `prefers-reduced-motion: reduce`:
+
 - **Waveform**: freeze the display at the most recent frame. Do not animate.
 - **Spectrum**: show a static snapshot updated at ≤ 1 Hz, or hide completely.
 - Both canvases should display a static last-frame image rather than animating.
@@ -830,7 +881,9 @@ The reduced-motion preference is detected via `window.matchMedia('(prefers-reduc
 ```typescript
 const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 let reduceMotion = motionQuery.matches;
-motionQuery.addEventListener('change', (e) => { reduceMotion = e.matches; });
+motionQuery.addEventListener('change', (e) => {
+  reduceMotion = e.matches;
+});
 
 function animationLoop(): void {
   if (!reduceMotion) {
@@ -848,6 +901,7 @@ function animationLoop(): void {
 ### Component Description
 
 A grid of controls for 8 DSP voices. Each channel row contains:
+
 - Channel label (1–8)
 - Mute toggle button
 - Solo toggle button
@@ -861,12 +915,7 @@ This is the closest to a standard control surface among the custom components.
 Use `role="grid"` — the channel mixer is an interactive 2D control surface where arrow key navigation between cells is the expected interaction pattern. Each channel is a row; each control type is a column.
 
 ```html
-<div
-  role="grid"
-  aria-label="Channel mixer"
-  aria-rowcount="8"
-  aria-colcount="5"
->
+<div role="grid" aria-label="Channel mixer" aria-rowcount="8" aria-colcount="5">
   <!-- Column headers (visually present as labels) -->
   <div role="row" aria-rowindex="1">
     <div role="columnheader">Channel</div>
@@ -881,19 +930,15 @@ Use `role="grid"` — the channel mixer is an interactive 2D control surface whe
     <div role="rowheader">1</div>
 
     <div role="gridcell">
-      <button
-        aria-label="Mute channel 1"
-        aria-pressed="false"
-        tabindex="-1"
-      >M</button>
+      <button aria-label="Mute channel 1" aria-pressed="false" tabindex="-1">
+        M
+      </button>
     </div>
 
     <div role="gridcell">
-      <button
-        aria-label="Solo channel 1"
-        aria-pressed="false"
-        tabindex="-1"
-      >S</button>
+      <button aria-label="Solo channel 1" aria-pressed="false" tabindex="-1">
+        S
+      </button>
     </div>
 
     <div role="gridcell">
@@ -932,31 +977,31 @@ Use `role="grid"` — the channel mixer is an interactive 2D control surface whe
 
 The grid uses a standard data grid keyboard pattern per WAI-ARIA APG:
 
-| Key | Behavior |
-|-----|----------|
-| Tab | Focus enters the grid (lands on the previously focused cell, or row 1 / col 1 on first visit). Next Tab exits the grid. |
-| Right Arrow | Move focus to the next cell in the same row. Wrap: last col → first col of next row. |
-| Left Arrow | Move focus to the previous cell. Wrap: first col → last col of previous row. |
-| Down Arrow | Move focus to the same column in the next row. No-op on last row. |
-| Up Arrow | Move focus to the same column in the previous row. No-op on first row (header). |
-| Home | Move focus to the first cell in the current row. |
-| End | Move focus to the last cell in the current row. |
-| Ctrl + Home | Move focus to the first cell in the first row. |
-| Ctrl + End | Move focus to the last cell in the last row. |
-| Enter / Space | Activate the focused control (toggle mute/solo, or enter slider edit mode). |
+| Key           | Behavior                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Tab           | Focus enters the grid (lands on the previously focused cell, or row 1 / col 1 on first visit). Next Tab exits the grid. |
+| Right Arrow   | Move focus to the next cell in the same row. Wrap: last col → first col of next row.                                    |
+| Left Arrow    | Move focus to the previous cell. Wrap: first col → last col of previous row.                                            |
+| Down Arrow    | Move focus to the same column in the next row. No-op on last row.                                                       |
+| Up Arrow      | Move focus to the same column in the previous row. No-op on first row (header).                                         |
+| Home          | Move focus to the first cell in the current row.                                                                        |
+| End           | Move focus to the last cell in the current row.                                                                         |
+| Ctrl + Home   | Move focus to the first cell in the first row.                                                                          |
+| Ctrl + End    | Move focus to the last cell in the last row.                                                                            |
+| Enter / Space | Activate the focused control (toggle mute/solo, or enter slider edit mode).                                             |
 
 #### Slider Interaction Within Grid
 
 When a slider cell is focused, the user interacts with it directly:
 
-| Key | Behavior |
-|-----|----------|
-| Enter / Space | Enter slider edit mode. Announce: "Editing Channel 1 volume. Use Left and Right to adjust. Press Escape to return to grid." |
-| Left / Right Arrow (in edit mode) | Adjust slider value by 1 step. |
-| Page Up / Page Down (in edit mode) | Adjust slider value by 10 steps. |
-| Home (in edit mode) | Set slider to minimum. |
-| End (in edit mode) | Set slider to maximum. |
-| Escape | Exit slider edit mode. Return to grid navigation. Announce: "Returned to grid navigation." |
+| Key                                | Behavior                                                                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Enter / Space                      | Enter slider edit mode. Announce: "Editing Channel 1 volume. Use Left and Right to adjust. Press Escape to return to grid." |
+| Left / Right Arrow (in edit mode)  | Adjust slider value by 1 step.                                                                                              |
+| Page Up / Page Down (in edit mode) | Adjust slider value by 10 steps.                                                                                            |
+| Home (in edit mode)                | Set slider to minimum.                                                                                                      |
+| End (in edit mode)                 | Set slider to maximum.                                                                                                      |
+| Escape                             | Exit slider edit mode. Return to grid navigation. Announce: "Returned to grid navigation."                                  |
 
 This two-layer navigation (grid → slider) prevents arrow keys from being ambiguous: in grid mode they navigate cells; in slider edit mode they adjust values. The mode transition is announced via `aria-live` to prevent invisible modal state.
 
@@ -970,7 +1015,12 @@ Channel state changes (mute/solo toggled, volume/pan adjusted) are announced via
 For **global keyboard shortcuts** (pressing `1`–`8` to toggle mute per the music player UX conventions), announce the result via a polite live region:
 
 ```html
-<div aria-live="polite" aria-atomic="true" class="visually-hidden" id="mixer-announcements">
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="visually-hidden"
+  id="mixer-announcements"
+>
   <!-- "Channel 3 muted" / "Channel 3 unmuted" / "Channel 5 soloed" -->
 </div>
 ```
@@ -979,13 +1029,13 @@ For **global keyboard shortcuts** (pressing `1`–`8` to toggle mute per the mus
 
 Convert numeric pan values to human-readable text:
 
-| `aria-valuenow` | `aria-valuetext` |
-|-----------------|------------------|
-| −100 | `"hard left"` |
-| −50 | `"50 percent left"` |
-| 0 | `"center"` |
-| 50 | `"50 percent right"` |
-| 100 | `"hard right"` |
+| `aria-valuenow` | `aria-valuetext`     |
+| --------------- | -------------------- |
+| −100            | `"hard left"`        |
+| −50             | `"50 percent left"`  |
+| 0               | `"center"`           |
+| 50              | `"50 percent right"` |
+| 100             | `"hard right"`       |
 
 ---
 
@@ -1039,10 +1089,7 @@ Use a standard HTML `<table>` — not `role="grid"`. Rationale:
 
 ```html
 <div class="register-inspector-controls">
-  <button
-    aria-pressed="false"
-    aria-label="Freeze register values"
-  >
+  <button aria-pressed="false" aria-label="Freeze register values">
     Freeze
   </button>
   <span aria-live="polite" class="visually-hidden" id="freeze-status">
@@ -1051,10 +1098,10 @@ Use a standard HTML `<table>` — not `role="grid"`. Rationale:
 </div>
 ```
 
-| State | Visual | ARIA | Behavior |
-|-------|--------|------|----------|
-| Live (default) | Values animate at rAF rate | Table cells update at ≤ 4 Hz | Screen readers see throttled values |
-| Frozen | Values static, dimmed "paused" indicator | No updates | Screen readers see stable snapshot |
+| State          | Visual                                   | ARIA                         | Behavior                            |
+| -------------- | ---------------------------------------- | ---------------------------- | ----------------------------------- |
+| Live (default) | Values animate at rAF rate               | Table cells update at ≤ 4 Hz | Screen readers see throttled values |
+| Frozen         | Values static, dimmed "paused" indicator | No updates                   | Screen readers see stable snapshot  |
 
 #### Throttled DOM Updates
 
@@ -1067,7 +1114,7 @@ const registerUpdater = createThrottledUpdater(250);
 function updateRegisterDisplay(
   cells: HTMLElement[],
   values: Uint8Array,
-  frozen: boolean
+  frozen: boolean,
 ): void {
   if (frozen) return;
 
@@ -1089,10 +1136,10 @@ function updateRegisterDisplay(
 
 The table uses standard HTML table keyboard semantics — no custom keyboard handling needed.
 
-| Key | Behavior |
-|-----|----------|
-| Tab | Focus moves to the freeze/live toggle button. The table itself is not focusable (screen readers navigate it via virtual cursor). |
-| Screen reader table navigation | NVDA: Ctrl+Alt+Arrow keys. VoiceOver: same with VO modifier. |
+| Key                            | Behavior                                                                                                                         |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Tab                            | Focus moves to the freeze/live toggle button. The table itself is not focusable (screen readers navigate it via virtual cursor). |
+| Screen reader table navigation | NVDA: Ctrl+Alt+Arrow keys. VoiceOver: same with VO modifier.                                                                     |
 
 ### Search/Filter
 
@@ -1125,6 +1172,7 @@ For large register tables, provide a search/filter input:
 ### Classification
 
 Both are **primarily decorative / supplementary visual displays**. The meaningful data they represent (echo parameters, sample waveforms) is available via other accessible channels:
+
 - Echo parameters → numeric values in the DSP register inspector or a dedicated echo settings panel.
 - BRR sample data → the audio itself when previewed, plus numeric metadata (sample length, loop point, etc.).
 
@@ -1134,12 +1182,18 @@ Follow the same pattern as the waveform/spectrum analyzer: `role="img"` with des
 
 ```html
 <!-- Echo buffer visualizer -->
-<div role="img" aria-label="Echo buffer visualization: 240ms delay, 60% feedback">
+<div
+  role="img"
+  aria-label="Echo buffer visualization: 240ms delay, 60% feedback"
+>
   <canvas aria-hidden="true" width="600" height="150"></canvas>
 </div>
 
 <!-- BRR sample viewer -->
-<div role="img" aria-label="BRR sample waveform: instrument 3, 1024 samples, loop at sample 512">
+<div
+  role="img"
+  aria-label="BRR sample waveform: instrument 3, 1024 samples, loop at sample 512"
+>
   <canvas aria-hidden="true" width="600" height="100"></canvas>
 </div>
 ```
@@ -1188,6 +1242,7 @@ The `aria-label` on the `role="img"` container should update when the displayed 
 ### Reduced Motion
 
 Under `prefers-reduced-motion: reduce`:
+
 - Echo buffer animation freezes. Show a static FIR coefficient diagram instead of the animated buffer.
 - BRR waveform is already a static display and needs no adjustment.
 
@@ -1247,7 +1302,9 @@ function VuMeter({ channel }: { channel: number }) {
       aria-valuetext="silent"
     >
       <div className={styles.bar} aria-hidden="true" />
-      <span className={styles.numeric} aria-hidden="true">0</span>
+      <span className={styles.numeric} aria-hidden="true">
+        0
+      </span>
     </div>
   );
 }
@@ -1270,7 +1327,9 @@ For ARIA attribute updates (non-`aria-live`):
  *
  * Default interval: 250ms (4 Hz).
  */
-function createThrottledUpdater(intervalMs: number = 250): (callback: () => void) => void {
+function createThrottledUpdater(
+  intervalMs: number = 250,
+): (callback: () => void) => void {
   let lastUpdate = 0;
   let pendingCallback: (() => void) | null = null;
   let timerId: ReturnType<typeof setTimeout> | null = null;
@@ -1314,7 +1373,7 @@ For `aria-live` region updates:
  */
 function createThrottledAnnouncer(
   liveRegion: HTMLElement,
-  intervalMs: number = 250
+  intervalMs: number = 250,
 ): (message: string) => void {
   let lastUpdate = 0;
   let pendingMessage: string | null = null;
@@ -1346,6 +1405,7 @@ function createThrottledAnnouncer(
 ```
 
 **Usage rules:**
+
 - Both utilities default to 250ms (4 Hz), the application-wide ARIA throttle rate.
 - For discrete events (mute toggle, note press): announce immediately, no throttle.
 - For clipping/peak events: announce once per occurrence with debounce (do not re-announce while the condition persists).
@@ -1372,7 +1432,9 @@ function createMotionPreference(): {
   });
 
   return {
-    get reduced() { return reduced; },
+    get reduced() {
+      return reduced;
+    },
     subscribe(callback) {
       listeners.add(callback);
       return () => listeners.delete(callback);
@@ -1383,18 +1445,19 @@ function createMotionPreference(): {
 
 **Component behavior matrix:**
 
-| Component | Normal | Reduced Motion |
-|-----------|--------|----------------|
-| VU meters | Smooth 60fps bar animation | Snap to level (no transition) |
-| Waveform display | Continuous waveform rendering | Freeze on last frame |
-| Spectrum analyzer | Animated frequency bars | Static snapshot at ≤ 1 Hz |
-| Echo buffer viz | Animated buffer visualization | Static FIR diagram |
-| Virtual keyboard | Key depression animation | No animation; color-only pressed state |
-| Channel mixer | Slider thumb animation | No thumb animation; value still updates |
+| Component         | Normal                        | Reduced Motion                          |
+| ----------------- | ----------------------------- | --------------------------------------- |
+| VU meters         | Smooth 60fps bar animation    | Snap to level (no transition)           |
+| Waveform display  | Continuous waveform rendering | Freeze on last frame                    |
+| Spectrum analyzer | Animated frequency bars       | Static snapshot at ≤ 1 Hz               |
+| Echo buffer viz   | Animated buffer visualization | Static FIR diagram                      |
+| Virtual keyboard  | Key depression animation      | No animation; color-only pressed state  |
+| Channel mixer     | Slider thumb animation        | No thumb animation; value still updates |
 
 ### 12.4. Focus Management — Custom ↔ Radix Transitions
 
 **Problem:** When the user Tabs from a Radix component (e.g., a Radix `Tabs` panel) into a custom component (e.g., the channel mixer grid), focus must transfer cleanly. The two systems have different focus management:
+
 - Radix uses its own internal focus management with roving tabindex.
 - Custom components use manually implemented roving tabindex.
 
@@ -1491,7 +1554,7 @@ When `prefers-contrast: more` is active, override design tokens to meet enhanced
 }
 ```
 
-**Note:** The specific token values for `prefers-contrast: more` overrides are defined in the design tokens document. This section specifies *which* components apply overrides; the tokens document defines *what* the override values are.
+**Note:** The specific token values for `prefers-contrast: more` overrides are defined in the design tokens document. This section specifies _which_ components apply overrides; the tokens document defines _what_ the override values are.
 
 #### Windows High Contrast Mode (Forced Colors)
 
@@ -1505,7 +1568,7 @@ For users with `forced-colors: active` (Windows High Contrast), defer to system 
   .key {
     border: 1px solid ButtonText;
   }
-  .key[aria-pressed="true"] {
+  .key[aria-pressed='true'] {
     background: Highlight;
     color: HighlightText;
   }
@@ -1521,43 +1584,44 @@ For users with `forced-colors: active` (Windows High Contrast), defer to system 
 
 ### Target Screen Readers
 
-| Screen Reader | Platform | Priority | Notes |
-|---------------|----------|----------|-------|
-| VoiceOver | macOS / iOS Safari | P0 | Primary development platform. Test with Safari (macOS) and Safari (iOS). |
-| NVDA | Windows / Chrome | P0 | Most popular free screen reader. Test with Chrome. |
-| JAWS | Windows / Chrome | P1 | Most popular commercial screen reader. Verify critical flows. |
-| TalkBack | Android / Chrome | P1 | Mobile screen reader. Test touch interaction + TalkBack gestures. |
+| Screen Reader | Platform           | Priority | Notes                                                                    |
+| ------------- | ------------------ | -------- | ------------------------------------------------------------------------ |
+| VoiceOver     | macOS / iOS Safari | P0       | Primary development platform. Test with Safari (macOS) and Safari (iOS). |
+| NVDA          | Windows / Chrome   | P0       | Most popular free screen reader. Test with Chrome.                       |
+| JAWS          | Windows / Chrome   | P1       | Most popular commercial screen reader. Verify critical flows.            |
+| TalkBack      | Android / Chrome   | P1       | Mobile screen reader. Test touch interaction + TalkBack gestures.        |
 
 ### Test Matrix Per Component
 
-| Component | What to Test |
-|-----------|-------------|
-| **Transport Controls** | Toolbar announced with label. Play/pause label changes with state. Repeat/shuffle `aria-pressed` announced on toggle. Global shortcut announcements fire via live region. |
-| **Seek Bar** | Slider announced with label. `aria-valuetext` reads formatted time. Arrow key increments work (5s small, 15s Page Up/Down). Home/End seek to start/end. |
-| **Playlist** | Listbox announced with item count. `aria-current` marks playing track. Selection/multi-select announced. Alt+Arrow reorder announced with new position. Empty state read. |
-| **Export Progress** | Progressbar announced with label and value. `aria-valuetext` reads phase + percentage. Milestone announcements fire at 25/50/75/100%. Error/cancel announced. Batch file boundary announced. |
-| **VU Meters** | `role="meter"` or `aria-roledescription="level meter"` announced. `aria-valuenow`/`aria-valuetext` read on focus. Throttled updates do not cause repeated announcements. Clipping announcement fires once. Numeric readout accessible as fallback. |
-| **Virtual Keyboard** | `aria-roledescription="piano keyboard"` announced. Key labels read correctly ("C sharp 3" not "C#3"). `aria-pressed` state changes announced on activation. Arrow key navigation works. Instrument mode announcement fires. |
-| **Waveform/Spectrum** | Announced as image with label. Not focusable. Does not generate continuous announcements. |
-| **Channel Mixer** | Grid announced with row/column count. Cell-to-cell navigation via arrow keys works. Mute/solo state announced on toggle. Slider values announced during adjustment. Slider edit mode entry/exit announced. |
-| **DSP Registers** | Table announced with correct column headers. Table navigation works (Ctrl+Alt+Arrow in NVDA). `aria-describedby` on value cells reads register name. Freeze toggle announced. Filter result count announced. |
-| **Echo/BRR** | Announced as image with descriptive label. Metadata panel accessible. Preview button announced. |
+| Component              | What to Test                                                                                                                                                                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Transport Controls** | Toolbar announced with label. Play/pause label changes with state. Repeat/shuffle `aria-pressed` announced on toggle. Global shortcut announcements fire via live region.                                                                          |
+| **Seek Bar**           | Slider announced with label. `aria-valuetext` reads formatted time. Arrow key increments work (5s small, 15s Page Up/Down). Home/End seek to start/end.                                                                                            |
+| **Playlist**           | Listbox announced with item count. `aria-current` marks playing track. Selection/multi-select announced. Alt+Arrow reorder announced with new position. Empty state read.                                                                          |
+| **Export Progress**    | Progressbar announced with label and value. `aria-valuetext` reads phase + percentage. Milestone announcements fire at 25/50/75/100%. Error/cancel announced. Batch file boundary announced.                                                       |
+| **VU Meters**          | `role="meter"` or `aria-roledescription="level meter"` announced. `aria-valuenow`/`aria-valuetext` read on focus. Throttled updates do not cause repeated announcements. Clipping announcement fires once. Numeric readout accessible as fallback. |
+| **Virtual Keyboard**   | `aria-roledescription="piano keyboard"` announced. Key labels read correctly ("C sharp 3" not "C#3"). `aria-pressed` state changes announced on activation. Arrow key navigation works. Instrument mode announcement fires.                        |
+| **Waveform/Spectrum**  | Announced as image with label. Not focusable. Does not generate continuous announcements.                                                                                                                                                          |
+| **Channel Mixer**      | Grid announced with row/column count. Cell-to-cell navigation via arrow keys works. Mute/solo state announced on toggle. Slider values announced during adjustment. Slider edit mode entry/exit announced.                                         |
+| **DSP Registers**      | Table announced with correct column headers. Table navigation works (Ctrl+Alt+Arrow in NVDA). `aria-describedby` on value cells reads register name. Freeze toggle announced. Filter result count announced.                                       |
+| **Echo/BRR**           | Announced as image with descriptive label. Metadata panel accessible. Preview button announced.                                                                                                                                                    |
 
 ### `role="meter"` Testing Protocol
 
 Because `role="meter"` has incomplete screen reader support, test the following degradation matrix:
 
-| Screen Reader | Expected (ideal) | Acceptable (degraded) | Unacceptable |
-|---------------|-------------------|------------------------|--------------|
-| VoiceOver | "Channel 1 level, level meter, 72 percent" | "Channel 1 level, 72 percent" (no role) | No announcement at all |
-| NVDA | "Channel 1 level, level meter, 72 percent" | "Channel 1 level, progress bar, 72 percent" (wrong role) | No value announced |
-| JAWS | "Channel 1 level, level meter, 72 percent" | "Channel 1 level, 72 percent" | No announcement at all |
+| Screen Reader | Expected (ideal)                           | Acceptable (degraded)                                    | Unacceptable           |
+| ------------- | ------------------------------------------ | -------------------------------------------------------- | ---------------------- |
+| VoiceOver     | "Channel 1 level, level meter, 72 percent" | "Channel 1 level, 72 percent" (no role)                  | No announcement at all |
+| NVDA          | "Channel 1 level, level meter, 72 percent" | "Channel 1 level, progress bar, 72 percent" (wrong role) | No value announced     |
+| JAWS          | "Channel 1 level, level meter, 72 percent" | "Channel 1 level, 72 percent"                            | No announcement at all |
 
 If a screen reader falls into the "unacceptable" column, file a bug and investigate whether additional ARIA attributes (e.g., `aria-roledescription`) resolve the issue.
 
 ### Automated Testing
 
 Use `axe-core` (via `@axe-core/react` in development and `axe-playwright` in E2E tests) to catch:
+
 - Missing `aria-label` on custom components
 - Color contrast violations
 - Focusable elements without accessible names
@@ -1566,8 +1630,8 @@ Use `axe-core` (via `@axe-core/react` in development and `axe-playwright` in E2E
 
 #### Known axe-core Exceptions
 
-| Rule ID | Element | Reason |
-|---------|---------|--------|
+| Rule ID                          | Element                 | Reason                                                                                              |
+| -------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------- |
 | `aria-allowed-role` (if flagged) | VU meter `role="meter"` | ARIA 1.2 role; axe-core may not recognize it in older versions. Verify support with axe-core ≥ 4.6. |
 
 ```typescript
@@ -1627,57 +1691,58 @@ For each component, perform these manual checks with VoiceOver (macOS) and NVDA 
 
 ## Appendix A: ARIA Role Summary
 
-| Component | Role | Rationale |
-|-----------|------|-----------|
-| Transport controls | `toolbar` | Groups playback buttons as a single composite widget. |
-| Play/Pause | `button` with dynamic `aria-label` | Single toggle button; label changes with state. |
-| Repeat / Shuffle | `button` with `aria-pressed` | Toggle button with pressed state. |
-| Seek bar | `slider` | Standard slider for bounded value selection. |
-| Playlist | `listbox` | Selectable list with active descendant management. |
-| Playlist item | `option` | Individual selectable item within list. |
-| Export progress | `progressbar` | Bounded progress indicator. Universally supported. |
-| VU Meter | `meter` + `aria-roledescription="level meter"` | Scalar value within known range. ARIA 1.2 with fallback. |
-| VU Meter group | `group` | Groups related meters. |
-| Virtual Keyboard | `group` with `aria-roledescription="piano keyboard"` | Custom widget. Individual keys are `<button>` elements. |
-| Waveform display | `img` | Decorative visualization. |
-| Spectrum analyzer | `img` | Decorative visualization. |
-| Channel Mixer | `grid` | Interactive 2D control surface with row/column navigation. |
-| DSP Register Inspector | `<table>` (native) | Read-only tabular data. Native HTML table is more appropriate than `role="grid"`. |
-| Echo Buffer Visualizer | `img` | Decorative visualization with text alternative. |
-| BRR Sample Viewer | `img` | Decorative visualization with text alternative. |
+| Component              | Role                                                 | Rationale                                                                         |
+| ---------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Transport controls     | `toolbar`                                            | Groups playback buttons as a single composite widget.                             |
+| Play/Pause             | `button` with dynamic `aria-label`                   | Single toggle button; label changes with state.                                   |
+| Repeat / Shuffle       | `button` with `aria-pressed`                         | Toggle button with pressed state.                                                 |
+| Seek bar               | `slider`                                             | Standard slider for bounded value selection.                                      |
+| Playlist               | `listbox`                                            | Selectable list with active descendant management.                                |
+| Playlist item          | `option`                                             | Individual selectable item within list.                                           |
+| Export progress        | `progressbar`                                        | Bounded progress indicator. Universally supported.                                |
+| VU Meter               | `meter` + `aria-roledescription="level meter"`       | Scalar value within known range. ARIA 1.2 with fallback.                          |
+| VU Meter group         | `group`                                              | Groups related meters.                                                            |
+| Virtual Keyboard       | `group` with `aria-roledescription="piano keyboard"` | Custom widget. Individual keys are `<button>` elements.                           |
+| Waveform display       | `img`                                                | Decorative visualization.                                                         |
+| Spectrum analyzer      | `img`                                                | Decorative visualization.                                                         |
+| Channel Mixer          | `grid`                                               | Interactive 2D control surface with row/column navigation.                        |
+| DSP Register Inspector | `<table>` (native)                                   | Read-only tabular data. Native HTML table is more appropriate than `role="grid"`. |
+| Echo Buffer Visualizer | `img`                                                | Decorative visualization with text alternative.                                   |
+| BRR Sample Viewer      | `img`                                                | Decorative visualization with text alternative.                                   |
 
 ## Appendix B: Throttle Intervals
 
 All continuous ARIA updates use the shared throttle utilities from §12.2 at a default 250ms (4 Hz) interval.
 
-| Data Type | Visual Update Rate | ARIA Update Rate | Rationale |
-|-----------|--------------------|------------------|-----------|
-| VU meter levels | 60fps | ≤ 4 Hz (250ms) | Continuous data; screen reader cannot convey 60fps changes. |
-| DSP register values | 60fps | ≤ 4 Hz (250ms) | Same as VU. Freeze mode available for stable reading. |
-| Seek bar position | 60fps (visual thumb) | ≤ 4 Hz (250ms) passive; immediate during scrub | Passive playback throttled; user interaction is immediate. |
-| Export progress | Per worker message (~20/sec) | ≤ 4 Hz (250ms) for `aria-valuenow`; milestones immediate | Milestones (25/50/75/100%) are infrequent, announced immediately. |
-| Note press/release | Immediate | Immediate | Discrete event; user expects instant feedback. |
-| Mute/solo toggle | Immediate | Immediate | Discrete event. |
-| Slider adjustment | Immediate (visual) | As user drags (Radix handles) | Radix slider announces during interaction. |
-| Clipping event | Immediate (visual) | Once per occurrence | Debounced to avoid repeated announcements. |
-| MIDI device connection | N/A | Immediate | Infrequent event; announce once on connect/disconnect. |
-| Playlist reorder | Immediate | Immediate | Discrete user action; announce new position. |
+| Data Type              | Visual Update Rate           | ARIA Update Rate                                         | Rationale                                                         |
+| ---------------------- | ---------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| VU meter levels        | 60fps                        | ≤ 4 Hz (250ms)                                           | Continuous data; screen reader cannot convey 60fps changes.       |
+| DSP register values    | 60fps                        | ≤ 4 Hz (250ms)                                           | Same as VU. Freeze mode available for stable reading.             |
+| Seek bar position      | 60fps (visual thumb)         | ≤ 4 Hz (250ms) passive; immediate during scrub           | Passive playback throttled; user interaction is immediate.        |
+| Export progress        | Per worker message (~20/sec) | ≤ 4 Hz (250ms) for `aria-valuenow`; milestones immediate | Milestones (25/50/75/100%) are infrequent, announced immediately. |
+| Note press/release     | Immediate                    | Immediate                                                | Discrete event; user expects instant feedback.                    |
+| Mute/solo toggle       | Immediate                    | Immediate                                                | Discrete event.                                                   |
+| Slider adjustment      | Immediate (visual)           | As user drags (Radix handles)                            | Radix slider announces during interaction.                        |
+| Clipping event         | Immediate (visual)           | Once per occurrence                                      | Debounced to avoid repeated announcements.                        |
+| MIDI device connection | N/A                          | Immediate                                                | Infrequent event; announce once on connect/disconnect.            |
+| Playlist reorder       | Immediate                    | Immediate                                                | Discrete user action; announce new position.                      |
 
 ## Appendix C: Key Mapping Conflict Resolution
 
 Three systems consume keyboard events. Priority order (highest to lowest):
 
-| Priority | System | Active When | Keys |
-|----------|--------|-------------|------|
-| 1 | Text input focus | `<input>`, `<textarea>`, `[contenteditable]` focused | All keys — suppress app shortcuts |
-| 2 | Radix overlay active | Dialog, menu, popover is open | Escape, Enter, Space, Arrow keys, Tab — Radix handles |
-| 3 | Focused interactive element | A `<button>`, `<a>`, checkbox, radio, select, or any element with `role="button"` / `role="checkbox"` etc. has focus | Enter, Space — yield to native activation behavior |
-| 4 | Focused custom widget | A custom widget (keyboard, mixer grid) has focus and declares keyboard handling | Varies by widget (see per-component tables) |
-| 5 | Instrument mode | Virtual keyboard has focus + instrument mode active | Letter keys mapped to notes |
-| 6 | Contextual scope | View-specific shortcuts | View-dependent key bindings |
-| 7 | Global scope | No input/widget has focus, or explicitly non-conflicting | Space (play/pause), 1-8 (mute), M (mute all), Left/Right (seek) |
+| Priority | System                      | Active When                                                                                                          | Keys                                                            |
+| -------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1        | Text input focus            | `<input>`, `<textarea>`, `[contenteditable]` focused                                                                 | All keys — suppress app shortcuts                               |
+| 2        | Radix overlay active        | Dialog, menu, popover is open                                                                                        | Escape, Enter, Space, Arrow keys, Tab — Radix handles           |
+| 3        | Focused interactive element | A `<button>`, `<a>`, checkbox, radio, select, or any element with `role="button"` / `role="checkbox"` etc. has focus | Enter, Space — yield to native activation behavior              |
+| 4        | Focused custom widget       | A custom widget (keyboard, mixer grid) has focus and declares keyboard handling                                      | Varies by widget (see per-component tables)                     |
+| 5        | Instrument mode             | Virtual keyboard has focus + instrument mode active                                                                  | Letter keys mapped to notes                                     |
+| 6        | Contextual scope            | View-specific shortcuts                                                                                              | View-dependent key bindings                                     |
+| 7        | Global scope                | No input/widget has focus, or explicitly non-conflicting                                                             | Space (play/pause), 1-8 (mute), M (mute all), Left/Right (seek) |
 
 **Resolution rules:**
+
 - A lower-priority handler must not fire when a higher-priority handler has consumed the event.
 - Global shortcuts (Space for play/pause) must not fire when a Radix `<button>` is focused — the button's own Space handling takes precedence (priority 3 > priority 7).
 - The note input system must not capture letter keys when a `<input>` or `<textarea>` has focus (priority 1 > priority 5).

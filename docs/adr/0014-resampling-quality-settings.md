@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -48,11 +48,11 @@ Chosen option: **"Quality presets with an advanced custom mode" (Option 4)**, be
 
 ### Preset Definitions
 
-| Preset | Output Resampler | Output Sample Rate | S-DSP Interpolation | Target User |
-|--------|------------------|--------------------|---------------------|-------------|
-| **Standard** (default) | Linear | 48 kHz | Gaussian | All users; matches ADR-0003 default |
-| **High Quality** | Sinc (Lanczos-3) | 48 kHz | Gaussian | Desktop users wanting cleaner resampling |
-| **Custom** | User-selected | User-selected | User-selected | Audiophiles and experimenters |
+| Preset                 | Output Resampler | Output Sample Rate | S-DSP Interpolation | Target User                              |
+| ---------------------- | ---------------- | ------------------ | ------------------- | ---------------------------------------- |
+| **Standard** (default) | Linear           | 48 kHz             | Gaussian            | All users; matches ADR-0003 default      |
+| **High Quality**       | Sinc (Lanczos-3) | 48 kHz             | Gaussian            | Desktop users wanting cleaner resampling |
+| **Custom**             | User-selected    | User-selected      | User-selected       | Audiophiles and experimenters            |
 
 The **Standard** preset reproduces the exact pipeline defined by ADR-0003 — linear output resampling at 48 kHz with hardware-authentic Gaussian DSP interpolation. No existing behavior changes for users who do not interact with the quality settings.
 
@@ -131,12 +131,12 @@ This is an inherently disruptive operation. The UI must warn the user that chang
 
 The AudioWorklet render quantum is always 128 frames regardless of sample rate (Web Audio API specification). At higher sample rates, the time budget per quantum shrinks: 128/48000 = 2.67ms at 48 kHz, but 128/96000 = 1.33ms at 96 kHz. However, the number of DSP samples (at 32 kHz) needed to fill each quantum also changes with the ratio: ~86 samples at 3:2 (48 kHz) but only ~43 samples at 3:1 (96 kHz), so DSP emulation cost per quantum is approximately halved at 96 kHz.
 
-| Configuration | Output frames/quantum | Time budget | DSP samples needed | Resampling ops/quantum | Est. resampling (desktop) | Est. resampling (mobile) |
-| --- | --- | --- | --- | --- | --- | --- |
-| Linear, 48 kHz | 128 | 2.67ms | ~86 (3:2) | ~256 | <0.01ms | <0.01ms |
-| Sinc (Lanczos-3), 48 kHz | 128 | 2.67ms | ~86 (3:2) | ~1,536 | ~0.02ms | ~0.05ms |
-| Linear, 96 kHz | 128 | 1.33ms | ~43 (3:1) | ~256 | <0.01ms | <0.01ms |
-| Sinc (Lanczos-3), 96 kHz | 128 | 1.33ms | ~43 (3:1) | ~1,536 | ~0.02ms | ~0.05ms |
+| Configuration            | Output frames/quantum | Time budget | DSP samples needed | Resampling ops/quantum | Est. resampling (desktop) | Est. resampling (mobile) |
+| ------------------------ | --------------------- | ----------- | ------------------ | ---------------------- | ------------------------- | ------------------------ |
+| Linear, 48 kHz           | 128                   | 2.67ms      | ~86 (3:2)          | ~256                   | <0.01ms                   | <0.01ms                  |
+| Sinc (Lanczos-3), 48 kHz | 128                   | 2.67ms      | ~86 (3:2)          | ~1,536                 | ~0.02ms                   | ~0.05ms                  |
+| Linear, 96 kHz           | 128                   | 1.33ms      | ~43 (3:1)          | ~256                   | <0.01ms                   | <0.01ms                  |
+| Sinc (Lanczos-3), 96 kHz | 128                   | 1.33ms      | ~43 (3:1)          | ~1,536                 | ~0.02ms                   | ~0.05ms                  |
 
 At 48 kHz, both configurations are well within the 2.67ms quantum budget. The DSP emulation itself (SPC700 CPU + S-DSP for ~86 samples) dominates at ~0.5–1.5ms on desktop; resampling overhead is marginal.
 
@@ -174,6 +174,7 @@ At 96 kHz, the halved DSP sample count (~43 samples, ~0.25–0.75ms emulation co
 A single "Audio Quality" dropdown with fixed presets (e.g., Standard / High / Audiophile / Maximum). Each preset maps to a predetermined combination of output resampler algorithm, output sample rate, and S-DSP interpolation mode. No individual control is exposed.
 
 Example preset mapping:
+
 - Standard: linear resampling, 48 kHz, Gaussian DSP
 - High: sinc resampling, 48 kHz, Gaussian DSP
 - Audiophile: sinc resampling, 96 kHz, Gaussian DSP
@@ -190,6 +191,7 @@ Example preset mapping:
 ### Option 2: Separate Independent Controls
 
 Three separate settings, each independently configurable:
+
 1. Output resampler: Linear / Sinc (Lanczos-3)
 2. Output sample rate: 48 kHz / 96 kHz
 3. S-DSP interpolation: Gaussian / Linear / Cubic / Sinc
@@ -256,7 +258,7 @@ Some audiophile users with high-end DACs may desire rates above 96 kHz as part o
 
 The distinction between S-DSP interpolation and output resampling is crucial and must be communicated clearly in the UI:
 
-- **S-DSP interpolation** determines how the DSP reads BRR-decoded samples — it affects the spectral content of the 32 kHz output *before* any output resampling occurs. Gaussian is what the SNES hardware does. Linear, cubic, and sinc modes produce a different-sounding output that could be described as "cleaner" or "brighter" but is not authentic. This is an artistic choice, not a quality improvement. Each mode has a distinct frequency response:
+- **S-DSP interpolation** determines how the DSP reads BRR-decoded samples — it affects the spectral content of the 32 kHz output _before_ any output resampling occurs. Gaussian is what the SNES hardware does. Linear, cubic, and sinc modes produce a different-sounding output that could be described as "cleaner" or "brighter" but is not authentic. This is an artistic choice, not a quality improvement. Each mode has a distinct frequency response:
   - **Gaussian**: The S-DSP's 512-entry lookup table implements a roughly Gaussian-shaped kernel that acts as a low-pass filter with a -3 dB point around 14 kHz and significant attenuation above 12 kHz. This rolloff is a fundamental part of the "SNES sound" — every game's audio was shaped by this filter.
   - **Linear**: Triangular interpolation with a sinc² frequency response. Better high-frequency extension than Gaussian (less rolloff above 12 kHz), producing a "brighter" sound, but introduces more aliasing from spectral images that are not fully attenuated.
   - **Cubic**: Hermite or B-spline interpolation with fuller mid-range response and better high-frequency preservation than linear. A middle ground that sounds smoother than linear but less authentic than Gaussian.
@@ -267,7 +269,7 @@ The Custom mode UI must label these accordingly. Suggested label for S-DSP inter
 
 ### Sinc Resampling Pre-Ringing Tradeoff
 
-Windowed sinc resamplers (including Lanczos-3) are linear-phase FIR filters. Linear-phase filters have a symmetric impulse response, which means they produce **pre-ringing** (Gibbs phenomenon) on transient signals — a subtle oscillation *before* a sharp attack. SNES music frequently contains sharp transients from BRR-decoded percussion, staccato instruments, and key-on events, making this artifact relevant to the audiophile persona.
+Windowed sinc resamplers (including Lanczos-3) are linear-phase FIR filters. Linear-phase filters have a symmetric impulse response, which means they produce **pre-ringing** (Gibbs phenomenon) on transient signals — a subtle oscillation _before_ a sharp attack. SNES music frequently contains sharp transients from BRR-decoded percussion, staccato instruments, and key-on events, making this artifact relevant to the audiophile persona.
 
 For the 3:2 ratio with a 6-tap Lanczos-3 kernel, pre-ringing duration is very short (~3 samples before the transient) and amplitude is low. It is unlikely to be audible in normal listening conditions but may be detectable on isolated transients through high-quality monitoring equipment.
 

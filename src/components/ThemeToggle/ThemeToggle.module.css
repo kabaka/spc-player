@@ -1,0 +1,50 @@
+/* ThemeToggle.module.css */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spc-space-1);
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--spc-space-2) var(--spc-space-3);
+  border: none;
+  border-radius: var(--spc-radius-md);
+  background-color: transparent;
+  color: var(--spc-color-text);
+  font-family: var(--spc-font-sans);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  line-height: var(--spc-leading-none);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.toggle:hover {
+  background-color: var(--spc-color-hover);
+}
+
+.toggle:active {
+  background-color: var(--spc-color-active);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  .toggle:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+.icon {
+  font-size: var(--spc-font-size-md);
+  line-height: 1;
+}

@@ -21,8 +21,8 @@ Use this skill when working with the WebAssembly build pipeline, JS-WASM interop
 ```typescript
 const module = await WebAssembly.instantiateStreaming(
   fetch('/dsp.wasm'),
-  importObject
-)
+  importObject,
+);
 ```
 
 ### In AudioWorklet
@@ -58,5 +58,6 @@ Prefer option 1 for smaller initial load.
 ## Cross-Origin Isolation
 
 If using `SharedArrayBuffer` (for shared memory between threads):
+
 - Server must send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`.
 - GitHub Pages supports this via response headers (verify deployment config).

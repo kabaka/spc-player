@@ -1,0 +1,35 @@
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+  padding: var(--spc-space-4);
+}
+
+.block {
+  height: 1.5rem;
+  border-radius: var(--spc-radius-md);
+  background-color: var(--spc-color-skeleton);
+  animation: pulse 1.5s var(--spc-easing-in-out) infinite;
+}
+
+.block:nth-child(1) {
+  width: 60%;
+}
+
+.block:nth-child(2) {
+  width: 80%;
+}
+
+.block:nth-child(3) {
+  width: 40%;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}

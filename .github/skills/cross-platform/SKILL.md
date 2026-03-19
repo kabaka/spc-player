@@ -9,13 +9,13 @@ Use this skill when handling platform differences, feature detection, or ensurin
 
 ## Target Platforms
 
-| Platform | Browser | Priority |
-| -------- | ------- | -------- |
-| Windows | Chrome, Edge, Firefox | Primary |
-| macOS | Chrome, Safari, Firefox | Primary |
-| iOS | Safari, Chrome | Secondary |
-| Android | Chrome, Firefox | Secondary |
-| Linux | Chrome, Firefox | Secondary |
+| Platform | Browser                 | Priority  |
+| -------- | ----------------------- | --------- |
+| Windows  | Chrome, Edge, Firefox   | Primary   |
+| macOS    | Chrome, Safari, Firefox | Primary   |
+| iOS      | Safari, Chrome          | Secondary |
+| Android  | Chrome, Firefox         | Secondary |
+| Linux    | Chrome, Firefox         | Secondary |
 
 ## Feature Detection Pattern
 
@@ -35,7 +35,9 @@ const hasFileSystem = 'showOpenFilePicker' in window;
 const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
 
 // Bad: user-agent sniffing
-if (navigator.userAgent.includes('Safari')) { /* don't do this */ }
+if (navigator.userAgent.includes('Safari')) {
+  /* don't do this */
+}
 ```
 
 ## Progressive Enhancement Tiers

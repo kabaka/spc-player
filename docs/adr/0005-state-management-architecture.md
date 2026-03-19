@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -53,15 +53,15 @@ The critical architectural insight is that **real-time audio visualization data 
 
 A single Zustand store composed of domain slices, created via the slice pattern (`StateCreator` with mutual access):
 
-| Slice | State Examples | Subscribing Components |
-|-------|---------------|----------------------|
-| `playback` | status (playing/paused/stopped), position, speed, volume, activeTrackId | Player controls, seek bar, status bar |
-| `playlist` | ordered track list, shuffle mode, repeat mode, queue | Playlist panel, queue view |
-| `mixer` | per-voice mute/solo state (8 voices) | Mixer panel, voice channel strips |
-| `metadata` | ID666 tags, xid6 tags for active track | Metadata viewer, now-playing display |
-| `settings` | theme, audio preferences, keyboard mappings, export defaults | Settings panel, theme provider |
-| `instrument` | active instrument index, keyboard mapping, MIDI input state | Instrument performer, virtual keyboard |
-| `export` | export format, sample rate, progress, active export jobs | Export dialog, progress indicator |
+| Slice        | State Examples                                                          | Subscribing Components                 |
+| ------------ | ----------------------------------------------------------------------- | -------------------------------------- |
+| `playback`   | status (playing/paused/stopped), position, speed, volume, activeTrackId | Player controls, seek bar, status bar  |
+| `playlist`   | ordered track list, shuffle mode, repeat mode, queue                    | Playlist panel, queue view             |
+| `mixer`      | per-voice mute/solo state (8 voices)                                    | Mixer panel, voice channel strips      |
+| `metadata`   | ID666 tags, xid6 tags for active track                                  | Metadata viewer, now-playing display   |
+| `settings`   | theme, audio preferences, keyboard mappings, export defaults            | Settings panel, theme provider         |
+| `instrument` | active instrument index, keyboard mapping, MIDI input state             | Instrument performer, virtual keyboard |
+| `export`     | export format, sample rate, progress, active export jobs                | Export dialog, progress indicator      |
 
 A single store is preferred over multiple independent stores because cross-slice reads are trivial (any selector can read any slice), cross-slice updates are atomic (a single `set()` call can modify multiple slices), and DevTools show the complete state tree in one view. The slice pattern provides the organizational boundaries of separate stores without the coordination complexity.
 
@@ -85,12 +85,14 @@ A small subset of audio state — specifically, whether audio is actively playin
 Zustand's `persist` middleware wraps the store and automatically serializes/deserializes specified state slices to a configured storage backend. An IndexedDB storage adapter (via `idb-keyval` or a thin custom wrapper around the raw IndexedDB API) replaces the default `localStorage` backend, which is unsuitable due to its 5–10 MB quota and synchronous API.
 
 Persisted slices:
+
 - `settings` — full slice (theme, audio preferences, keyboard mappings)
 - `playlist` — full slice (track list, order, shuffle/repeat mode)
 - `playback` — partial (recently played track IDs, last volume level; not position or play/pause status)
 - `export` — partial (default format and sample rate preferences; not active job state)
 
 Non-persisted slices:
+
 - `metadata` — derived from the loaded SPC file; reconstructed on load
 - `mixer` — ephemeral per-session; starts with all voices unmuted
 - `instrument` — ephemeral per-session; resets on load
@@ -100,6 +102,7 @@ The `persist` middleware's `partialize` option selects which state fields are pe
 ### URL ↔ Store Synchronization Pattern
 
 TanStack Router is the source of truth for URL-derived state:
+
 - Active view (player, playlist, settings, instrument, analysis)
 - Selected track identifier
 - Optional playback configuration (speed, active voices — for shareable links)

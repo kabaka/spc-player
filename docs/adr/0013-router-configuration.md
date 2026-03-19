@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -56,13 +56,13 @@ File-based routing is TanStack Router's recommended and most mature configuratio
 
 ### URL Schema
 
-| URL | View | Search Params |
-|-----|------|---------------|
-| `/#/` | Player (default) | `?track=<id>&speed=<number>&voices=<bitmask>` |
-| `/#/playlist` | Playlist | `?track=<id>` |
-| `/#/instrument` | Instrument | `?track=<id>&instrument=<index>` |
-| `/#/analysis` | Analysis | `?track=<id>&tab=<memory\|registers\|voices\|echo>` |
-| `/#/settings` | Settings | (none) |
+| URL             | View             | Search Params                                       |
+| --------------- | ---------------- | --------------------------------------------------- |
+| `/#/`           | Player (default) | `?track=<id>&speed=<number>&voices=<bitmask>`       |
+| `/#/playlist`   | Playlist         | `?track=<id>`                                       |
+| `/#/instrument` | Instrument       | `?track=<id>&instrument=<index>`                    |
+| `/#/analysis`   | Analysis         | `?track=<id>&tab=<memory\|registers\|voices\|echo>` |
+| `/#/settings`   | Settings         | (none)                                              |
 
 Search parameters are defined per-route via Zod schemas with `fallback()` defaults, ensuring invalid or missing params never crash the application:
 
@@ -72,7 +72,7 @@ const playerSearchSchema = z.object({
   track: fallback(z.string(), ''),
   speed: fallback(z.number().min(0.25).max(4), 1),
   voices: fallback(z.number().int().min(0).max(255), 255),
-})
+});
 ```
 
 All search params are optional with sensible defaults. When a user shares a link like `/#/?track=ff6-terra&speed=0.75&voices=240`, the receiving browser validates and applies the params, falling back to defaults for any invalid values.
@@ -99,23 +99,23 @@ With `autoCodeSplitting: true` enabled in the Vite plugin, each route file is a 
 
 ```typescript
 // src/app/routes/playlist.tsx — single file, auto-split by the plugin
-import { createFileRoute } from '@tanstack/react-router'
-import { zodValidator, fallback } from '@tanstack/zod-adapter'
-import { z } from 'zod'
-import { PlaylistView } from '../../features/playlist/PlaylistView'
-import { ViewSkeleton } from '../../components/ViewSkeleton'
-import { ViewError } from '../../components/ViewError'
+import { createFileRoute } from '@tanstack/react-router';
+import { zodValidator, fallback } from '@tanstack/zod-adapter';
+import { z } from 'zod';
+import { PlaylistView } from '../../features/playlist/PlaylistView';
+import { ViewSkeleton } from '../../components/ViewSkeleton';
+import { ViewError } from '../../components/ViewError';
 
 const playlistSearchSchema = z.object({
   track: fallback(z.string(), ''),
-})
+});
 
 export const Route = createFileRoute('/playlist')({
   validateSearch: zodValidator(playlistSearchSchema),
   component: PlaylistView,
   pendingComponent: ViewSkeleton,
   errorComponent: ViewError,
-})
+});
 ```
 
 The plugin's auto-splitting extracts the component, pendingComponent, and errorComponent into a lazy-loaded chunk, while keeping the search param validation and route matching logic in the critical path. This eliminates the need for manually maintaining paired `.tsx` + `.lazy.tsx` files.
@@ -142,7 +142,7 @@ export const router = createRouter({
 
 ```typescript
 // vite.config.ts (see ADR-0009 for the complete configuration)
-import { tanstackRouter } from '@tanstack/router-plugin/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 
 export default defineConfig({
   plugins: [
@@ -154,7 +154,7 @@ export default defineConfig({
     }),
     react(),
   ],
-})
+});
 ```
 
 The `autoCodeSplitting: true` option enables TanStack Router's automatic code splitting, which eliminates the need for manually maintaining paired `.tsx` + `.lazy.tsx` route files. When enabled, the plugin automatically splits each route file into critical (search params, loaders, route configuration) and non-critical (component, pendingComponent, errorComponent) chunks at build time. This means each route can be a single `.tsx` file containing all route configuration and the component — the plugin handles the splitting transparently.
@@ -256,12 +256,12 @@ Use file-based routing for the five primary view routes, but define sub-routes o
 
 This configuration requires the following packages (all part of the TanStack Router ecosystem already selected in ADR-0002):
 
-| Package | Purpose | Size |
-|---------|---------|------|
-| `@tanstack/react-router` | Core router (already selected) | ~24.5 kB gzipped |
-| `@tanstack/router-plugin` | Vite plugin for file-based route generation | Dev dependency |
-| `@tanstack/zod-adapter` | Zod integration for `validateSearch` | ~1 kB gzipped |
-| `zod` | Search parameter schema validation | ~13 kB gzipped (Zod v3) or ~17 kB gzipped (Zod v4) |
+| Package                   | Purpose                                     | Size                                               |
+| ------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| `@tanstack/react-router`  | Core router (already selected)              | ~24.5 kB gzipped                                   |
+| `@tanstack/router-plugin` | Vite plugin for file-based route generation | Dev dependency                                     |
+| `@tanstack/zod-adapter`   | Zod integration for `validateSearch`        | ~1 kB gzipped                                      |
+| `zod`                     | Search parameter schema validation          | ~13 kB gzipped (Zod v3) or ~17 kB gzipped (Zod v4) |
 
 Zod is a new dependency. Its bundle cost is justified by compile-time type inference from search param schemas, runtime validation with fallback defaults, and broad LLM training data coverage. It may also be used for SPC file metadata validation and other input validation throughout the application, amortizing the bundle cost. If bundle size becomes a concern, Zod v4's tree-shakable `zod/mini` variant offers ~2–4 kB gzipped for simple schemas (a ~64% reduction), though it uses a functional API rather than method chaining.
 

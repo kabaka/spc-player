@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -133,11 +133,11 @@ Jest (unit/integration) with React Testing Library for component testing and Pla
 
 The three testing layers map to the project's architecture (from `docs/architecture.md`) as follows:
 
-| Layer | Tool | Scope | Location | What It Covers |
-|-------|------|-------|----------|----------------|
-| Unit | Vitest + RTL | Individual functions, components in isolation | Colocated `*.test.ts` | SPC parsing, DSP math, BRR decoding, ADSR envelope calculations, state reducers, utility functions, React component rendering with role-based queries |
-| Integration | Vitest | Module interactions, service wiring | `tests/integration/` | Audio pipeline (parser → DSP → output buffer), storage layer (service → IndexedDB → retrieval), state management flows, worker communication protocols, export pipeline |
-| E2E | Playwright | Complete user workflows in real browsers | `tests/e2e/` | Load SPC → play → mute track → verify audio, playlist CRUD and reorder, export flow (select → encode → download), settings persistence across reload, PWA install and offline, deep linking, keyboard navigation |
+| Layer       | Tool         | Scope                                         | Location              | What It Covers                                                                                                                                                                                                   |
+| ----------- | ------------ | --------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit        | Vitest + RTL | Individual functions, components in isolation | Colocated `*.test.ts` | SPC parsing, DSP math, BRR decoding, ADSR envelope calculations, state reducers, utility functions, React component rendering with role-based queries                                                            |
+| Integration | Vitest       | Module interactions, service wiring           | `tests/integration/`  | Audio pipeline (parser → DSP → output buffer), storage layer (service → IndexedDB → retrieval), state management flows, worker communication protocols, export pipeline                                          |
+| E2E         | Playwright   | Complete user workflows in real browsers      | `tests/e2e/`          | Load SPC → play → mute track → verify audio, playlist CRUD and reorder, export flow (select → encode → download), settings persistence across reload, PWA install and offline, deep linking, keyboard navigation |
 
 ### Vitest Configuration Strategy
 
@@ -148,44 +148,47 @@ A single `vitest.config.ts` extending the base Vite config, using Vitest's `proj
 import { defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
-export default mergeConfig(viteConfig, defineConfig({
-  test: {
-    projects: [
-      {
-        // Unit tests: colocated with source, jsdom environment
-        extends: true,
-        test: {
-          name: 'unit',
-          include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-          environment: 'jsdom',
-          setupFiles: ['./tests/setup/unit.ts'],
+export default mergeConfig(
+  viteConfig,
+  defineConfig({
+    test: {
+      projects: [
+        {
+          // Unit tests: colocated with source, jsdom environment
+          extends: true,
+          test: {
+            name: 'unit',
+            include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+            environment: 'jsdom',
+            setupFiles: ['./tests/setup/unit.ts'],
+          },
         },
-      },
-      {
-        // Integration tests: separate directory, jsdom or node environment
-        extends: true,
-        test: {
-          name: 'integration',
-          include: ['tests/integration/**/*.test.ts'],
-          environment: 'jsdom',
-          setupFiles: ['./tests/setup/integration.ts'],
-          testTimeout: 30_000,
+        {
+          // Integration tests: separate directory, jsdom or node environment
+          extends: true,
+          test: {
+            name: 'integration',
+            include: ['tests/integration/**/*.test.ts'],
+            environment: 'jsdom',
+            setupFiles: ['./tests/setup/integration.ts'],
+            testTimeout: 30_000,
+          },
         },
-      },
-    ],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov', 'json-summary'],
-      include: ['src/**/*.ts', 'src/**/*.tsx'],
-      exclude: [
-        'src/**/*.test.ts',
-        'src/**/*.test.tsx',
-        'src/**/*.d.ts',
-        'src/wasm/**',
       ],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'lcov', 'json-summary'],
+        include: ['src/**/*.ts', 'src/**/*.tsx'],
+        exclude: [
+          'src/**/*.test.ts',
+          'src/**/*.test.tsx',
+          'src/**/*.d.ts',
+          'src/wasm/**',
+        ],
+      },
     },
-  },
-}));
+  }),
+);
 ```
 
 ### Playwright Configuration Strategy

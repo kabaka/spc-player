@@ -9,12 +9,12 @@ Use this skill when implementing SPC-to-audio export features.
 
 ## Export Format Matrix
 
-| Format | Container | Lossy | Browser Encode | File Size | Metadata |
-| ------ | --------- | ----- | -------------- | --------- | -------- |
-| WAV | RIFF | No | Native (easy) | Large | Minimal |
-| FLAC | FLAC/OGG | No | Library needed | Medium | Vorbis comments |
-| OGG Vorbis | OGG | Yes | Library needed | Small | Vorbis comments |
-| MP3 | MP3 | Yes | Library needed | Small | ID3v2 |
+| Format     | Container | Lossy | Browser Encode | File Size | Metadata        |
+| ---------- | --------- | ----- | -------------- | --------- | --------------- |
+| WAV        | RIFF      | No    | Native (easy)  | Large     | Minimal         |
+| FLAC       | FLAC/OGG  | No    | Library needed | Medium    | Vorbis comments |
+| OGG Vorbis | OGG       | Yes   | Library needed | Small     | Vorbis comments |
+| MP3        | MP3       | Yes   | Library needed | Small     | ID3v2           |
 
 ## WAV Encoding
 

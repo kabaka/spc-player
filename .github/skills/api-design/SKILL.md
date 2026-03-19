@@ -25,13 +25,13 @@ type MainToWorker =
   | { type: 'play'; startSample?: number }
   | { type: 'pause' }
   | { type: 'set-voice-mask'; mask: number }
-  | { type: 'set-speed'; factor: number }
+  | { type: 'set-speed'; factor: number };
 
 type WorkerToMain =
   | { type: 'ready' }
   | { type: 'position'; sample: number }
   | { type: 'error'; message: string; code: string }
-  | { type: 'metadata'; tags: SpcMetadata }
+  | { type: 'metadata'; tags: SpcMetadata };
 ```
 
 - Every message has a `type` discriminator.

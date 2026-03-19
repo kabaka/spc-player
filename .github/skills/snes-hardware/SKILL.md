@@ -25,25 +25,25 @@ Use this skill when dealing with SNES system-level concerns that affect audio em
 
 ## Audio Memory Map
 
-| Range | Content |
-| ----- | ------- |
-| 0x0000–0x00EF | Zero page (direct page) |
+| Range         | Content                                     |
+| ------------- | ------------------------------------------- |
+| 0x0000–0x00EF | Zero page (direct page)                     |
 | 0x00F0–0x00FF | Hardware registers (ports, timers, control) |
-| 0x0100–0x01FF | Stack |
-| 0x0200–0xFFBF | General-purpose RAM |
-| 0xFFC0–0xFFFF | IPL ROM or RAM (switchable) |
+| 0x0100–0x01FF | Stack                                       |
+| 0x0200–0xFFBF | General-purpose RAM                         |
+| 0xFFC0–0xFFFF | IPL ROM or RAM (switchable)                 |
 
 ## Key Registers
 
-| Address | Name | Description |
-| ------- | ---- | ----------- |
-| 0x00F0 | TEST | Test register (write-only, undocumented) |
-| 0x00F1 | CONTROL | Timer enable, IPL ROM enable, port clear |
-| 0x00F2 | DSPADDR | DSP register address |
-| 0x00F3 | DSPDATA | DSP register data |
-| 0x00F4–0x00F7 | CPUIO0–3 | I/O ports (communication with main CPU) |
-| 0x00FA–0x00FC | TnDIV | Timer divisors |
-| 0x00FD–0x00FF | TnOUT | Timer outputs (read-only, clears on read) |
+| Address       | Name     | Description                               |
+| ------------- | -------- | ----------------------------------------- |
+| 0x00F0        | TEST     | Test register (write-only, undocumented)  |
+| 0x00F1        | CONTROL  | Timer enable, IPL ROM enable, port clear  |
+| 0x00F2        | DSPADDR  | DSP register address                      |
+| 0x00F3        | DSPDATA  | DSP register data                         |
+| 0x00F4–0x00F7 | CPUIO0–3 | I/O ports (communication with main CPU)   |
+| 0x00FA–0x00FC | TnDIV    | Timer divisors                            |
+| 0x00FD–0x00FF | TnOUT    | Timer outputs (read-only, clears on read) |
 
 ## Timing
 

@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -44,12 +44,12 @@ Option 1 (unified Rust) was the most architecturally appealing but was rejected 
 
 ### Per-Format Library Selections
 
-| Format | Library | Source | License | Metadata System |
-| ------ | ------- | ------ | ------- | --------------- |
-| WAV | Custom TypeScript | Project code | N/A | RIFF INFO chunk |
-| FLAC | libflac.js | Emscripten port of libFLAC | BSD-3-Clause | Vorbis comments |
-| OGG Vorbis | ogg-vorbis-encoder-wasm | Emscripten port of libvorbisenc | BSD-like (Xiph) | Vorbis comments |
-| MP3 | lame-wasm (or equivalent) | Emscripten port of LAME | LGPL-2.1 | ID3v2 |
+| Format     | Library                   | Source                          | License         | Metadata System |
+| ---------- | ------------------------- | ------------------------------- | --------------- | --------------- |
+| WAV        | Custom TypeScript         | Project code                    | N/A             | RIFF INFO chunk |
+| FLAC       | libflac.js                | Emscripten port of libFLAC      | BSD-3-Clause    | Vorbis comments |
+| OGG Vorbis | ogg-vorbis-encoder-wasm   | Emscripten port of libvorbisenc | BSD-like (Xiph) | Vorbis comments |
+| MP3        | lame-wasm (or equivalent) | Emscripten port of LAME         | LGPL-2.1        | ID3v2           |
 
 **WAV:** Custom TypeScript implementation generating a RIFF/WAVE container with a `fmt ` chunk (PCM format, 16-bit, configurable sample rate and channel count) and a `data` chunk containing raw little-endian int16 PCM samples. Optionally includes a LIST/INFO chunk for basic metadata (INAM for title, IART for artist). This is ~50 lines of code with no external dependency.
 
@@ -104,6 +104,7 @@ Use community-maintained npm packages that ship pre-compiled WASM builds of the 
 **Per-format library evaluation:**
 
 **FLAC — libflac.js (recommended):**
+
 - Good, because it provides the Xiph reference libFLAC encoder — the definitive FLAC implementation — compiled to WASM with full feature support including streaming encoding and compression levels 0–8.
 - Good, because Vorbis comment metadata is natively supported through the libFLAC API.
 - Good, because BSD-3-Clause license is fully permissive with no copyleft restrictions.
@@ -117,18 +118,22 @@ A pure JavaScript FLAC encoder. Rejected in favor of the WASM reference encoder 
 No production-quality pure Rust FLAC encoder exists. See Option 1 analysis.
 
 **OGG Vorbis — ogg-vorbis-encoder-wasm (recommended):**
+
 - Good, because it provides the Xiph reference libvorbisenc — the only production-quality Vorbis encoder — compiled to WASM with quality-based VBR support (quality -1 to 10).
 - Good, because Vorbis comments are the native metadata format for OGG containers, requiring no additional metadata library.
 - Good, because the Xiph BSD-like license is fully permissive.
 - Bad, because the Vorbis encoder WASM port ecosystem has fewer maintained packages than FLAC or MP3, with some packages last updated several years ago. The underlying C encoder is stable (last major release 2018), so staleness in npm packaging is less concerning than it would be for a rapidly evolving library, but it still creates risk.
 
 **OGG Vorbis — Rust lewton/vorbis (not viable):**
+
 - Bad, because lewton is a Vorbis **decoder** only. It cannot encode audio to Vorbis format. There is no pure Rust Vorbis encoder implementation. This option is technically non-viable and cannot be further evaluated.
 
 **OGG Vorbis — stb_vorbis compiled to WASM (not viable):**
+
 - Bad, because stb_vorbis (Sean Barrett's single-file C library) is a Vorbis **decoder** only. It was designed for game engines that need to decode OGG audio, not encode it. This option is technically non-viable and cannot be further evaluated.
 
 **MP3 — lame-wasm (recommended):**
+
 - Good, because LAME is the de facto reference MP3 encoder, producing the highest-quality MP3 output of any open-source encoder across all bitrate modes (CBR, VBR, ABR).
 - Good, because WASM compilation provides near-native encoding speed — critical for batch export of large playlists.
 - Good, because ID3v2 tag support is available through the LAME API or can be implemented independently via a lightweight ID3v2 header generator in TypeScript.
@@ -142,6 +147,7 @@ A pure JavaScript port of LAME. Rejected in favor of the WASM-compiled LAME due 
 Uses LAME via Rust FFI bindings. Rejected because it adds Rust FFI wrapper complexity over a direct Emscripten compilation of LAME without improving encoding quality or performance. See Option 1 analysis.
 
 **Overall Option 2 evaluation:**
+
 - Good, because the reference C encoders are the highest-quality implementations for all three encoded formats — they define the quality standard that all other implementations are measured against.
 - Good, because WASM compilation preserves the near-native performance characteristics of the C implementations.
 - Good, because pre-compiled packages require no Emscripten installation in the project's build pipeline.
@@ -172,6 +178,7 @@ Use JavaScript-only encoder implementations for all formats — no WASM modules,
 **Per-format library evaluation:**
 
 **FLAC — flac.js (pure JavaScript):**
+
 - Good, because it is a standard JavaScript module that can be bundled, tree-shaken, and minified using the existing Vite pipeline with no special configuration.
 - Good, because debugging uses standard JavaScript source maps — no WASM binary inspection required.
 - Bad, because encoding performance is ~5–20× slower than the WASM-compiled reference encoder, making batch export of long playlists at high sample rates (96 kHz) impractically slow.
@@ -179,9 +186,11 @@ Use JavaScript-only encoder implementations for all formats — no WASM modules,
 - Bad, because maintenance is sporadic with long gaps between updates.
 
 **OGG Vorbis — no viable pure JavaScript encoder:**
+
 - Bad, because no production-quality pure JavaScript Vorbis encoder exists. The few attempts (partial ports, academic demos) are incomplete, unmaintained, or produce non-compliant output. **This gap alone makes Option 4 non-viable for the full required format matrix.**
 
 **MP3 — lamejs (pure JavaScript port of LAME):**
+
 - Good, because it is the most widely deployed browser-based MP3 encoder, with significant real-world usage demonstrating basic reliability.
 - Good, because it requires no WASM — standard JavaScript importable as an npm package.
 - Good, because it includes basic ID3v2 tag writing support.
@@ -191,6 +200,7 @@ Use JavaScript-only encoder implementations for all formats — no WASM modules,
 - Bad, because it lacks TypeScript type definitions (community `@types/lamejs` exists but may be incomplete).
 
 **Overall Option 4 evaluation:**
+
 - Good, because no WASM modules or compilation toolchains are needed — encoders are standard JavaScript consumed like any npm dependency.
 - Good, because bundle analysis, tree-shaking, and source-map debugging use the existing JavaScript tooling without special WASM considerations.
 - Bad, because **no pure JavaScript Vorbis encoder exists at production quality**, making Option 4 fundamentally non-viable for the required four-format export matrix.
@@ -203,12 +213,12 @@ Use JavaScript-only encoder implementations for all formats — no WASM modules,
 
 Each export format uses a different metadata container. SPC ID666 and xid6 tag fields are mapped to format-native metadata:
 
-| Format | Metadata System | ID666 Field Mapping |
-| ------ | --------------- | ------------------- |
-| WAV | RIFF LIST/INFO chunk | INAM=title, IART=artist, IPRD=game, ICMT=comment |
-| FLAC | Vorbis comments (metadata block) | TITLE, ARTIST, ALBUM=game, COMMENT, DATE |
-| OGG Vorbis | Vorbis comments (stream header) | TITLE, ARTIST, ALBUM=game, COMMENT, DATE |
-| MP3 | ID3v2 tags (prepended header) | TIT2=title, TPE1=artist, TALB=game, COMM=comment |
+| Format     | Metadata System                  | ID666 Field Mapping                              |
+| ---------- | -------------------------------- | ------------------------------------------------ |
+| WAV        | RIFF LIST/INFO chunk             | INAM=title, IART=artist, IPRD=game, ICMT=comment |
+| FLAC       | Vorbis comments (metadata block) | TITLE, ARTIST, ALBUM=game, COMMENT, DATE         |
+| OGG Vorbis | Vorbis comments (stream header)  | TITLE, ARTIST, ALBUM=game, COMMENT, DATE         |
+| MP3        | ID3v2 tags (prepended header)    | TIT2=title, TPE1=artist, TALB=game, COMM=comment |
 
 All exported files include a comment field: `"Exported by SPC Player — original dump by {dumper}"` (where the dumper field comes from the SPC ID666 tag). If the SPC file has xid6 extended tags with additional fields (publisher, OST title, disc number), these are mapped to the appropriate format-native equivalents where supported.
 
@@ -231,7 +241,7 @@ interface EncoderConfig {
   sampleRate: number;
   channels: 1 | 2;
   bitDepth: 16;
-  quality?: number;          // Lossy: VBR quality (Vorbis -1–10, LAME V0–V9)
+  quality?: number; // Lossy: VBR quality (Vorbis -1–10, LAME V0–V9)
   compressionLevel?: number; // FLAC: 0–8
   metadata?: ExportMetadata;
 }
@@ -241,12 +251,12 @@ Each format-specific adapter wraps the underlying WASM library behind this inter
 
 ### Default Encoding Parameters
 
-| Format | Default Setting | Approximate Output Size |
-| ------ | --------------- | ----------------------- |
-| WAV | 16-bit PCM | ~10 MB/min at 48 kHz stereo |
-| FLAC | Compression level 5 | ~5 MB/min at 48 kHz stereo |
-| OGG Vorbis | Quality 6 (~192 kbps VBR) | ~1.4 MB/min |
-| MP3 | V2 (~190 kbps VBR) | ~1.4 MB/min |
+| Format     | Default Setting           | Approximate Output Size     |
+| ---------- | ------------------------- | --------------------------- |
+| WAV        | 16-bit PCM                | ~10 MB/min at 48 kHz stereo |
+| FLAC       | Compression level 5       | ~5 MB/min at 48 kHz stereo  |
+| OGG Vorbis | Quality 6 (~192 kbps VBR) | ~1.4 MB/min                 |
+| MP3        | V2 (~190 kbps VBR)        | ~1.4 MB/min                 |
 
 Users can adjust quality/compression settings in the export dialog. Higher FLAC compression levels (6–8) reduce file size at the cost of slower encoding. Higher Vorbis/MP3 quality settings increase bitrate and file size but improve perceptual audio quality, though the difference is subtle above Quality 6 / V2 for typical SPC content (limited to the S-DSP's ~16 kHz bandwidth).
 
@@ -265,13 +275,14 @@ This is functionally equivalent to dynamic linking, which the LGPL explicitly pe
 
 The Rust audio codec ecosystem has mature **decoders** but immature or nonexistent **encoders**:
 
-| Codec | Rust Decoder | Rust Encoder |
-| ----- | ------------ | ------------ |
-| FLAC | claxon (mature, maintained) | None at production quality |
+| Codec  | Rust Decoder                | Rust Encoder                  |
+| ------ | --------------------------- | ----------------------------- |
+| FLAC   | claxon (mature, maintained) | None at production quality    |
 | Vorbis | lewton (mature, maintained) | None — lewton is decoder-only |
-| MP3 | minimp3 bindings (mature) | None at production quality |
+| MP3    | minimp3 bindings (mature)   | None at production quality    |
 
 Writing production-quality encoders for three codecs would be a massive engineering effort. Each reference C encoder represents years to decades of development:
+
 - **libFLAC**: developed since 2001, maintained by Xiph.Org Foundation
 - **libvorbisenc**: developed since 1998, the only Vorbis encoder with fully tuned psychoacoustic models
 - **LAME**: developed since 1998, with extensive psychoacoustic tuning informed by decades of listening tests and ABX comparisons

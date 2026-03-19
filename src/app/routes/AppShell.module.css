@@ -1,0 +1,103 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100dvh;
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+
+.nav {
+  display: flex;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-2) var(--spc-space-4);
+  background-color: var(--spc-color-surface);
+  border-bottom: 1px solid var(--spc-color-border);
+  z-index: var(--spc-z-sticky);
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spc-space-2) var(--spc-space-3);
+  border-radius: var(--spc-radius-md);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-secondary);
+  text-decoration: none;
+  min-height: 44px;
+  transition:
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    background-color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.nav a:hover {
+  color: var(--spc-color-text);
+  background-color: var(--spc-color-hover);
+  text-decoration: none;
+}
+
+.nav a.active {
+  color: var(--spc-color-accent-text);
+  background-color: var(--spc-color-accent-subtle);
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+
+.main {
+  padding: var(--spc-space-4);
+  outline: none;
+}
+
+/* ============================================================
+   PLAYER BAR (placeholder)
+   ============================================================ */
+
+.playerBar {
+  background-color: var(--spc-color-surface);
+  border-top: 1px solid var(--spc-color-border);
+  padding: var(--spc-space-3) var(--spc-space-4);
+  min-height: 64px;
+}
+
+/* ============================================================
+   MOBILE: Bottom navigation
+   ============================================================ */
+
+@media (max-width: 639px) {
+  .shell {
+    grid-template-rows: 1fr auto auto;
+  }
+
+  .nav {
+    order: 2;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-bottom: none;
+    border-top: 1px solid var(--spc-color-border);
+    justify-content: space-around;
+  }
+
+  .main {
+    order: 0;
+    padding-bottom: calc(var(--spc-space-16) + 44px);
+  }
+
+  .playerBar {
+    order: 1;
+    margin-bottom: calc(44px + var(--spc-space-4) * 2);
+  }
+
+  .nav a {
+    font-size: var(--spc-font-size-xs);
+    padding: var(--spc-space-1) var(--spc-space-2);
+    flex-direction: column;
+    gap: var(--spc-space-1);
+  }
+}

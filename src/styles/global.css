@@ -1,0 +1,153 @@
+/* src/styles/global.css */
+@import './tokens.css';
+
+/* ============================================================
+   RESET / NORMALIZE
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--spc-font-sans);
+  font-size: var(--spc-font-size-md);
+  line-height: var(--spc-leading-normal);
+  color: var(--spc-color-text);
+  background-color: var(--spc-color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+a {
+  color: var(--spc-color-accent-text);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+::selection {
+  background-color: var(--spc-color-selection-bg);
+  color: var(--spc-color-selection-text);
+}
+
+/* ============================================================
+   SCROLLBAR (Firefox)
+   ============================================================ */
+
+html {
+  scrollbar-color: var(--spc-color-border) var(--spc-color-bg);
+  scrollbar-width: thin;
+}
+
+/* ============================================================
+   FOCUS STYLES
+   ============================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  :focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* ============================================================
+   SKIP LINK
+   ============================================================ */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-link:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  padding: var(--spc-space-2) var(--spc-space-4);
+  background: var(--spc-color-surface);
+  color: var(--spc-color-text);
+  z-index: 9999;
+  outline: 2px solid var(--spc-color-focus-ring);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+}
+
+/* ============================================================
+   VISUALLY HIDDEN (utility)
+   ============================================================ */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -10,7 +10,7 @@ Use this skill when implementing or reviewing theme switching, system preference
 ## System Preference Detection
 
 ```typescript
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 ```
 
 - Default to system preference on first visit.
@@ -24,12 +24,13 @@ const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
 Define all colors as CSS custom properties. Switch themes by changing the root attribute:
 
 ```css
-:root, [data-theme="light"] {
+:root,
+[data-theme='light'] {
   --color-bg: var(--light-bg);
   --color-text: var(--light-text);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --color-bg: var(--dark-bg);
   --color-text: var(--dark-text);
 }

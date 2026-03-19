@@ -36,14 +36,14 @@ language:c "brr decode" snes
 
 ### Advanced Qualifiers
 
-| Qualifier | Example | Purpose |
-| --------- | ------- | ------- |
-| `language:` | `language:typescript` | Filter by language |
-| `stars:` | `stars:>100` | Popular repos |
-| `pushed:` | `pushed:>2024-01-01` | Recently active |
-| `license:` | `license:mit` | License filter |
-| `topic:` | `topic:web-audio` | Topic tags |
-| `in:readme` | `spc player in:readme` | Search in README |
+| Qualifier   | Example                | Purpose            |
+| ----------- | ---------------------- | ------------------ |
+| `language:` | `language:typescript`  | Filter by language |
+| `stars:`    | `stars:>100`           | Popular repos      |
+| `pushed:`   | `pushed:>2024-01-01`   | Recently active    |
+| `license:`  | `license:mit`          | License filter     |
+| `topic:`    | `topic:web-audio`      | Topic tags         |
+| `in:readme` | `spc player in:readme` | Search in README   |
 
 ## Reference Repos to Know
 

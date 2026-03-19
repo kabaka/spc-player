@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -191,15 +191,15 @@ Radix UI components expose data attributes for state styling. In CSS Modules, th
   background: rgba(0, 0, 0, 0.5);
 }
 
-.overlay[data-state="open"] {
+.overlay[data-state='open'] {
   animation: fadeIn 150ms ease-out;
 }
 
-.overlay[data-state="closed"] {
+.overlay[data-state='closed'] {
   animation: fadeOut 150ms ease-in;
 }
 
-.content[data-state="open"] {
+.content[data-state='open'] {
   animation: slideIn 200ms ease-out;
 }
 ```

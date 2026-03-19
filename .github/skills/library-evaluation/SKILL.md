@@ -26,23 +26,24 @@ Ask these questions before writing custom code:
 6. **What's the switching cost?** How tightly would we couple to this library?
 
 Default to using a library when a good one exists. Build custom only when:
+
 - No library fits the specific requirements (e.g., SNES DSP emulation).
 - The library would be the majority of the bundle for a small feature.
 - The library is unmaintained and the domain is simple enough to own.
 
 ## Comparison Criteria
 
-| Criterion | How to Assess |
-| --------- | ------------- |
-| Bundle size | Check bundlephobia.com or `npm pack` |
-| TypeScript support | Native types preferred over @types/ |
-| Maintenance | Commit frequency, issue response time, release cadence |
-| Community | GitHub stars, npm downloads, Stack Overflow activity |
-| License | Must be MIT, Apache-2.0, BSD, or similar permissive license |
-| API quality | Is the API ergonomic? Does it encourage correct usage? |
-| Tree-shakability | Does it support ESM and dead-code elimination? |
-| Dependencies | Fewer transitive deps = less supply chain risk |
-| Browser support | Must work on all target platforms |
+| Criterion          | How to Assess                                               |
+| ------------------ | ----------------------------------------------------------- |
+| Bundle size        | Check bundlephobia.com or `npm pack`                        |
+| TypeScript support | Native types preferred over @types/                         |
+| Maintenance        | Commit frequency, issue response time, release cadence      |
+| Community          | GitHub stars, npm downloads, Stack Overflow activity        |
+| License            | Must be MIT, Apache-2.0, BSD, or similar permissive license |
+| API quality        | Is the API ergonomic? Does it encourage correct usage?      |
+| Tree-shakability   | Does it support ESM and dead-code elimination?              |
+| Dependencies       | Fewer transitive deps = less supply chain risk              |
+| Browser support    | Must work on all target platforms                           |
 
 ## Output
 

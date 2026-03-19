@@ -9,13 +9,13 @@ Use this skill when implementing caching strategies for the service worker or ma
 
 ## Cache Strategy by Resource Type
 
-| Resource | Strategy | Rationale |
-| -------- | -------- | --------- |
-| App shell (HTML) | Network-first, cache fallback | Ensures fresh content, works offline |
-| JS/CSS bundles | Cache-first (content-hashed filenames) | Immutable once deployed |
-| WASM modules | Cache-first (content-hashed) | Large, rarely changes |
-| Icons/images | Cache-first | Static assets |
-| Fonts | Cache-first, long expiry | Rarely change |
+| Resource         | Strategy                               | Rationale                            |
+| ---------------- | -------------------------------------- | ------------------------------------ |
+| App shell (HTML) | Network-first, cache fallback          | Ensures fresh content, works offline |
+| JS/CSS bundles   | Cache-first (content-hashed filenames) | Immutable once deployed              |
+| WASM modules     | Cache-first (content-hashed)           | Large, rarely changes                |
+| Icons/images     | Cache-first                            | Static assets                        |
+| Fonts            | Cache-first, long expiry               | Rarely change                        |
 
 ## Content-Hashed Filenames
 
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (e) => {
         return response;
       });
       return cached || fetchPromise;
-    })
+    }),
   );
 });
 ```
@@ -66,7 +66,7 @@ Cache critical resources during install:
 const PRECACHE = [
   '/',
   '/index.html',
-  '/app.js',     // use actual hashed names
+  '/app.js', // use actual hashed names
   '/app.css',
   '/spc-engine.wasm',
 ];

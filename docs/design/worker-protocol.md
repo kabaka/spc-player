@@ -21,12 +21,12 @@ This document defines every message that crosses a thread boundary in SPC Player
 
 This document references types defined elsewhere. The following table clarifies ownership:
 
-| Type | Defined in | Referenced by |
-|------|-----------|---------------|
-| All error code unions (`SpcParseError`, `AudioPipelineError`, `ExportError`, etc.) | ADR-0015 | All other docs |
+| Type                                                                                                | Defined in                 | Referenced by                         |
+| --------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------- |
+| All error code unions (`SpcParseError`, `AudioPipelineError`, `ExportError`, etc.)                  | ADR-0015                   | All other docs                        |
 | Worker message types (`MainToWorklet`, `WorkletToMain`, `MainToExportWorker`, `ExportWorkerToMain`) | Worker Protocol (this doc) | Export Pipeline, Zustand Coordination |
-| `SpcFile`, `SpcParseResult` | SPC Parsing | Zustand Coordination |
-| `ExportJob`, `ExportOptions` | Export Pipeline | Zustand Coordination |
+| `SpcFile`, `SpcParseResult`                                                                         | SPC Parsing                | Zustand Coordination                  |
+| `ExportJob`, `ExportOptions`                                                                        | Export Pipeline            | Zustand Coordination                  |
 
 ---
 
@@ -104,7 +104,8 @@ type MainToWorklet =
   | MainToWorklet.SetInterpolationMode
   | MainToWorklet.SetTelemetryRate
   | MainToWorklet.RequestSnapshot
-  | MainToWorklet.RestoreSnapshot;
+  | MainToWorklet.RestoreSnapshot
+  | MainToWorklet.SetPlaybackConfig;
 
 namespace MainToWorklet {
   /** Initial handshake: transfers compiled WASM module and first SPC file. */
@@ -121,6 +122,10 @@ namespace MainToWorklet {
     readonly resamplerMode: number;
     /** Initial S-DSP interpolation mode. 0 = gaussian, 1 = linear, 2 = cubic, 3 = sinc. */
     readonly interpolationMode: number;
+    /** Total duration to play in DSP samples before fade begins. null = infinite (no auto-stop). */
+    readonly durationSamples: number | null;
+    /** Fade-out duration in DSP samples. 0 = no fade. */
+    readonly fadeOutSamples: number;
   }
 
   /** Load a new SPC file into an already-initialized worklet. */
@@ -128,6 +133,10 @@ namespace MainToWorklet {
     readonly type: 'load-spc';
     /** SPC file data. ArrayBuffer is transferred. */
     readonly spcData: ArrayBuffer;
+    /** Total duration to play in DSP samples before fade begins. null = infinite (no auto-stop). */
+    readonly durationSamples: number | null;
+    /** Fade-out duration in DSP samples. 0 = no fade. */
+    readonly fadeOutSamples: number;
     /**
      * Behavior during active playback: the worklet pauses playback, loads the
      * new SPC, resets position to 0, and awaits a new 'play' message. It does
@@ -218,6 +227,25 @@ namespace MainToWorklet {
     /** New output sample rate the resampler should target. */
     readonly outputSampleRate: number;
   }
+
+  /**
+   * Update playback timing configuration mid-playback.
+   * Sent when the user changes loop count during playback.
+   *
+   * The worklet counts rendered DSP samples against durationSamples. When the
+   * count reaches durationSamples, a linear fade gain ramp is applied over
+   * fadeOutSamples. When fade completes, the worklet emits PlaybackEnded and
+   * stops. If durationSamples is null, the worklet renders indefinitely.
+   * SetPlaybackConfig updates these values mid-playback; the worklet
+   * recalculates remaining duration from its current position.
+   */
+  interface SetPlaybackConfig {
+    readonly type: 'set-playback-config';
+    /** Total duration to play in DSP samples before fade begins. null = infinite (no auto-stop). */
+    readonly durationSamples: number | null;
+    /** Fade-out duration in DSP samples. 0 = no fade. */
+    readonly fadeOutSamples: number;
+  }
 }
 ```
 
@@ -256,9 +284,27 @@ namespace WorkletToMain {
     /** Current playback position in DSP output samples (32 kHz basis). */
     readonly positionSamples: number;
     /** Per-voice VU levels. 8 entries, range [0.0, 1.0]. Left channel. */
-    readonly vuLeft: readonly [number, number, number, number, number, number, number, number];
+    readonly vuLeft: readonly [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
     /** Per-voice VU levels. 8 entries, range [0.0, 1.0]. Right channel. */
-    readonly vuRight: readonly [number, number, number, number, number, number, number, number];
+    readonly vuRight: readonly [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
     /** Master output level. Range [0.0, 1.0]. */
     readonly masterVuLeft: number;
     readonly masterVuRight: number;
@@ -474,11 +520,7 @@ namespace ExportWorkerToMain {
  * Both the worker protocol and the export pipeline use this same set.
  * Completion is signaled by ExportWorkerToMain.Complete, not by a phase.
  */
-type ExportPhase =
-  | 'rendering'
-  | 'encoding'
-  | 'metadata'
-  | 'packaging';
+type ExportPhase = 'rendering' | 'encoding' | 'metadata' | 'packaging';
 
 /**
  * Export worker error codes — defined in ADR-0015.
@@ -486,7 +528,10 @@ type ExportPhase =
  * The export worker sends these codes as-is; the main thread maps them
  * to user-facing messages via ADR-0015 error factory functions.
  */
-type ExportErrorCode = ExportError['code'] | AudioPipelineError['code'] | 'SPC_INVALID_DATA';
+type ExportErrorCode =
+  | ExportError['code']
+  | AudioPipelineError['code']
+  | 'SPC_INVALID_DATA';
 ```
 
 ---
@@ -551,18 +596,18 @@ User gesture (click/tap)
 
 ### Timing Budget
 
-| Step | Typical Desktop | Typical Mobile |
-|------|-----------------|----------------|
-| ① AudioContext resume | <5ms | <10ms |
-| ② WASM compile (cold) | 20–50ms | 50–150ms |
-| ② WASM compile (cached) | <5ms | <10ms |
-| ③ Worklet registration | 10–30ms | 20–50ms |
-| ④ Node creation + wiring | <1ms | <2ms |
-| ⑤ Init message transfer | <1ms | <2ms |
-| ⑥ WASM instantiate + init | 5–15ms | 15–40ms |
+| Step                      | Typical Desktop     | Typical Mobile      |
+| ------------------------- | ------------------- | ------------------- |
+| ① AudioContext resume     | <5ms                | <10ms               |
+| ② WASM compile (cold)     | 20–50ms             | 50–150ms            |
+| ② WASM compile (cached)   | <5ms                | <10ms               |
+| ③ Worklet registration    | 10–30ms             | 20–50ms             |
+| ④ Node creation + wiring  | <1ms                | <2ms                |
+| ⑤ Init message transfer   | <1ms                | <2ms                |
+| ⑥ WASM instantiate + init | 5–15ms              | 15–40ms             |
 | ⑦ Ready → first process() | One quantum: 2.67ms | One quantum: 2.67ms |
-| **Total (cold)** | **~50–100ms** | **~100–260ms** |
-| **Total (warm/cached)** | **~25–55ms** | **~50–115ms** |
+| **Total (cold)**          | **~50–100ms**       | **~100–260ms**      |
+| **Total (warm/cached)**   | **~25–55ms**        | **~50–115ms**       |
 
 ### Parallelization Strategy
 
@@ -575,8 +620,8 @@ async function initializeAudio(spcData: ArrayBuffer): Promise<void> {
 
   // ② and ③ in parallel
   const [wasmModule] = await Promise.all([
-    WebAssembly.compileStreaming(fetch(dspWasmUrl)),  // ②
-    ctx.audioWorklet.addModule(workletScriptUrl),      // ③
+    WebAssembly.compileStreaming(fetch(dspWasmUrl)), // ②
+    ctx.audioWorklet.addModule(workletScriptUrl), // ③
   ]);
 
   // ④ Sequential from here
@@ -644,19 +689,19 @@ Maximum memory: 4 MiB (growth disabled via Rust linker flags)
 
 4 MiB accommodates all required allocations with ample headroom:
 
-| Region | Size | Purpose |
-|--------|------|---------|
-| SPC RAM | 64 KiB | Full 64 KB SPC address space (RAM + registers + IPL ROM) |
-| DSP registers | 128 B | 128-byte DSP register file |
-| DSP internal state | ~8 KiB | Per-voice state (8 voices × ~1 KiB each): BRR decode buffers, envelope state, pitch counters, Gaussian interpolation ring buffers |
-| Echo buffer | 62 KiB max | Echo ring buffer (up to 7680 samples × 2 channels × 2 bytes, S-DSP ESA/EDL controlled) |
-| DSP output buffer (32 kHz) | 688 B | 2 channels × 86 samples × 4 bytes (int16 stored as i32 for DSP arithmetic) |
-| Resampled output buffer (48 kHz) | 1,024 B | 2 channels × 128 samples × 4 bytes (float32, one AudioWorklet quantum) |
-| Sinc filter coefficients | ~2 KiB | Lanczos-3 polyphase FIR kernel table (precomputed at init, ADR-0014) |
-| Resampler state | 64 B | Fractional accumulator, filter history buffer |
-| Snapshot buffer | ~68 KiB | Serialized emulation state for AudioContext recreation (ADR-0014) |
-| Rust allocator overhead | ~64 KiB | dlmalloc metadata and alignment padding |
-| **Total estimated** | **~270 KiB** | **~6.5% of 4 MiB budget** |
+| Region                           | Size         | Purpose                                                                                                                           |
+| -------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| SPC RAM                          | 64 KiB       | Full 64 KB SPC address space (RAM + registers + IPL ROM)                                                                          |
+| DSP registers                    | 128 B        | 128-byte DSP register file                                                                                                        |
+| DSP internal state               | ~8 KiB       | Per-voice state (8 voices × ~1 KiB each): BRR decode buffers, envelope state, pitch counters, Gaussian interpolation ring buffers |
+| Echo buffer                      | 62 KiB max   | Echo ring buffer (up to 7680 samples × 2 channels × 2 bytes, S-DSP ESA/EDL controlled)                                            |
+| DSP output buffer (32 kHz)       | 688 B        | 2 channels × 86 samples × 4 bytes (int16 stored as i32 for DSP arithmetic)                                                        |
+| Resampled output buffer (48 kHz) | 1,024 B      | 2 channels × 128 samples × 4 bytes (float32, one AudioWorklet quantum)                                                            |
+| Sinc filter coefficients         | ~2 KiB       | Lanczos-3 polyphase FIR kernel table (precomputed at init, ADR-0014)                                                              |
+| Resampler state                  | 64 B         | Fractional accumulator, filter history buffer                                                                                     |
+| Snapshot buffer                  | ~68 KiB      | Serialized emulation state for AudioContext recreation (ADR-0014)                                                                 |
+| Rust allocator overhead          | ~64 KiB      | dlmalloc metadata and alignment padding                                                                                           |
+| **Total estimated**              | **~270 KiB** | **~6.5% of 4 MiB budget**                                                                                                         |
 
 The large headroom ensures that future additions (e.g., FIR filter state for additional DSP effects) do not require a memory size change.
 
@@ -682,7 +727,7 @@ WASM Linear Memory (4 MiB)
 │  │ Snapshot buffer (~68 KiB)│  │  Used by dsp_snapshot() / dsp_restore()
 │  └──────────────────────────┘  │
 │         ... free heap ...       │
-├────────────────────────────────┤  
+├────────────────────────────────┤
 │  Stack (grows downward)        │  Default ~64 KiB, configured via linker
 └────────────────────────────────┘  0x400000 (4 MiB)
 ```
@@ -751,19 +796,19 @@ Every `postMessage` call crosses a thread boundary. The choice between **structu
 
 ### 5.1 Transfer Matrix
 
-| Direction | Message Type | Transfer Strategy | Rationale |
-|-----------|-------------|-------------------|-----------|
-| Main → Worklet | `init` | `wasmModule`: structured clone (Module is clonable, not transferable — browser shares compiled code backing store). `spcData`: **transferred** via transferable list. | SPC data can be 66 KiB+. Transfer avoids a copy. The main thread loses access to the buffer. |
-| Main → Worklet | `load-spc` | `spcData`: **transferred**. | Same rationale. Main thread doesn't need the buffer after sending. |
-| Main → Worklet | `restore-snapshot` | `snapshotData`: **transferred**. | ~68 KiB snapshot. Transfer avoids copy. |
-| Main → Worklet | All control messages | Structured clone. | Small payloads (<100 bytes). Clone cost is negligible. |
-| Worklet → Main | `telemetry` | Structured clone. | Telemetry is a small object (~200 bytes). Structured clone at ~60 Hz is sustainable. No ArrayBuffers to transfer. |
-| Worklet → Main | `snapshot` | `snapshotData`: **transferred**. | ~68 KiB. Transfer avoids copy on the audio thread. |
-| Worklet → Main | All other messages | Structured clone. | Small payloads. |
-| Main → Export Worker | `init` | `wasmModule`: structured clone. | Same as worklet init. |
-| Main → Export Worker | `start-export` | `spcData`: **transferred**. | Same rationale as worklet. |
-| Export Worker → Main | `complete` | `fileData`: **transferred**. | Encoded file can be several MiB. Transfer is essential. |
-| Export Worker → Main | `progress`, `error` | Structured clone. | Small payloads. |
+| Direction            | Message Type         | Transfer Strategy                                                                                                                                                     | Rationale                                                                                                         |
+| -------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Main → Worklet       | `init`               | `wasmModule`: structured clone (Module is clonable, not transferable — browser shares compiled code backing store). `spcData`: **transferred** via transferable list. | SPC data can be 66 KiB+. Transfer avoids a copy. The main thread loses access to the buffer.                      |
+| Main → Worklet       | `load-spc`           | `spcData`: **transferred**.                                                                                                                                           | Same rationale. Main thread doesn't need the buffer after sending.                                                |
+| Main → Worklet       | `restore-snapshot`   | `snapshotData`: **transferred**.                                                                                                                                      | ~68 KiB snapshot. Transfer avoids copy.                                                                           |
+| Main → Worklet       | All control messages | Structured clone.                                                                                                                                                     | Small payloads (<100 bytes). Clone cost is negligible.                                                            |
+| Worklet → Main       | `telemetry`          | Structured clone.                                                                                                                                                     | Telemetry is a small object (~200 bytes). Structured clone at ~60 Hz is sustainable. No ArrayBuffers to transfer. |
+| Worklet → Main       | `snapshot`           | `snapshotData`: **transferred**.                                                                                                                                      | ~68 KiB. Transfer avoids copy on the audio thread.                                                                |
+| Worklet → Main       | All other messages   | Structured clone.                                                                                                                                                     | Small payloads.                                                                                                   |
+| Main → Export Worker | `init`               | `wasmModule`: structured clone.                                                                                                                                       | Same as worklet init.                                                                                             |
+| Main → Export Worker | `start-export`       | `spcData`: **transferred**.                                                                                                                                           | Same rationale as worklet.                                                                                        |
+| Export Worker → Main | `complete`           | `fileData`: **transferred**.                                                                                                                                          | Encoded file can be several MiB. Transfer is essential.                                                           |
+| Export Worker → Main | `progress`, `error`  | Structured clone.                                                                                                                                                     | Small payloads.                                                                                                   |
 
 ### 5.2 Transfer Code Patterns
 
@@ -771,13 +816,13 @@ Every `postMessage` call crosses a thread boundary. The choice between **structu
 // Transferring an ArrayBuffer (main → worklet)
 node.port.postMessage(
   { type: 'load-spc', spcData: spcArrayBuffer },
-  [spcArrayBuffer]  // Transfer list — spcArrayBuffer.byteLength becomes 0 on sender
+  [spcArrayBuffer], // Transfer list — spcArrayBuffer.byteLength becomes 0 on sender
 );
 
 // Transferring from worklet → main
 this.port.postMessage(
   { type: 'snapshot', snapshotData, positionSamples },
-  [snapshotData]  // Transfer list
+  [snapshotData], // Transfer list
 );
 
 // Structured clone (no transfer list) — for small messages
@@ -810,18 +855,18 @@ The current design uses `MessagePort` for all worklet ↔ main communication. Th
 
 All error codes use UPPER_SNAKE_CASE per ADR-0015. All error messages include a `context` field per the `AppError` shape.
 
-| Source | Error Code | Severity | Recovery | Escalation |
-|--------|-----------|----------|----------|------------|
-| WASM instantiation | `AUDIO_WASM_INIT_FAILED` | Fatal | Reload app | — |
-| WASM trap (`RuntimeError` from `unreachable` instruction) | `AUDIO_WASM_TRAP` | Recoverable | Main thread attempts worklet node recreation (up to 3 retries). See §6.7. | After 3 failed retries → show error, offer reload |
-| WASM controlled error return (non-zero) | `AUDIO_WASM_RENDER_ERROR` | Transient | Log error, output silence for that quantum, continue | 5 consecutive → escalate to `AUDIO_RENDER_OVERRUN_CRITICAL` |
-| Invalid SPC data | `SPC_INVALID_DATA` | Recoverable | Skip file, show toast | — |
-| Render overrun (`process()` misses deadline) | `AUDIO_WASM_RENDER_OVERRUN` | Transient | Output silence for that quantum, continue | **5 consecutive overruns → `AUDIO_RENDER_OVERRUN_CRITICAL`**: tear down and rebuild the AudioWorkletNode (same recovery as AUDIO_WASM_TRAP). See §6.8. |
-| Render overrun critical | `AUDIO_RENDER_OVERRUN_CRITICAL` | Recoverable | Tear down AudioWorkletNode, rebuild. Up to 3 retries. | After 3 failed retries → show error, offer reload |
-| Protocol mismatch | `AUDIO_PROTOCOL_VERSION_MISMATCH` | Fatal | Reload worklet/worker script | — |
-| Codec load failure | `EXPORT_CODEC_LOAD_FAILED` | Recoverable | Show error in export dialog, retry available | — |
-| Encoding failure | `EXPORT_ENCODING_FAILED` | Recoverable | Report to user, cancel job | — |
-| AudioContext suspended | *(handled via state transition, not error message)* | Transient | Auto-resume on tab focus via `statechange` listener; if `resume()` requires user gesture, show "Audio paused" indicator | — |
+| Source                                                    | Error Code                                          | Severity    | Recovery                                                                                                                | Escalation                                                                                                                                             |
+| --------------------------------------------------------- | --------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| WASM instantiation                                        | `AUDIO_WASM_INIT_FAILED`                            | Fatal       | Reload app                                                                                                              | —                                                                                                                                                      |
+| WASM trap (`RuntimeError` from `unreachable` instruction) | `AUDIO_WASM_TRAP`                                   | Recoverable | Main thread attempts worklet node recreation (up to 3 retries). See §6.7.                                               | After 3 failed retries → show error, offer reload                                                                                                      |
+| WASM controlled error return (non-zero)                   | `AUDIO_WASM_RENDER_ERROR`                           | Transient   | Log error, output silence for that quantum, continue                                                                    | 5 consecutive → escalate to `AUDIO_RENDER_OVERRUN_CRITICAL`                                                                                            |
+| Invalid SPC data                                          | `SPC_INVALID_DATA`                                  | Recoverable | Skip file, show toast                                                                                                   | —                                                                                                                                                      |
+| Render overrun (`process()` misses deadline)              | `AUDIO_WASM_RENDER_OVERRUN`                         | Transient   | Output silence for that quantum, continue                                                                               | **5 consecutive overruns → `AUDIO_RENDER_OVERRUN_CRITICAL`**: tear down and rebuild the AudioWorkletNode (same recovery as AUDIO_WASM_TRAP). See §6.8. |
+| Render overrun critical                                   | `AUDIO_RENDER_OVERRUN_CRITICAL`                     | Recoverable | Tear down AudioWorkletNode, rebuild. Up to 3 retries.                                                                   | After 3 failed retries → show error, offer reload                                                                                                      |
+| Protocol mismatch                                         | `AUDIO_PROTOCOL_VERSION_MISMATCH`                   | Fatal       | Reload worklet/worker script                                                                                            | —                                                                                                                                                      |
+| Codec load failure                                        | `EXPORT_CODEC_LOAD_FAILED`                          | Recoverable | Show error in export dialog, retry available                                                                            | —                                                                                                                                                      |
+| Encoding failure                                          | `EXPORT_ENCODING_FAILED`                            | Recoverable | Report to user, cancel job                                                                                              | —                                                                                                                                                      |
+| AudioContext suspended                                    | _(handled via state transition, not error message)_ | Transient   | Auto-resume on tab focus via `statechange` listener; if `resume()` requires user gesture, show "Audio paused" indicator | —                                                                                                                                                      |
 
 ### 6.2 WASM Error Propagation
 
@@ -835,7 +880,7 @@ The WASM module uses integer return codes (ADR-0007). Every exported function th
 -4 = internal error (should not occur; indicates a logic bug)
 ```
 
-**Important distinction:** WASM return codes (-1 through -4) are *controlled* error returns from Rust code — the WASM instance remains valid and usable. A WASM trap (`RuntimeError` from the `unreachable` instruction) is a fundamentally different failure mode where the instance is permanently corrupted.
+**Important distinction:** WASM return codes (-1 through -4) are _controlled_ error returns from Rust code — the WASM instance remains valid and usable. A WASM trap (`RuntimeError` from the `unreachable` instruction) is a fundamentally different failure mode where the instance is permanently corrupted.
 
 The TypeScript wrapper in the worklet maps return codes to appropriate error codes:
 
@@ -978,14 +1023,24 @@ exportWorker.onmessage = (event: MessageEvent<ExportWorkerToMain>) => {
       });
       break;
     case 'progress':
-      useAppStore.getState().setExportJobProgress(
-        msg.jobId, msg.phase, msg.fraction, msg.overallProgress,
-      );
+      useAppStore
+        .getState()
+        .setExportJobProgress(
+          msg.jobId,
+          msg.phase,
+          msg.fraction,
+          msg.overallProgress,
+        );
       break;
     case 'complete':
-      useAppStore.getState().completeExportJob(
-        msg.jobId, msg.fileData, msg.mimeType, msg.suggestedName,
-      );
+      useAppStore
+        .getState()
+        .completeExportJob(
+          msg.jobId,
+          msg.fileData,
+          msg.mimeType,
+          msg.suggestedName,
+        );
       break;
   }
 };
@@ -1105,15 +1160,18 @@ async function attemptWorkletRecovery(): Promise<void> {
 
   // ④ Send init with cached module + current SPC data
   const spcDataCopy = currentSpcData.slice(0); // Clone since original was transferred
-  newNode.port.postMessage({
-    type: 'init',
-    version: PROTOCOL_VERSION,
-    wasmModule: cachedWasmModule,  // Structured clone, sender keeps reference
-    spcData: spcDataCopy,
-    outputSampleRate: audioContext.sampleRate,
-    resamplerMode: currentResamplerMode,
-    interpolationMode: currentInterpolationMode,
-  }, [spcDataCopy]);
+  newNode.port.postMessage(
+    {
+      type: 'init',
+      version: PROTOCOL_VERSION,
+      wasmModule: cachedWasmModule, // Structured clone, sender keeps reference
+      spcData: spcDataCopy,
+      outputSampleRate: audioContext.sampleRate,
+      resamplerMode: currentResamplerMode,
+      interpolationMode: currentInterpolationMode,
+    },
+    [spcDataCopy],
+  );
 
   // ⑤ Wait for ready
   await waitForReady(newNode);

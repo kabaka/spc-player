@@ -56,15 +56,15 @@ Priority (highest → lowest)
 
 Each scope is a named layer:
 
-| Scope | Lifecycle | Example |
-|---|---|---|
-| `text-input` | Implicit — detected via `event.target` element type | Any `<input>`, `<textarea>`, `[contenteditable]` |
-| `radix-overlay` | Implicit — detected via Radix's internal focus trap | Open dialog, dropdown menu, select, popover |
-| `interactive-element` | Implicit — detected via `document.activeElement` tag/role | Focused `<button>`, `<a>`, `<select>`, `[role="button"]` |
-| `custom-widget` | Explicit — registered via `ShortcutManager.registerWidget()` | Virtual keyboard, channel mixer |
-| `instrument` | Explicit — toggled by user action | Instrument mode ON |
-| `contextual` | Automatic — tied to the active route/view | Playlist view, Analysis view, Mixer view |
-| `global` | Always active | Play/pause, volume, navigation |
+| Scope                 | Lifecycle                                                    | Example                                                  |
+| --------------------- | ------------------------------------------------------------ | -------------------------------------------------------- |
+| `text-input`          | Implicit — detected via `event.target` element type          | Any `<input>`, `<textarea>`, `[contenteditable]`         |
+| `radix-overlay`       | Implicit — detected via Radix's internal focus trap          | Open dialog, dropdown menu, select, popover              |
+| `interactive-element` | Implicit — detected via `document.activeElement` tag/role    | Focused `<button>`, `<a>`, `<select>`, `[role="button"]` |
+| `custom-widget`       | Explicit — registered via `ShortcutManager.registerWidget()` | Virtual keyboard, channel mixer                          |
+| `instrument`          | Explicit — toggled by user action                            | Instrument mode ON                                       |
+| `contextual`          | Automatic — tied to the active route/view                    | Playlist view, Analysis view, Mixer view                 |
+| `global`              | Always active                                                | Play/pause, volume, navigation                           |
 
 ### 1.2 Key Naming Convention
 
@@ -102,10 +102,12 @@ The hook registers the shortcut on mount and unregisters on unmount. The `action
 
 ```typescript
 // Example: register a global shortcut
-useShortcut('playback.playPause', () => togglePlayback(), { scope: 'global' })
+useShortcut('playback.playPause', () => togglePlayback(), { scope: 'global' });
 
 // Example: register a contextual shortcut for the playlist view
-useShortcut('playlist.removeTrack', () => removeSelectedTrack(), { scope: 'contextual' })
+useShortcut('playlist.removeTrack', () => removeSelectedTrack(), {
+  scope: 'contextual',
+});
 
 // Example: multiple shortcuts for one action (primary + secondary binding)
 // Handled automatically — the keymap allows arrays of bindings per action
@@ -114,8 +116,8 @@ useShortcut('playlist.removeTrack', () => removeSelectedTrack(), { scope: 'conte
 For imperative registration outside React (e.g., in a service), the underlying `ShortcutManager` class exposes:
 
 ```typescript
-shortcutManager.register(actionId, handler, options)
-shortcutManager.unregister(actionId, handler)
+shortcutManager.register(actionId, handler, options);
+shortcutManager.unregister(actionId, handler);
 ```
 
 ---
@@ -128,45 +130,45 @@ The default keymap follows conventions from established audio players (foobar200
 
 ### 2.2 Player Controls
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Play / Pause | `Space` | global | Single toggle. Most universal convention. |
-| Stop | `Ctrl+Space` | global | Distinct from pause (resets position to 0). |
-| Next track | `Ctrl+ArrowRight` | global | Modifier prevents conflict with seek. |
-| Previous track | `Ctrl+ArrowLeft` | global | |
-| Seek forward (5s) | `ArrowRight` | global | |
-| Seek backward (5s) | `ArrowLeft` | global | |
-| Seek forward (30s) | `Shift+ArrowRight` | global | Larger seek increment. |
-| Seek backward (30s) | `Shift+ArrowLeft` | global | |
-| Volume up | `ArrowUp` | global | |
-| Volume down | `ArrowDown` | global | |
-| Mute / Unmute | `KeyM` | global | |
-| Speed increase | `Shift+ArrowUp` | global | +0.25× step. |
-| Speed decrease | `Shift+ArrowDown` | global | −0.25× step. |
-| Speed reset (1×) | `Shift+Backspace` | global | |
-| Toggle repeat mode | `KeyR` | global | Cycles: off → all → one. |
-| Toggle shuffle | `KeyS` | global | |
+| Action              | Default Binding    | Scope  | Notes                                       |
+| ------------------- | ------------------ | ------ | ------------------------------------------- |
+| Play / Pause        | `Space`            | global | Single toggle. Most universal convention.   |
+| Stop                | `Ctrl+Space`       | global | Distinct from pause (resets position to 0). |
+| Next track          | `Ctrl+ArrowRight`  | global | Modifier prevents conflict with seek.       |
+| Previous track      | `Ctrl+ArrowLeft`   | global |                                             |
+| Seek forward (5s)   | `ArrowRight`       | global |                                             |
+| Seek backward (5s)  | `ArrowLeft`        | global |                                             |
+| Seek forward (30s)  | `Shift+ArrowRight` | global | Larger seek increment.                      |
+| Seek backward (30s) | `Shift+ArrowLeft`  | global |                                             |
+| Volume up           | `ArrowUp`          | global |                                             |
+| Volume down         | `ArrowDown`        | global |                                             |
+| Mute / Unmute       | `KeyM`             | global |                                             |
+| Speed increase      | `Shift+ArrowUp`    | global | +0.25× step.                                |
+| Speed decrease      | `Shift+ArrowDown`  | global | −0.25× step.                                |
+| Speed reset (1×)    | `Shift+Backspace`  | global |                                             |
+| Toggle repeat mode  | `KeyR`             | global | Cycles: off → all → one.                    |
+| Toggle shuffle      | `KeyS`             | global |                                             |
 
 ### 2.3 A-B Loop
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Set loop start (A) | `BracketLeft` | global | At current playback position. Shared with instrument velocity (§3.2) — instrument scope (5) takes priority when active. |
-| Set loop end (B) | `BracketRight` | global | At current playback position. Shared with instrument velocity (§3.2). |
-| Toggle A-B loop | `KeyL` | global | Requires both A and B to be set. |
-| Clear A-B loop | `Shift+KeyL` | global | Clears both loop points. |
+| Action             | Default Binding | Scope  | Notes                                                                                                                   |
+| ------------------ | --------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Set loop start (A) | `BracketLeft`   | global | At current playback position. Shared with instrument velocity (§3.2) — instrument scope (5) takes priority when active. |
+| Set loop end (B)   | `BracketRight`  | global | At current playback position. Shared with instrument velocity (§3.2).                                                   |
+| Toggle A-B loop    | `KeyL`          | global | Requires both A and B to be set.                                                                                        |
+| Clear A-B loop     | `Shift+KeyL`    | global | Clears both loop points.                                                                                                |
 
 ### 2.4 Navigation
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Go to Player view | `Alt+Digit1` | global | View ordering matches tab bar. |
-| Go to Playlist view | `Alt+Digit2` | global | |
-| Go to Instrument view | `Alt+Digit3` | global | |
-| Go to Analysis view | `Alt+Digit4` | global | |
-| Go to Settings view | `Alt+Digit5` | global | |
-| Focus search / filter | `Ctrl+KeyF` | global | Focus the search/filter input if present. |
-| Show keyboard shortcuts | `Shift+Slash` | global | `?` character — universal help convention. |
+| Action                  | Default Binding | Scope  | Notes                                      |
+| ----------------------- | --------------- | ------ | ------------------------------------------ |
+| Go to Player view       | `Alt+Digit1`    | global | View ordering matches tab bar.             |
+| Go to Playlist view     | `Alt+Digit2`    | global |                                            |
+| Go to Instrument view   | `Alt+Digit3`    | global |                                            |
+| Go to Analysis view     | `Alt+Digit4`    | global |                                            |
+| Go to Settings view     | `Alt+Digit5`    | global |                                            |
+| Focus search / filter   | `Ctrl+KeyF`     | global | Focus the search/filter input if present.  |
+| Show keyboard shortcuts | `Shift+Slash`   | global | `?` character — universal help convention. |
 
 > **Note (macOS):** `Alt+Digit1` through `Alt+Digit5` produce special characters on macOS (e.g., `¡`, `™`, `£`, `¢`, `∞`). The shortcut handler calls `event.preventDefault()` to suppress the character insertion, so no stray characters appear. Users who rely on these characters for text input are unaffected because text input focus (priority 1) suppresses all app shortcuts.
 >
@@ -174,89 +176,89 @@ The default keymap follows conventions from established audio players (foobar200
 
 ### 2.5 Playlist Actions
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Add files | `Ctrl+KeyO` | contextual:playlist | Opens file picker. |
-| Remove selected track(s) | `Delete` | contextual:playlist | With confirmation for batch. |
-| Move track up | `Alt+ArrowUp` | contextual:playlist | Reorder within playlist. |
-| Move track down | `Alt+ArrowDown` | contextual:playlist | |
-| Select all | `Ctrl+KeyA` | contextual:playlist | |
-| Deselect all | `Ctrl+Shift+KeyA` | contextual:playlist | Mirrors `Ctrl+KeyA` for select all. |
-| Play selected track | `Enter` | contextual:playlist | Double-click equivalent. |
+| Action                   | Default Binding   | Scope               | Notes                               |
+| ------------------------ | ----------------- | ------------------- | ----------------------------------- |
+| Add files                | `Ctrl+KeyO`       | contextual:playlist | Opens file picker.                  |
+| Remove selected track(s) | `Delete`          | contextual:playlist | With confirmation for batch.        |
+| Move track up            | `Alt+ArrowUp`     | contextual:playlist | Reorder within playlist.            |
+| Move track down          | `Alt+ArrowDown`   | contextual:playlist |                                     |
+| Select all               | `Ctrl+KeyA`       | contextual:playlist |                                     |
+| Deselect all             | `Ctrl+Shift+KeyA` | contextual:playlist | Mirrors `Ctrl+KeyA` for select all. |
+| Play selected track      | `Enter`           | contextual:playlist | Double-click equivalent.            |
 
 ### 2.6 Mixer / Voice Controls
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Toggle voice 1 mute | `Digit1` | global | Numeric keys for quick toggles. |
-| Toggle voice 2 mute | `Digit2` | global | |
-| Toggle voice 3 mute | `Digit3` | global | |
-| Toggle voice 4 mute | `Digit4` | global | |
-| Toggle voice 5 mute | `Digit5` | global | |
-| Toggle voice 6 mute | `Digit6` | global | |
-| Toggle voice 7 mute | `Digit7` | global | |
-| Toggle voice 8 mute | `Digit8` | global | |
-| Solo voice 1 | `Shift+Digit1` | global | Mute all others, unmute this. |
-| Solo voice 2 | `Shift+Digit2` | global | |
-| Solo voice 3 | `Shift+Digit3` | global | |
-| Solo voice 4 | `Shift+Digit4` | global | |
-| Solo voice 5 | `Shift+Digit5` | global | |
-| Solo voice 6 | `Shift+Digit6` | global | |
-| Solo voice 7 | `Shift+Digit7` | global | |
-| Solo voice 8 | `Shift+Digit8` | global | |
-| Unmute all voices | `Digit0` | global | Reset to all-voices-playing. |
+| Action              | Default Binding | Scope  | Notes                           |
+| ------------------- | --------------- | ------ | ------------------------------- |
+| Toggle voice 1 mute | `Digit1`        | global | Numeric keys for quick toggles. |
+| Toggle voice 2 mute | `Digit2`        | global |                                 |
+| Toggle voice 3 mute | `Digit3`        | global |                                 |
+| Toggle voice 4 mute | `Digit4`        | global |                                 |
+| Toggle voice 5 mute | `Digit5`        | global |                                 |
+| Toggle voice 6 mute | `Digit6`        | global |                                 |
+| Toggle voice 7 mute | `Digit7`        | global |                                 |
+| Toggle voice 8 mute | `Digit8`        | global |                                 |
+| Solo voice 1        | `Shift+Digit1`  | global | Mute all others, unmute this.   |
+| Solo voice 2        | `Shift+Digit2`  | global |                                 |
+| Solo voice 3        | `Shift+Digit3`  | global |                                 |
+| Solo voice 4        | `Shift+Digit4`  | global |                                 |
+| Solo voice 5        | `Shift+Digit5`  | global |                                 |
+| Solo voice 6        | `Shift+Digit6`  | global |                                 |
+| Solo voice 7        | `Shift+Digit7`  | global |                                 |
+| Solo voice 8        | `Shift+Digit8`  | global |                                 |
+| Unmute all voices   | `Digit0`        | global | Reset to all-voices-playing.    |
 
 ### 2.7 Analysis / Inspector
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Memory tab | `Alt+KeyM` | contextual:analysis | Sub-tab within Analysis view. |
-| Registers tab | `Alt+KeyR` | contextual:analysis | |
-| Voices tab | `Alt+KeyV` | contextual:analysis | |
-| Echo tab | `Alt+KeyE` | contextual:analysis | |
-| Toggle hex/decimal display | `KeyH` | contextual:analysis | |
+| Action                     | Default Binding | Scope               | Notes                         |
+| -------------------------- | --------------- | ------------------- | ----------------------------- |
+| Memory tab                 | `Alt+KeyM`      | contextual:analysis | Sub-tab within Analysis view. |
+| Registers tab              | `Alt+KeyR`      | contextual:analysis |                               |
+| Voices tab                 | `Alt+KeyV`      | contextual:analysis |                               |
+| Echo tab                   | `Alt+KeyE`      | contextual:analysis |                               |
+| Toggle hex/decimal display | `KeyH`          | contextual:analysis |                               |
 
 ### 2.8 Export
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Open export dialog | `Ctrl+KeyE` | global | |
+| Action                     | Default Binding   | Scope  | Notes                                 |
+| -------------------------- | ----------------- | ------ | ------------------------------------- |
+| Open export dialog         | `Ctrl+KeyE`       | global |                                       |
 | Quick export (last format) | `Ctrl+Shift+KeyE` | global | Uses the most recent export settings. |
 
 ### 2.9 General
 
-| Action | Default Binding | Scope | Notes |
-|---|---|---|---|
-| Open file(s) | `Ctrl+KeyO` | global | File picker for SPC files. Note: in playlist view, this is handled by the contextual scope version. |
-| Undo | `Ctrl+KeyZ` | global | Playlist operations, setting changes. |
-| Redo | `Ctrl+Shift+KeyZ` | global | |
-| Toggle fullscreen | `KeyF` | global | Fullscreen API where supported. |
-| Close dialog / cancel | `Escape` | global | Delegates to Radix when overlay is active. |
-| Toggle instrument mode | `Backquote` | global | `` ` `` key — top-left corner, easy to reach. |
+| Action                 | Default Binding   | Scope  | Notes                                                                                               |
+| ---------------------- | ----------------- | ------ | --------------------------------------------------------------------------------------------------- |
+| Open file(s)           | `Ctrl+KeyO`       | global | File picker for SPC files. Note: in playlist view, this is handled by the contextual scope version. |
+| Undo                   | `Ctrl+KeyZ`       | global | Playlist operations, setting changes.                                                               |
+| Redo                   | `Ctrl+Shift+KeyZ` | global |                                                                                                     |
+| Toggle fullscreen      | `KeyF`            | global | Fullscreen API where supported.                                                                     |
+| Close dialog / cancel  | `Escape`          | global | Delegates to Radix when overlay is active.                                                          |
+| Toggle instrument mode | `Backquote`       | global | `` ` `` key — top-left corner, easy to reach.                                                       |
 
 ### 2.10 Reserved Keys (Never Remappable)
 
 These bindings are hardcoded and cannot be overridden by user customization or instrument mode:
 
-| Key | Action | Reason |
-|---|---|---|
-| `Escape` | Close overlay / exit instrument mode | Universal escape hatch |
-| `Tab` / `Shift+Tab` | Focus navigation | Accessibility requirement |
-| `Ctrl+KeyC` / `Ctrl+KeyV` / `Ctrl+KeyX` | Clipboard | System convention |
-| `F5` | Refresh | Browser convention |
-| `F11` | Browser fullscreen | Browser convention |
-| `F12` | DevTools | Browser convention |
+| Key                                     | Action                               | Reason                    |
+| --------------------------------------- | ------------------------------------ | ------------------------- |
+| `Escape`                                | Close overlay / exit instrument mode | Universal escape hatch    |
+| `Tab` / `Shift+Tab`                     | Focus navigation                     | Accessibility requirement |
+| `Ctrl+KeyC` / `Ctrl+KeyV` / `Ctrl+KeyX` | Clipboard                            | System convention         |
+| `F5`                                    | Refresh                              | Browser convention        |
+| `F11`                                   | Browser fullscreen                   | Browser convention        |
+| `F12`                                   | DevTools                             | Browser convention        |
 
 **Escape behavior by context:**
 
 Escape is reserved across all scopes. Its behavior varies by the active context, resolved in priority order:
 
-| Context | Escape behavior | Priority |
-|---|---|---|
-| Radix dialog/menu open | Close dialog/menu | 2 (overlay) |
-| Custom widget focused | Exit widget / return focus to parent | 4 (custom widget) |
-| Instrument mode active | Exit instrument mode | 5 (instrument) |
-| Global (no other context) | General cancel/close | 7 (global) |
+| Context                   | Escape behavior                      | Priority          |
+| ------------------------- | ------------------------------------ | ----------------- |
+| Radix dialog/menu open    | Close dialog/menu                    | 2 (overlay)       |
+| Custom widget focused     | Exit widget / return focus to parent | 4 (custom widget) |
+| Instrument mode active    | Exit instrument mode                 | 5 (instrument)    |
+| Global (no other context) | General cancel/close                 | 7 (global)        |
 
 The highest-priority context that is active determines the Escape behavior. For example, if a Radix dialog is open while instrument mode is active, Escape closes the dialog (priority 2). Once the dialog is dismissed, the next Escape exits instrument mode (priority 5).
 
@@ -268,12 +270,12 @@ The highest-priority context that is active determines the Escape behavior. For 
 
 Instrument mode converts the computer keyboard into a musical instrument, mapping typing keys to SPC instrument notes.
 
-| Action | Trigger |
-|---|---|
-| **Activate** | Press `` ` `` (Backquote) — global toggle. Also available via an "Enable Keyboard" toggle button in the Instrument view UI. |
-| **Deactivate** | Press `` ` `` again, press `Escape`, click the toggle button, or navigate away from the Instrument view. |
+| Action              | Trigger                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Activate**        | Press `` ` `` (Backquote) — global toggle. Also available via an "Enable Keyboard" toggle button in the Instrument view UI.                                                           |
+| **Deactivate**      | Press `` ` `` again, press `Escape`, click the toggle button, or navigate away from the Instrument view.                                                                              |
 | **Auto-deactivate** | Navigating to any view other than Instrument automatically disables instrument mode. Opening a Radix overlay (dialog, menu) temporarily suspends it; closing the overlay restores it. |
-| **Auto-activate** | Optionally (user setting), navigating to the Instrument view auto-enables instrument mode. Default: off. |
+| **Auto-activate**   | Optionally (user setting), navigating to the Instrument view auto-enables instrument mode. Default: off.                                                                              |
 
 ### 3.2 Note Mapping
 
@@ -299,11 +301,11 @@ Code: KeyQ Digit2 KeyW Digit3 KeyE KeyR Digit5 KeyT Digit6 KeyY Digit7 KeyU KeyI
 
 **Octave and velocity controls:**
 
-| Key | Action |
-|---|---|
-| `Minus` (`-`) | Shift octave down (minimum: octave 1) |
-| `Equal` (`=`) | Shift octave up (maximum: octave 7) |
-| `BracketLeft` (`[`) | Decrease velocity by 16 (minimum: 1) |
+| Key                  | Action                                 |
+| -------------------- | -------------------------------------- |
+| `Minus` (`-`)        | Shift octave down (minimum: octave 1)  |
+| `Equal` (`=`)        | Shift octave up (maximum: octave 7)    |
+| `BracketLeft` (`[`)  | Decrease velocity by 16 (minimum: 1)   |
 | `BracketRight` (`]`) | Increase velocity by 16 (maximum: 127) |
 
 The base octave defaults to 4 (middle C = C4). The velocity defaults to 100.
@@ -339,7 +341,7 @@ When instrument mode is active:
 
 Instrument mode and playback are independent:
 
-- A track can be playing while instrument mode is active. The user plays notes from the selected instrument *on top of* the playing track mix.
+- A track can be playing while instrument mode is active. The user plays notes from the selected instrument _on top of_ the playing track mix.
 - If no track is loaded, the instrument still produces sound using the selected instrument sample.
 - Transport controls remain available via mouse/touch, via Space (passthrough), and via modifier shortcuts (`Ctrl+Space` for stop, etc.).
 
@@ -420,27 +422,39 @@ function resolveKeyEvent(event: KeyboardEvent): void {
 
 ```typescript
 function isFocusedInteractiveElement(): boolean {
-  const el = document.activeElement
-  if (!el || el === document.body) return false
+  const el = document.activeElement;
+  if (!el || el === document.body) return false;
 
   // Native interactive elements
-  const tag = el.tagName
-  if (['BUTTON', 'A', 'SELECT'].includes(tag)) return true
+  const tag = el.tagName;
+  if (['BUTTON', 'A', 'SELECT'].includes(tag)) return true;
   if (tag === 'INPUT') {
-    const type = (el as HTMLInputElement).type
+    const type = (el as HTMLInputElement).type;
     // Non-text inputs: checkbox, radio, range, etc.
-    return ['checkbox', 'radio', 'range', 'color', 'file'].includes(type)
+    return ['checkbox', 'radio', 'range', 'color', 'file'].includes(type);
   }
 
   // ARIA interactive roles
-  const role = el.getAttribute('role')
-  if (role && ['button', 'checkbox', 'radio', 'switch', 'menuitem',
-               'menuitemcheckbox', 'menuitemradio', 'option', 'tab',
-               'link'].includes(role)) {
-    return true
+  const role = el.getAttribute('role');
+  if (
+    role &&
+    [
+      'button',
+      'checkbox',
+      'radio',
+      'switch',
+      'menuitem',
+      'menuitemcheckbox',
+      'menuitemradio',
+      'option',
+      'tab',
+      'link',
+    ].includes(role)
+  ) {
+    return true;
   }
 
-  return false
+  return false;
 }
 ```
 
@@ -448,10 +462,10 @@ function isFocusedInteractiveElement(): boolean {
 
 ```typescript
 function isFocusedCustomWidget(): boolean {
-  const el = document.activeElement
-  if (!el) return false
+  const el = document.activeElement;
+  if (!el) return false;
   // Walk up from activeElement to see if it's inside a registered widget
-  return registeredWidgets.some(widget => widget.contains(el))
+  return registeredWidgets.some((widget) => widget.contains(el));
 }
 ```
 
@@ -461,16 +475,24 @@ The system detects text input focus by checking:
 
 ```typescript
 function isTextInputFocused(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
   if (tag === 'INPUT') {
-    const type = (target as HTMLInputElement).type
+    const type = (target as HTMLInputElement).type;
     // Only text-like inputs suppress shortcuts
-    return ['text', 'search', 'url', 'email', 'password', 'number', 'tel'].includes(type)
+    return [
+      'text',
+      'search',
+      'url',
+      'email',
+      'password',
+      'number',
+      'tel',
+    ].includes(type);
   }
-  if (tag === 'TEXTAREA') return true
-  if (target.isContentEditable) return true
-  return false
+  if (tag === 'TEXTAREA') return true;
+  if (target.isContentEditable) return true;
+  return false;
 }
 ```
 
@@ -519,14 +541,14 @@ export function ShortcutOverlayBoundary({ children }: { children: React.ReactNod
 
 When two scopes bind the same key, the higher-priority scope wins. The lower-priority binding is not lost — it resumes when the higher scope is deactivated (e.g., exiting instrument mode re-enables the global binding for that key).
 
-When two bindings exist within the *same* scope (e.g., a user accidentally binds two global actions to the same key), the customization validator prevents this at configuration time (see §5.3).
+When two bindings exist within the _same_ scope (e.g., a user accidentally binds two global actions to the same key), the customization validator prevents this at configuration time (see §5.3).
 
 ### 4.5 Key Event Semantics
 
-| Event | Usage |
-|---|---|
-| `keydown` | All shortcut activation. Instrument note-on. |
-| `keyup` | Instrument note-off only. Not used for other shortcuts. |
+| Event            | Usage                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `keydown`        | All shortcut activation. Instrument note-on.                                                                       |
+| `keyup`          | Instrument note-off only. Not used for other shortcuts.                                                            |
 | `keydown` repeat | Suppressed for instrument mode (no re-triggering). Allowed for seek/volume (holding arrow key seeks continuously). |
 
 `event.preventDefault()` is called for all handled shortcuts to suppress browser defaults (e.g., Space scrolling the page, Backquote inserting a character in some contexts).
@@ -541,11 +563,11 @@ The keymap is stored as a record of action IDs to key bindings:
 
 ```typescript
 type KeyBinding = {
-  primary: KeyCombo        // Main binding
-  secondary?: KeyCombo     // Optional alternate binding
-}
+  primary: KeyCombo; // Main binding
+  secondary?: KeyCombo; // Optional alternate binding
+};
 
-type CustomKeymap = Partial<Record<ShortcutActionId, KeyBinding>>
+type CustomKeymap = Partial<Record<ShortcutActionId, KeyBinding>>;
 ```
 
 The settings store (Zustand, per ADR-0005) holds:
@@ -553,18 +575,18 @@ The settings store (Zustand, per ADR-0005) holds:
 ```typescript
 // In the settings slice
 keymap: {
-  custom: CustomKeymap          // User overrides (sparse — only changed bindings)
-  instrumentOctave: number      // Persisted last octave
-  instrumentVelocity: number    // Persisted last velocity
-  autoEnableInstrumentMode: boolean  // Auto-enable when navigating to Instrument view
+  custom: CustomKeymap; // User overrides (sparse — only changed bindings)
+  instrumentOctave: number; // Persisted last octave
+  instrumentVelocity: number; // Persisted last velocity
+  autoEnableInstrumentMode: boolean; // Auto-enable when navigating to Instrument view
 }
 ```
 
-The *effective keymap* is computed by merging defaults with user overrides:
+The _effective keymap_ is computed by merging defaults with user overrides:
 
 ```typescript
 function getEffectiveKeymap(): FullKeymap {
-  return { ...DEFAULT_KEYMAP, ...customKeymap }
+  return { ...DEFAULT_KEYMAP, ...customKeymap };
 }
 ```
 
@@ -673,7 +695,7 @@ Pressing `?` (`Shift+Slash`) opens a modal overlay listing all active shortcuts.
 The panel:
 
 - Groups shortcuts by category with clear section headers.
-- Shows the *effective* binding (user-customized if modified, default otherwise).
+- Shows the _effective_ binding (user-customized if modified, default otherwise).
 - Displays platform-appropriate symbols (`⌘` on macOS, `Ctrl` on Windows/Linux).
 - Includes a link to the full customization UI in Settings.
 - Is searchable (filter field at the top for large keymaps).
@@ -702,26 +724,27 @@ Implementation: a `ShortcutHint` component reads the effective binding for a giv
 
 Key combos are displayed using platform-native conventions:
 
-| Key | macOS | Windows/Linux |
-|---|---|---|
-| `Ctrl+` (logical) | `⌘` | `Ctrl+` |
-| `Alt+` | `⌥` | `Alt+` |
-| `Shift+` | `⇧` | `Shift+` |
-| `ArrowUp` | `↑` | `↑` |
-| `ArrowDown` | `↓` | `↓` |
-| `ArrowLeft` | `←` | `←` |
-| `ArrowRight` | `→` | `→` |
-| `Space` | `Space` | `Space` |
-| `Backspace` | `⌫` | `Backspace` |
-| `Delete` | `⌦` | `Delete` |
-| `Escape` | `Esc` | `Esc` |
-| `Enter` | `↵` | `Enter` |
+| Key               | macOS   | Windows/Linux |
+| ----------------- | ------- | ------------- |
+| `Ctrl+` (logical) | `⌘`     | `Ctrl+`       |
+| `Alt+`            | `⌥`     | `Alt+`        |
+| `Shift+`          | `⇧`     | `Shift+`      |
+| `ArrowUp`         | `↑`     | `↑`           |
+| `ArrowDown`       | `↓`     | `↓`           |
+| `ArrowLeft`       | `←`     | `←`           |
+| `ArrowRight`      | `→`     | `→`           |
+| `Space`           | `Space` | `Space`       |
+| `Backspace`       | `⌫`     | `Backspace`   |
+| `Delete`          | `⌦`     | `Delete`      |
+| `Escape`          | `Esc`   | `Esc`         |
+| `Enter`           | `↵`     | `Enter`       |
 
 Platform detection:
 
 ```typescript
-const isMac = navigator.userAgentData?.platform === 'macOS'
-  || /Mac|iPhone|iPad/.test(navigator.platform);
+const isMac =
+  navigator.userAgentData?.platform === 'macOS' ||
+  /Mac|iPhone|iPad/.test(navigator.platform);
 ```
 
 On macOS, the logical `Ctrl` modifier renders as `⌘` because the system normalizes `Meta` → `Ctrl` internally.
@@ -741,44 +764,100 @@ When a view-specific shortcut is available, the view may display an inline hint.
 
 /** Physical key code (KeyboardEvent.code values) */
 type PhysicalKey =
-  | 'KeyA' | 'KeyB' | 'KeyC' | 'KeyD' | 'KeyE' | 'KeyF' | 'KeyG'
-  | 'KeyH' | 'KeyI' | 'KeyJ' | 'KeyK' | 'KeyL' | 'KeyM' | 'KeyN'
-  | 'KeyO' | 'KeyP' | 'KeyQ' | 'KeyR' | 'KeyS' | 'KeyT' | 'KeyU'
-  | 'KeyV' | 'KeyW' | 'KeyX' | 'KeyY' | 'KeyZ'
-  | 'Digit0' | 'Digit1' | 'Digit2' | 'Digit3' | 'Digit4'
-  | 'Digit5' | 'Digit6' | 'Digit7' | 'Digit8' | 'Digit9'
-  | 'Space' | 'Enter' | 'Escape' | 'Backspace' | 'Delete' | 'Tab'
-  | 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
-  | 'Minus' | 'Equal' | 'BracketLeft' | 'BracketRight'
-  | 'Backquote' | 'Slash' | 'Period' | 'Comma' | 'Semicolon'
-  | 'Quote' | 'Backslash'
-  | 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6'
-  | 'F7' | 'F8' | 'F9' | 'F10' | 'F11' | 'F12'
-  | 'Home' | 'End' | 'PageUp' | 'PageDown'
+  | 'KeyA'
+  | 'KeyB'
+  | 'KeyC'
+  | 'KeyD'
+  | 'KeyE'
+  | 'KeyF'
+  | 'KeyG'
+  | 'KeyH'
+  | 'KeyI'
+  | 'KeyJ'
+  | 'KeyK'
+  | 'KeyL'
+  | 'KeyM'
+  | 'KeyN'
+  | 'KeyO'
+  | 'KeyP'
+  | 'KeyQ'
+  | 'KeyR'
+  | 'KeyS'
+  | 'KeyT'
+  | 'KeyU'
+  | 'KeyV'
+  | 'KeyW'
+  | 'KeyX'
+  | 'KeyY'
+  | 'KeyZ'
+  | 'Digit0'
+  | 'Digit1'
+  | 'Digit2'
+  | 'Digit3'
+  | 'Digit4'
+  | 'Digit5'
+  | 'Digit6'
+  | 'Digit7'
+  | 'Digit8'
+  | 'Digit9'
+  | 'Space'
+  | 'Enter'
+  | 'Escape'
+  | 'Backspace'
+  | 'Delete'
+  | 'Tab'
+  | 'ArrowUp'
+  | 'ArrowDown'
+  | 'ArrowLeft'
+  | 'ArrowRight'
+  | 'Minus'
+  | 'Equal'
+  | 'BracketLeft'
+  | 'BracketRight'
+  | 'Backquote'
+  | 'Slash'
+  | 'Period'
+  | 'Comma'
+  | 'Semicolon'
+  | 'Quote'
+  | 'Backslash'
+  | 'F1'
+  | 'F2'
+  | 'F3'
+  | 'F4'
+  | 'F5'
+  | 'F6'
+  | 'F7'
+  | 'F8'
+  | 'F9'
+  | 'F10'
+  | 'F11'
+  | 'F12'
+  | 'Home'
+  | 'End'
+  | 'PageUp'
+  | 'PageDown';
 
 /** Modifier flags */
 type Modifiers = {
-  ctrl: boolean   // Cmd on macOS, Ctrl elsewhere
-  shift: boolean
-  alt: boolean    // Option on macOS
-}
+  ctrl: boolean; // Cmd on macOS, Ctrl elsewhere
+  shift: boolean;
+  alt: boolean; // Option on macOS
+};
 
 /** Normalized key combination string: "Ctrl+Shift+KeyA" */
-type KeyCombo = string & { readonly __brand: unique symbol }
+type KeyCombo = string & { readonly __brand: unique symbol };
 
 // ── Scope Types ──
 
-type ShortcutScope =
-  | 'global'
-  | 'contextual'
-  | 'instrument'
+type ShortcutScope = 'global' | 'contextual' | 'instrument';
 
 type ContextualScopeId =
   | 'playlist'
   | 'analysis'
   | 'instrument-view'
   | 'mixer'
-  | 'settings'
+  | 'settings';
 
 // ── Action ID Types ──
 
@@ -798,7 +877,7 @@ type PlaybackAction =
   | 'playback.speedDown'
   | 'playback.speedReset'
   | 'playback.toggleRepeat'
-  | 'playback.toggleShuffle'
+  | 'playback.toggleShuffle';
 
 type NavigationAction =
   | 'navigation.player'
@@ -807,7 +886,7 @@ type NavigationAction =
   | 'navigation.analysis'
   | 'navigation.settings'
   | 'navigation.search'
-  | 'navigation.showShortcuts'
+  | 'navigation.showShortcuts';
 
 type PlaylistAction =
   | 'playlist.addFiles'
@@ -816,27 +895,35 @@ type PlaylistAction =
   | 'playlist.moveDown'
   | 'playlist.selectAll'
   | 'playlist.deselectAll'
-  | 'playlist.playSelected'
+  | 'playlist.playSelected';
 
 type MixerAction =
-  | 'mixer.toggleVoice1' | 'mixer.toggleVoice2' | 'mixer.toggleVoice3'
-  | 'mixer.toggleVoice4' | 'mixer.toggleVoice5' | 'mixer.toggleVoice6'
-  | 'mixer.toggleVoice7' | 'mixer.toggleVoice8'
-  | 'mixer.soloVoice1' | 'mixer.soloVoice2' | 'mixer.soloVoice3'
-  | 'mixer.soloVoice4' | 'mixer.soloVoice5' | 'mixer.soloVoice6'
-  | 'mixer.soloVoice7' | 'mixer.soloVoice8'
-  | 'mixer.unmuteAll'
+  | 'mixer.toggleVoice1'
+  | 'mixer.toggleVoice2'
+  | 'mixer.toggleVoice3'
+  | 'mixer.toggleVoice4'
+  | 'mixer.toggleVoice5'
+  | 'mixer.toggleVoice6'
+  | 'mixer.toggleVoice7'
+  | 'mixer.toggleVoice8'
+  | 'mixer.soloVoice1'
+  | 'mixer.soloVoice2'
+  | 'mixer.soloVoice3'
+  | 'mixer.soloVoice4'
+  | 'mixer.soloVoice5'
+  | 'mixer.soloVoice6'
+  | 'mixer.soloVoice7'
+  | 'mixer.soloVoice8'
+  | 'mixer.unmuteAll';
 
 type AnalysisAction =
   | 'analysis.memoryTab'
   | 'analysis.registersTab'
   | 'analysis.voicesTab'
   | 'analysis.echoTab'
-  | 'analysis.toggleHexDecimal'
+  | 'analysis.toggleHexDecimal';
 
-type ExportAction =
-  | 'export.open'
-  | 'export.quick'
+type ExportAction = 'export.open' | 'export.quick';
 
 type GeneralAction =
   | 'general.openFile'
@@ -844,13 +931,13 @@ type GeneralAction =
   | 'general.redo'
   | 'general.fullscreen'
   | 'general.close'
-  | 'general.toggleInstrumentMode'
+  | 'general.toggleInstrumentMode';
 
 type ABLoopAction =
   | 'abLoop.setStart'
   | 'abLoop.setEnd'
   | 'abLoop.toggle'
-  | 'abLoop.clear'
+  | 'abLoop.clear';
 
 type ShortcutActionId =
   | PlaybackAction
@@ -860,24 +947,24 @@ type ShortcutActionId =
   | AnalysisAction
   | ExportAction
   | GeneralAction
-  | ABLoopAction
+  | ABLoopAction;
 
 // ── Keymap Types ──
 
 type KeyBinding = {
-  primary: KeyCombo
-  secondary?: KeyCombo
-}
+  primary: KeyCombo;
+  secondary?: KeyCombo;
+};
 
 type ShortcutDefinition = {
-  id: ShortcutActionId
-  label: string              // Human-readable: "Play / Pause"
-  category: ShortcutCategory
-  scope: ShortcutScope
-  contextualScope?: ContextualScopeId
-  defaultBinding: KeyBinding
-  reserved: boolean          // If true, cannot be rebound
-}
+  id: ShortcutActionId;
+  label: string; // Human-readable: "Play / Pause"
+  category: ShortcutCategory;
+  scope: ShortcutScope;
+  contextualScope?: ContextualScopeId;
+  defaultBinding: KeyBinding;
+  reserved: boolean; // If true, cannot be rebound
+};
 
 type ShortcutCategory =
   | 'Playback'
@@ -888,38 +975,38 @@ type ShortcutCategory =
   | 'Export'
   | 'General'
   | 'A-B Loop'
-  | 'Instrument'
+  | 'Instrument';
 
-type CustomKeymap = Partial<Record<ShortcutActionId, KeyBinding>>
+type CustomKeymap = Partial<Record<ShortcutActionId, KeyBinding>>;
 
-type FullKeymap = Record<ShortcutActionId, KeyBinding>
+type FullKeymap = Record<ShortcutActionId, KeyBinding>;
 
 // ── Hook Types ──
 
 type ShortcutOptions = {
-  scope?: ShortcutScope
-  contextualScope?: ContextualScopeId
-  enabled?: boolean           // Dynamic enable/disable
-  preventDefault?: boolean    // Default: true
-  allowRepeat?: boolean       // Allow key repeat events. Default: false
-}
+  scope?: ShortcutScope;
+  contextualScope?: ContextualScopeId;
+  enabled?: boolean; // Dynamic enable/disable
+  preventDefault?: boolean; // Default: true
+  allowRepeat?: boolean; // Allow key repeat events. Default: false
+};
 
 // ── Instrument Types ──
 
-type NoteValue = number  // MIDI note number (0–127)
+type NoteValue = number; // MIDI note number (0–127)
 
 type InstrumentKeyMapping = {
-  code: PhysicalKey
-  note: NoteValue
-  octaveRelative: number  // 0 = base octave, 1 = base + 1
-}
+  code: PhysicalKey;
+  note: NoteValue;
+  octaveRelative: number; // 0 = base octave, 1 = base + 1
+};
 
 type InstrumentKeyboardState = {
-  enabled: boolean
-  baseOctave: number       // 1–7, default 4
-  velocity: number         // 1–127, default 100
-  activeNotes: Set<NoteValue>
-}
+  enabled: boolean;
+  baseOctave: number; // 1–7, default 4
+  velocity: number; // 1–127, default 100
+  activeNotes: Set<NoteValue>;
+};
 ```
 
 ### 7.2 Architecture Diagram
@@ -974,46 +1061,57 @@ The `ShortcutManager` is a singleton class (not a React component) that owns the
 
 ```typescript
 class ShortcutManager {
-  private globalHandlers: Map<KeyCombo, RegisteredHandler>
-  private contextualHandlers: Map<ContextualScopeId, Map<KeyCombo, RegisteredHandler>>
-  private instrumentHandler: InstrumentKeyHandler | null
-  private activeContextualScope: ContextualScopeId | null
-  private overlayDepth: number  // ref-counted overlay tracking
-  private effectiveKeymap: FullKeymap
-  private registeredWidgets: Set<HTMLElement>  // custom widgets (level 4)
+  private globalHandlers: Map<KeyCombo, RegisteredHandler>;
+  private contextualHandlers: Map<
+    ContextualScopeId,
+    Map<KeyCombo, RegisteredHandler>
+  >;
+  private instrumentHandler: InstrumentKeyHandler | null;
+  private activeContextualScope: ContextualScopeId | null;
+  private overlayDepth: number; // ref-counted overlay tracking
+  private effectiveKeymap: FullKeymap;
+  private registeredWidgets: Set<HTMLElement>; // custom widgets (level 4)
 
-  constructor(keymap: FullKeymap) { /* ... */ }
+  constructor(keymap: FullKeymap) {
+    /* ... */
+  }
 
   // Called once at app init
   attach(): void {
-    document.addEventListener('keydown', this.handleKeyDown, { capture: true })
-    document.addEventListener('keyup', this.handleKeyUp, { capture: true })
+    document.addEventListener('keydown', this.handleKeyDown, { capture: true });
+    document.addEventListener('keyup', this.handleKeyUp, { capture: true });
   }
 
   detach(): void {
-    document.removeEventListener('keydown', this.handleKeyDown, { capture: true })
-    document.removeEventListener('keyup', this.handleKeyUp, { capture: true })
+    document.removeEventListener('keydown', this.handleKeyDown, {
+      capture: true,
+    });
+    document.removeEventListener('keyup', this.handleKeyUp, { capture: true });
   }
 
   // Registration
-  register(actionId: ShortcutActionId, handler: () => void, options: ShortcutOptions): () => void
-  setActiveContextualScope(scope: ContextualScopeId | null): void
-  setInstrumentMode(enabled: boolean): void
-  pushOverlay(): void
-  popOverlay(): void
+  register(
+    actionId: ShortcutActionId,
+    handler: () => void,
+    options: ShortcutOptions,
+  ): () => void;
+  setActiveContextualScope(scope: ContextualScopeId | null): void;
+  setInstrumentMode(enabled: boolean): void;
+  pushOverlay(): void;
+  popOverlay(): void;
 
   // Custom widget registration (level 4)
-  registerWidget(element: HTMLElement): () => void  // returns unregister fn
+  registerWidget(element: HTMLElement): () => void; // returns unregister fn
 
   // Keymap management
-  updateKeymap(custom: CustomKeymap): void
-  getEffectiveKeymap(): FullKeymap
-  getBindingForAction(actionId: ShortcutActionId): KeyBinding
+  updateKeymap(custom: CustomKeymap): void;
+  getEffectiveKeymap(): FullKeymap;
+  getBindingForAction(actionId: ShortcutActionId): KeyBinding;
 
   // Private
-  private handleKeyDown(event: KeyboardEvent): void
-  private handleKeyUp(event: KeyboardEvent): void
-  private normalizeCombo(event: KeyboardEvent): KeyCombo
+  private handleKeyDown(event: KeyboardEvent): void;
+  private handleKeyUp(event: KeyboardEvent): void;
+  private normalizeCombo(event: KeyboardEvent): KeyCombo;
 }
 ```
 
@@ -1072,7 +1170,7 @@ export function useShortcut(
   useEffect(() => {
     if (!manager || enabled === false) return
     const stableHandler = () => handlerRef.current()
-    return manager.register(actionId, stableHandler, 
+    return manager.register(actionId, stableHandler,
       { scope, contextualScope, preventDefault, allowRepeat })
   }, [manager, actionId, enabled, scope, contextualScope, preventDefault, allowRepeat])
 }
@@ -1104,25 +1202,36 @@ export function useShortcutHint(actionId: ShortcutActionId): string {
 
 ```typescript
 function normalizeCombo(event: KeyboardEvent): KeyCombo {
-  const parts: string[] = []
+  const parts: string[] = [];
 
   // Normalize Meta (Cmd on macOS) to 'Ctrl' for cross-platform consistency
-  const isMac = navigator.userAgentData?.platform === 'macOS'
-    || /Mac|iPhone|iPad/.test(navigator.platform)
-  const ctrlPressed = isMac ? event.metaKey : event.ctrlKey
+  const isMac =
+    navigator.userAgentData?.platform === 'macOS' ||
+    /Mac|iPhone|iPad/.test(navigator.platform);
+  const ctrlPressed = isMac ? event.metaKey : event.ctrlKey;
 
-  if (ctrlPressed) parts.push('Ctrl')
-  if (event.shiftKey) parts.push('Shift')
-  if (event.altKey) parts.push('Alt')
+  if (ctrlPressed) parts.push('Ctrl');
+  if (event.shiftKey) parts.push('Shift');
+  if (event.altKey) parts.push('Alt');
 
   // Exclude modifier-only keys from the combo
-  const code = event.code
-  if (!['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight',
-        'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(code)) {
-    parts.push(code)
+  const code = event.code;
+  if (
+    ![
+      'ShiftLeft',
+      'ShiftRight',
+      'ControlLeft',
+      'ControlRight',
+      'AltLeft',
+      'AltRight',
+      'MetaLeft',
+      'MetaRight',
+    ].includes(code)
+  ) {
+    parts.push(code);
   }
 
-  return parts.join('+') as KeyCombo
+  return parts.join('+') as KeyCombo;
 }
 ```
 
@@ -1168,7 +1277,7 @@ Each route view declares its contextual scope via `useActiveContextualScope`. Th
 ```typescript
 // In PlaylistView.tsx
 export function PlaylistView() {
-  useActiveContextualScope('playlist')
+  useActiveContextualScope('playlist');
   // ... rest of the component
 }
 ```
@@ -1181,18 +1290,22 @@ The `InstrumentKeyboard` component within the Instrument view owns the instrumen
 
 ```typescript
 function InstrumentKeyboard() {
-  const manager = useContext(ShortcutContext)
-  const instrumentState = useSettingsStore(s => s.keymap)
-  const [enabled, setEnabled] = useState(false)
+  const manager = useContext(ShortcutContext);
+  const instrumentState = useSettingsStore((s) => s.keymap);
+  const [enabled, setEnabled] = useState(false);
 
   // Toggle handler (registered globally so ` works from any view)
-  useShortcut('general.toggleInstrumentMode', () => {
-    setEnabled(prev => !prev)
-  }, { scope: 'global' })
+  useShortcut(
+    'general.toggleInstrumentMode',
+    () => {
+      setEnabled((prev) => !prev);
+    },
+    { scope: 'global' },
+  );
 
   useEffect(() => {
-    manager?.setInstrumentMode(enabled)
-  }, [enabled, manager])
+    manager?.setInstrumentMode(enabled);
+  }, [enabled, manager]);
 
   // Auto-disable on navigation away from Instrument view
   // (handled by useActiveContextualScope cleanup in parent)
@@ -1221,13 +1334,13 @@ Note-on and note-off handlers are registered internally by the `ShortcutManager`
 
 These are distinct systems:
 
-| Concern | Keyboard Navigation | Keyboard Shortcuts |
-|---|---|---|
-| Purpose | Move focus between elements | Trigger actions without focus |
-| Keys | Tab, Shift+Tab, Arrow keys (in widgets) | Any key combo |
-| Standard | WCAG 2.2 / WAI-ARIA patterns | Application-specific |
-| Overridable | No | Yes (customizable) |
-| Scope | Follows DOM focus order | Scope-based priority (7 levels) |
+| Concern     | Keyboard Navigation                     | Keyboard Shortcuts              |
+| ----------- | --------------------------------------- | ------------------------------- |
+| Purpose     | Move focus between elements             | Trigger actions without focus   |
+| Keys        | Tab, Shift+Tab, Arrow keys (in widgets) | Any key combo                   |
+| Standard    | WCAG 2.2 / WAI-ARIA patterns            | Application-specific            |
+| Overridable | No                                      | Yes (customizable)              |
+| Scope       | Follows DOM focus order                 | Scope-based priority (7 levels) |
 
 The shortcut system never interferes with standard keyboard navigation. Tab, Shift+Tab, and arrow-key navigation within Radix composite widgets (tabs, toolbars, menus) always take priority. The focused interactive element (level 3) and focused custom widget (level 4) checks ensure that Space and Enter activate focused buttons and controls before being claimed by application shortcuts.
 
@@ -1242,85 +1355,545 @@ The shortcut system never interferes with standard keyboard navigation. Tab, Shi
 ```typescript
 export const DEFAULT_KEYMAP: Record<ShortcutActionId, ShortcutDefinition> = {
   // ── Playback ──
-  'playback.playPause':     { id: 'playback.playPause',     label: 'Play / Pause',       category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Space' as KeyCombo },           reserved: false },
-  'playback.stop':          { id: 'playback.stop',           label: 'Stop',               category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Ctrl+Space' as KeyCombo },      reserved: false },
-  'playback.nextTrack':     { id: 'playback.nextTrack',      label: 'Next Track',         category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Ctrl+ArrowRight' as KeyCombo }, reserved: false },
-  'playback.previousTrack': { id: 'playback.previousTrack',  label: 'Previous Track',     category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Ctrl+ArrowLeft' as KeyCombo },  reserved: false },
-  'playback.seekForward':   { id: 'playback.seekForward',    label: 'Seek Forward (5s)',  category: 'Playback',   scope: 'global', defaultBinding: { primary: 'ArrowRight' as KeyCombo },      reserved: false },
-  'playback.seekBackward':  { id: 'playback.seekBackward',   label: 'Seek Backward (5s)', category: 'Playback',   scope: 'global', defaultBinding: { primary: 'ArrowLeft' as KeyCombo },       reserved: false },
-  'playback.seekForwardLong':  { id: 'playback.seekForwardLong',  label: 'Seek Forward (30s)',  category: 'Playback', scope: 'global', defaultBinding: { primary: 'Shift+ArrowRight' as KeyCombo }, reserved: false },
-  'playback.seekBackwardLong': { id: 'playback.seekBackwardLong', label: 'Seek Backward (30s)', category: 'Playback', scope: 'global', defaultBinding: { primary: 'Shift+ArrowLeft' as KeyCombo },  reserved: false },
-  'playback.volumeUp':      { id: 'playback.volumeUp',       label: 'Volume Up',          category: 'Playback',   scope: 'global', defaultBinding: { primary: 'ArrowUp' as KeyCombo },         reserved: false },
-  'playback.volumeDown':    { id: 'playback.volumeDown',     label: 'Volume Down',        category: 'Playback',   scope: 'global', defaultBinding: { primary: 'ArrowDown' as KeyCombo },       reserved: false },
-  'playback.mute':          { id: 'playback.mute',           label: 'Mute / Unmute',      category: 'Playback',   scope: 'global', defaultBinding: { primary: 'KeyM' as KeyCombo },            reserved: false },
-  'playback.speedUp':       { id: 'playback.speedUp',        label: 'Speed +0.25×',       category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Shift+ArrowUp' as KeyCombo },   reserved: false },
-  'playback.speedDown':     { id: 'playback.speedDown',      label: 'Speed −0.25×',       category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Shift+ArrowDown' as KeyCombo }, reserved: false },
-  'playback.speedReset':    { id: 'playback.speedReset',     label: 'Speed Reset (1×)',   category: 'Playback',   scope: 'global', defaultBinding: { primary: 'Shift+Backspace' as KeyCombo }, reserved: false },
-  'playback.toggleRepeat':  { id: 'playback.toggleRepeat',   label: 'Toggle Repeat',      category: 'Playback',   scope: 'global', defaultBinding: { primary: 'KeyR' as KeyCombo },            reserved: false },
-  'playback.toggleShuffle': { id: 'playback.toggleShuffle',  label: 'Toggle Shuffle',     category: 'Playback',   scope: 'global', defaultBinding: { primary: 'KeyS' as KeyCombo },            reserved: false },
+  'playback.playPause': {
+    id: 'playback.playPause',
+    label: 'Play / Pause',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Space' as KeyCombo },
+    reserved: false,
+  },
+  'playback.stop': {
+    id: 'playback.stop',
+    label: 'Stop',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+Space' as KeyCombo },
+    reserved: false,
+  },
+  'playback.nextTrack': {
+    id: 'playback.nextTrack',
+    label: 'Next Track',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+ArrowRight' as KeyCombo },
+    reserved: false,
+  },
+  'playback.previousTrack': {
+    id: 'playback.previousTrack',
+    label: 'Previous Track',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+ArrowLeft' as KeyCombo },
+    reserved: false,
+  },
+  'playback.seekForward': {
+    id: 'playback.seekForward',
+    label: 'Seek Forward (5s)',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'ArrowRight' as KeyCombo },
+    reserved: false,
+  },
+  'playback.seekBackward': {
+    id: 'playback.seekBackward',
+    label: 'Seek Backward (5s)',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'ArrowLeft' as KeyCombo },
+    reserved: false,
+  },
+  'playback.seekForwardLong': {
+    id: 'playback.seekForwardLong',
+    label: 'Seek Forward (30s)',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+ArrowRight' as KeyCombo },
+    reserved: false,
+  },
+  'playback.seekBackwardLong': {
+    id: 'playback.seekBackwardLong',
+    label: 'Seek Backward (30s)',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+ArrowLeft' as KeyCombo },
+    reserved: false,
+  },
+  'playback.volumeUp': {
+    id: 'playback.volumeUp',
+    label: 'Volume Up',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'ArrowUp' as KeyCombo },
+    reserved: false,
+  },
+  'playback.volumeDown': {
+    id: 'playback.volumeDown',
+    label: 'Volume Down',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'ArrowDown' as KeyCombo },
+    reserved: false,
+  },
+  'playback.mute': {
+    id: 'playback.mute',
+    label: 'Mute / Unmute',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'KeyM' as KeyCombo },
+    reserved: false,
+  },
+  'playback.speedUp': {
+    id: 'playback.speedUp',
+    label: 'Speed +0.25×',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+ArrowUp' as KeyCombo },
+    reserved: false,
+  },
+  'playback.speedDown': {
+    id: 'playback.speedDown',
+    label: 'Speed −0.25×',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+ArrowDown' as KeyCombo },
+    reserved: false,
+  },
+  'playback.speedReset': {
+    id: 'playback.speedReset',
+    label: 'Speed Reset (1×)',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Backspace' as KeyCombo },
+    reserved: false,
+  },
+  'playback.toggleRepeat': {
+    id: 'playback.toggleRepeat',
+    label: 'Toggle Repeat',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'KeyR' as KeyCombo },
+    reserved: false,
+  },
+  'playback.toggleShuffle': {
+    id: 'playback.toggleShuffle',
+    label: 'Toggle Shuffle',
+    category: 'Playback',
+    scope: 'global',
+    defaultBinding: { primary: 'KeyS' as KeyCombo },
+    reserved: false,
+  },
 
   // ── Navigation ──
-  'navigation.player':     { id: 'navigation.player',     label: 'Player View',          category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Alt+Digit1' as KeyCombo }, reserved: false },
-  'navigation.playlist':   { id: 'navigation.playlist',   label: 'Playlist View',        category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Alt+Digit2' as KeyCombo }, reserved: false },
-  'navigation.instrument': { id: 'navigation.instrument', label: 'Instrument View',      category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Alt+Digit3' as KeyCombo }, reserved: false },
-  'navigation.analysis':   { id: 'navigation.analysis',   label: 'Analysis View',        category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Alt+Digit4' as KeyCombo }, reserved: false },
-  'navigation.settings':   { id: 'navigation.settings',   label: 'Settings View',        category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Alt+Digit5' as KeyCombo }, reserved: false },
-  'navigation.search':     { id: 'navigation.search',     label: 'Focus Search',         category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyF' as KeyCombo },  reserved: false },
-  'navigation.showShortcuts': { id: 'navigation.showShortcuts', label: 'Keyboard Shortcuts', category: 'Navigation', scope: 'global', defaultBinding: { primary: 'Shift+Slash' as KeyCombo }, reserved: false },
+  'navigation.player': {
+    id: 'navigation.player',
+    label: 'Player View',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Alt+Digit1' as KeyCombo },
+    reserved: false,
+  },
+  'navigation.playlist': {
+    id: 'navigation.playlist',
+    label: 'Playlist View',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Alt+Digit2' as KeyCombo },
+    reserved: false,
+  },
+  'navigation.instrument': {
+    id: 'navigation.instrument',
+    label: 'Instrument View',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Alt+Digit3' as KeyCombo },
+    reserved: false,
+  },
+  'navigation.analysis': {
+    id: 'navigation.analysis',
+    label: 'Analysis View',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Alt+Digit4' as KeyCombo },
+    reserved: false,
+  },
+  'navigation.settings': {
+    id: 'navigation.settings',
+    label: 'Settings View',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Alt+Digit5' as KeyCombo },
+    reserved: false,
+  },
+  'navigation.search': {
+    id: 'navigation.search',
+    label: 'Focus Search',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+KeyF' as KeyCombo },
+    reserved: false,
+  },
+  'navigation.showShortcuts': {
+    id: 'navigation.showShortcuts',
+    label: 'Keyboard Shortcuts',
+    category: 'Navigation',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Slash' as KeyCombo },
+    reserved: false,
+  },
 
   // ── Playlist ──
-  'playlist.addFiles':    { id: 'playlist.addFiles',    label: 'Add Files',          category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Ctrl+KeyO' as KeyCombo },       reserved: false },
-  'playlist.removeTrack': { id: 'playlist.removeTrack', label: 'Remove Track',       category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Delete' as KeyCombo },          reserved: false },
-  'playlist.moveUp':      { id: 'playlist.moveUp',      label: 'Move Track Up',      category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Alt+ArrowUp' as KeyCombo },     reserved: false },
-  'playlist.moveDown':    { id: 'playlist.moveDown',     label: 'Move Track Down',    category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Alt+ArrowDown' as KeyCombo },   reserved: false },
-  'playlist.selectAll':   { id: 'playlist.selectAll',    label: 'Select All',         category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Ctrl+KeyA' as KeyCombo },       reserved: false },
-  'playlist.deselectAll': { id: 'playlist.deselectAll',  label: 'Deselect All',       category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Ctrl+Shift+KeyA' as KeyCombo }, reserved: false },
-  'playlist.playSelected':{ id: 'playlist.playSelected', label: 'Play Selected',      category: 'Playlist', scope: 'contextual', contextualScope: 'playlist', defaultBinding: { primary: 'Enter' as KeyCombo },           reserved: false },
+  'playlist.addFiles': {
+    id: 'playlist.addFiles',
+    label: 'Add Files',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Ctrl+KeyO' as KeyCombo },
+    reserved: false,
+  },
+  'playlist.removeTrack': {
+    id: 'playlist.removeTrack',
+    label: 'Remove Track',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Delete' as KeyCombo },
+    reserved: false,
+  },
+  'playlist.moveUp': {
+    id: 'playlist.moveUp',
+    label: 'Move Track Up',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Alt+ArrowUp' as KeyCombo },
+    reserved: false,
+  },
+  'playlist.moveDown': {
+    id: 'playlist.moveDown',
+    label: 'Move Track Down',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Alt+ArrowDown' as KeyCombo },
+    reserved: false,
+  },
+  'playlist.selectAll': {
+    id: 'playlist.selectAll',
+    label: 'Select All',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Ctrl+KeyA' as KeyCombo },
+    reserved: false,
+  },
+  'playlist.deselectAll': {
+    id: 'playlist.deselectAll',
+    label: 'Deselect All',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Ctrl+Shift+KeyA' as KeyCombo },
+    reserved: false,
+  },
+  'playlist.playSelected': {
+    id: 'playlist.playSelected',
+    label: 'Play Selected',
+    category: 'Playlist',
+    scope: 'contextual',
+    contextualScope: 'playlist',
+    defaultBinding: { primary: 'Enter' as KeyCombo },
+    reserved: false,
+  },
 
   // ── Mixer ──
-  'mixer.toggleVoice1': { id: 'mixer.toggleVoice1', label: 'Toggle Voice 1', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit1' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice2': { id: 'mixer.toggleVoice2', label: 'Toggle Voice 2', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit2' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice3': { id: 'mixer.toggleVoice3', label: 'Toggle Voice 3', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit3' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice4': { id: 'mixer.toggleVoice4', label: 'Toggle Voice 4', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit4' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice5': { id: 'mixer.toggleVoice5', label: 'Toggle Voice 5', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit5' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice6': { id: 'mixer.toggleVoice6', label: 'Toggle Voice 6', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit6' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice7': { id: 'mixer.toggleVoice7', label: 'Toggle Voice 7', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit7' as KeyCombo }, reserved: false },
-  'mixer.toggleVoice8': { id: 'mixer.toggleVoice8', label: 'Toggle Voice 8', category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit8' as KeyCombo }, reserved: false },
-  'mixer.soloVoice1':   { id: 'mixer.soloVoice1',   label: 'Solo Voice 1',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit1' as KeyCombo }, reserved: false },
-  'mixer.soloVoice2':   { id: 'mixer.soloVoice2',   label: 'Solo Voice 2',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit2' as KeyCombo }, reserved: false },
-  'mixer.soloVoice3':   { id: 'mixer.soloVoice3',   label: 'Solo Voice 3',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit3' as KeyCombo }, reserved: false },
-  'mixer.soloVoice4':   { id: 'mixer.soloVoice4',   label: 'Solo Voice 4',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit4' as KeyCombo }, reserved: false },
-  'mixer.soloVoice5':   { id: 'mixer.soloVoice5',   label: 'Solo Voice 5',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit5' as KeyCombo }, reserved: false },
-  'mixer.soloVoice6':   { id: 'mixer.soloVoice6',   label: 'Solo Voice 6',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit6' as KeyCombo }, reserved: false },
-  'mixer.soloVoice7':   { id: 'mixer.soloVoice7',   label: 'Solo Voice 7',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit7' as KeyCombo }, reserved: false },
-  'mixer.soloVoice8':   { id: 'mixer.soloVoice8',   label: 'Solo Voice 8',  category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Shift+Digit8' as KeyCombo }, reserved: false },
-  'mixer.unmuteAll':    { id: 'mixer.unmuteAll',     label: 'Unmute All',    category: 'Mixer', scope: 'global', defaultBinding: { primary: 'Digit0' as KeyCombo },       reserved: false },
+  'mixer.toggleVoice1': {
+    id: 'mixer.toggleVoice1',
+    label: 'Toggle Voice 1',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit1' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice2': {
+    id: 'mixer.toggleVoice2',
+    label: 'Toggle Voice 2',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit2' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice3': {
+    id: 'mixer.toggleVoice3',
+    label: 'Toggle Voice 3',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit3' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice4': {
+    id: 'mixer.toggleVoice4',
+    label: 'Toggle Voice 4',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit4' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice5': {
+    id: 'mixer.toggleVoice5',
+    label: 'Toggle Voice 5',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit5' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice6': {
+    id: 'mixer.toggleVoice6',
+    label: 'Toggle Voice 6',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit6' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice7': {
+    id: 'mixer.toggleVoice7',
+    label: 'Toggle Voice 7',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit7' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.toggleVoice8': {
+    id: 'mixer.toggleVoice8',
+    label: 'Toggle Voice 8',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit8' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice1': {
+    id: 'mixer.soloVoice1',
+    label: 'Solo Voice 1',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit1' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice2': {
+    id: 'mixer.soloVoice2',
+    label: 'Solo Voice 2',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit2' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice3': {
+    id: 'mixer.soloVoice3',
+    label: 'Solo Voice 3',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit3' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice4': {
+    id: 'mixer.soloVoice4',
+    label: 'Solo Voice 4',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit4' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice5': {
+    id: 'mixer.soloVoice5',
+    label: 'Solo Voice 5',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit5' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice6': {
+    id: 'mixer.soloVoice6',
+    label: 'Solo Voice 6',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit6' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice7': {
+    id: 'mixer.soloVoice7',
+    label: 'Solo Voice 7',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit7' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.soloVoice8': {
+    id: 'mixer.soloVoice8',
+    label: 'Solo Voice 8',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+Digit8' as KeyCombo },
+    reserved: false,
+  },
+  'mixer.unmuteAll': {
+    id: 'mixer.unmuteAll',
+    label: 'Unmute All',
+    category: 'Mixer',
+    scope: 'global',
+    defaultBinding: { primary: 'Digit0' as KeyCombo },
+    reserved: false,
+  },
 
   // ── Analysis ──
-  'analysis.memoryTab':        { id: 'analysis.memoryTab',        label: 'Memory Tab',       category: 'Analysis', scope: 'contextual', contextualScope: 'analysis', defaultBinding: { primary: 'Alt+KeyM' as KeyCombo }, reserved: false },
-  'analysis.registersTab':     { id: 'analysis.registersTab',     label: 'Registers Tab',    category: 'Analysis', scope: 'contextual', contextualScope: 'analysis', defaultBinding: { primary: 'Alt+KeyR' as KeyCombo }, reserved: false },
-  'analysis.voicesTab':        { id: 'analysis.voicesTab',        label: 'Voices Tab',       category: 'Analysis', scope: 'contextual', contextualScope: 'analysis', defaultBinding: { primary: 'Alt+KeyV' as KeyCombo }, reserved: false },
-  'analysis.echoTab':          { id: 'analysis.echoTab',          label: 'Echo Tab',         category: 'Analysis', scope: 'contextual', contextualScope: 'analysis', defaultBinding: { primary: 'Alt+KeyE' as KeyCombo }, reserved: false },
-  'analysis.toggleHexDecimal': { id: 'analysis.toggleHexDecimal', label: 'Toggle Hex/Dec',   category: 'Analysis', scope: 'contextual', contextualScope: 'analysis', defaultBinding: { primary: 'KeyH' as KeyCombo },     reserved: false },
+  'analysis.memoryTab': {
+    id: 'analysis.memoryTab',
+    label: 'Memory Tab',
+    category: 'Analysis',
+    scope: 'contextual',
+    contextualScope: 'analysis',
+    defaultBinding: { primary: 'Alt+KeyM' as KeyCombo },
+    reserved: false,
+  },
+  'analysis.registersTab': {
+    id: 'analysis.registersTab',
+    label: 'Registers Tab',
+    category: 'Analysis',
+    scope: 'contextual',
+    contextualScope: 'analysis',
+    defaultBinding: { primary: 'Alt+KeyR' as KeyCombo },
+    reserved: false,
+  },
+  'analysis.voicesTab': {
+    id: 'analysis.voicesTab',
+    label: 'Voices Tab',
+    category: 'Analysis',
+    scope: 'contextual',
+    contextualScope: 'analysis',
+    defaultBinding: { primary: 'Alt+KeyV' as KeyCombo },
+    reserved: false,
+  },
+  'analysis.echoTab': {
+    id: 'analysis.echoTab',
+    label: 'Echo Tab',
+    category: 'Analysis',
+    scope: 'contextual',
+    contextualScope: 'analysis',
+    defaultBinding: { primary: 'Alt+KeyE' as KeyCombo },
+    reserved: false,
+  },
+  'analysis.toggleHexDecimal': {
+    id: 'analysis.toggleHexDecimal',
+    label: 'Toggle Hex/Dec',
+    category: 'Analysis',
+    scope: 'contextual',
+    contextualScope: 'analysis',
+    defaultBinding: { primary: 'KeyH' as KeyCombo },
+    reserved: false,
+  },
 
   // ── Export ──
-  'export.open':  { id: 'export.open',  label: 'Export…',       category: 'Export', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyE' as KeyCombo },       reserved: false },
-  'export.quick': { id: 'export.quick', label: 'Quick Export',  category: 'Export', scope: 'global', defaultBinding: { primary: 'Ctrl+Shift+KeyE' as KeyCombo }, reserved: false },
+  'export.open': {
+    id: 'export.open',
+    label: 'Export…',
+    category: 'Export',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+KeyE' as KeyCombo },
+    reserved: false,
+  },
+  'export.quick': {
+    id: 'export.quick',
+    label: 'Quick Export',
+    category: 'Export',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+Shift+KeyE' as KeyCombo },
+    reserved: false,
+  },
 
   // ── A-B Loop ──
-  'abLoop.setStart':  { id: 'abLoop.setStart',  label: 'Set Loop Start (A)', category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'BracketLeft' as KeyCombo },  reserved: false },
-  'abLoop.setEnd':    { id: 'abLoop.setEnd',    label: 'Set Loop End (B)',   category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'BracketRight' as KeyCombo }, reserved: false },
-  'abLoop.toggle':    { id: 'abLoop.toggle',    label: 'Toggle A-B Loop',   category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'KeyL' as KeyCombo },         reserved: false },
-  'abLoop.clear':     { id: 'abLoop.clear',     label: 'Clear A-B Loop',    category: 'A-B Loop', scope: 'global', defaultBinding: { primary: 'Shift+KeyL' as KeyCombo },   reserved: false },
+  'abLoop.setStart': {
+    id: 'abLoop.setStart',
+    label: 'Set Loop Start (A)',
+    category: 'A-B Loop',
+    scope: 'global',
+    defaultBinding: { primary: 'BracketLeft' as KeyCombo },
+    reserved: false,
+  },
+  'abLoop.setEnd': {
+    id: 'abLoop.setEnd',
+    label: 'Set Loop End (B)',
+    category: 'A-B Loop',
+    scope: 'global',
+    defaultBinding: { primary: 'BracketRight' as KeyCombo },
+    reserved: false,
+  },
+  'abLoop.toggle': {
+    id: 'abLoop.toggle',
+    label: 'Toggle A-B Loop',
+    category: 'A-B Loop',
+    scope: 'global',
+    defaultBinding: { primary: 'KeyL' as KeyCombo },
+    reserved: false,
+  },
+  'abLoop.clear': {
+    id: 'abLoop.clear',
+    label: 'Clear A-B Loop',
+    category: 'A-B Loop',
+    scope: 'global',
+    defaultBinding: { primary: 'Shift+KeyL' as KeyCombo },
+    reserved: false,
+  },
 
   // ── General ──
-  'general.openFile':              { id: 'general.openFile',              label: 'Open File…',            category: 'General', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyO' as KeyCombo },       reserved: false },
-  'general.undo':                  { id: 'general.undo',                  label: 'Undo',                  category: 'General', scope: 'global', defaultBinding: { primary: 'Ctrl+KeyZ' as KeyCombo },       reserved: false },
-  'general.redo':                  { id: 'general.redo',                  label: 'Redo',                  category: 'General', scope: 'global', defaultBinding: { primary: 'Ctrl+Shift+KeyZ' as KeyCombo }, reserved: false },
-  'general.fullscreen':            { id: 'general.fullscreen',            label: 'Toggle Fullscreen',     category: 'General', scope: 'global', defaultBinding: { primary: 'KeyF' as KeyCombo },             reserved: false },
-  'general.close':                 { id: 'general.close',                 label: 'Close / Cancel',        category: 'General', scope: 'global', defaultBinding: { primary: 'Escape' as KeyCombo },           reserved: true },
-  'general.toggleInstrumentMode':  { id: 'general.toggleInstrumentMode',  label: 'Toggle Instrument Mode',category: 'General', scope: 'global', defaultBinding: { primary: 'Backquote' as KeyCombo },       reserved: false },
-}
+  'general.openFile': {
+    id: 'general.openFile',
+    label: 'Open File…',
+    category: 'General',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+KeyO' as KeyCombo },
+    reserved: false,
+  },
+  'general.undo': {
+    id: 'general.undo',
+    label: 'Undo',
+    category: 'General',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+KeyZ' as KeyCombo },
+    reserved: false,
+  },
+  'general.redo': {
+    id: 'general.redo',
+    label: 'Redo',
+    category: 'General',
+    scope: 'global',
+    defaultBinding: { primary: 'Ctrl+Shift+KeyZ' as KeyCombo },
+    reserved: false,
+  },
+  'general.fullscreen': {
+    id: 'general.fullscreen',
+    label: 'Toggle Fullscreen',
+    category: 'General',
+    scope: 'global',
+    defaultBinding: { primary: 'KeyF' as KeyCombo },
+    reserved: false,
+  },
+  'general.close': {
+    id: 'general.close',
+    label: 'Close / Cancel',
+    category: 'General',
+    scope: 'global',
+    defaultBinding: { primary: 'Escape' as KeyCombo },
+    reserved: true,
+  },
+  'general.toggleInstrumentMode': {
+    id: 'general.toggleInstrumentMode',
+    label: 'Toggle Instrument Mode',
+    category: 'General',
+    scope: 'global',
+    defaultBinding: { primary: 'Backquote' as KeyCombo },
+    reserved: false,
+  },
+};
 ```
 
 ## Appendix B: Instrument Note Mapping Table
@@ -1328,38 +1901,38 @@ export const DEFAULT_KEYMAP: Record<ShortcutActionId, ShortcutDefinition> = {
 ```typescript
 export const INSTRUMENT_KEY_MAP: InstrumentKeyMapping[] = [
   // Lower octave (base)
-  { code: 'KeyZ',   note: 0,  octaveRelative: 0 },  // C
-  { code: 'KeyS',   note: 1,  octaveRelative: 0 },  // C#
-  { code: 'KeyX',   note: 2,  octaveRelative: 0 },  // D
-  { code: 'KeyD',   note: 3,  octaveRelative: 0 },  // D#
-  { code: 'KeyC',   note: 4,  octaveRelative: 0 },  // E
-  { code: 'KeyV',   note: 5,  octaveRelative: 0 },  // F
-  { code: 'KeyG',   note: 6,  octaveRelative: 0 },  // F#
-  { code: 'KeyB',   note: 7,  octaveRelative: 0 },  // G
-  { code: 'KeyH',   note: 8,  octaveRelative: 0 },  // G#
-  { code: 'KeyN',   note: 9,  octaveRelative: 0 },  // A
-  { code: 'KeyJ',   note: 10, octaveRelative: 0 },  // A#
-  { code: 'KeyM',   note: 11, octaveRelative: 0 },  // B
+  { code: 'KeyZ', note: 0, octaveRelative: 0 }, // C
+  { code: 'KeyS', note: 1, octaveRelative: 0 }, // C#
+  { code: 'KeyX', note: 2, octaveRelative: 0 }, // D
+  { code: 'KeyD', note: 3, octaveRelative: 0 }, // D#
+  { code: 'KeyC', note: 4, octaveRelative: 0 }, // E
+  { code: 'KeyV', note: 5, octaveRelative: 0 }, // F
+  { code: 'KeyG', note: 6, octaveRelative: 0 }, // F#
+  { code: 'KeyB', note: 7, octaveRelative: 0 }, // G
+  { code: 'KeyH', note: 8, octaveRelative: 0 }, // G#
+  { code: 'KeyN', note: 9, octaveRelative: 0 }, // A
+  { code: 'KeyJ', note: 10, octaveRelative: 0 }, // A#
+  { code: 'KeyM', note: 11, octaveRelative: 0 }, // B
 
   // Upper octave (base + 1)
   // Note: Digit1 and Digit4 are intentionally absent — there is no black key
   // between E and F (Digit1 would be between KeyE/E and KeyR/F) or between
   // B and C (Digit4 would be between KeyU/B and KeyI/C). This mirrors the
   // chromatic layout of a real piano keyboard.
-  { code: 'KeyQ',   note: 0,  octaveRelative: 1 },  // C
-  { code: 'Digit2', note: 1,  octaveRelative: 1 },  // C#
-  { code: 'KeyW',   note: 2,  octaveRelative: 1 },  // D
-  { code: 'Digit3', note: 3,  octaveRelative: 1 },  // D#
-  { code: 'KeyE',   note: 4,  octaveRelative: 1 },  // E
-  { code: 'KeyR',   note: 5,  octaveRelative: 1 },  // F
-  { code: 'Digit5', note: 6,  octaveRelative: 1 },  // F#
-  { code: 'KeyT',   note: 7,  octaveRelative: 1 },  // G
-  { code: 'Digit6', note: 8,  octaveRelative: 1 },  // G#
-  { code: 'KeyY',   note: 9,  octaveRelative: 1 },  // A
-  { code: 'Digit7', note: 10, octaveRelative: 1 },  // A#
-  { code: 'KeyU',   note: 11, octaveRelative: 1 },  // B
-  { code: 'KeyI',   note: 0,  octaveRelative: 2 },  // C (next octave start)
-]
+  { code: 'KeyQ', note: 0, octaveRelative: 1 }, // C
+  { code: 'Digit2', note: 1, octaveRelative: 1 }, // C#
+  { code: 'KeyW', note: 2, octaveRelative: 1 }, // D
+  { code: 'Digit3', note: 3, octaveRelative: 1 }, // D#
+  { code: 'KeyE', note: 4, octaveRelative: 1 }, // E
+  { code: 'KeyR', note: 5, octaveRelative: 1 }, // F
+  { code: 'Digit5', note: 6, octaveRelative: 1 }, // F#
+  { code: 'KeyT', note: 7, octaveRelative: 1 }, // G
+  { code: 'Digit6', note: 8, octaveRelative: 1 }, // G#
+  { code: 'KeyY', note: 9, octaveRelative: 1 }, // A
+  { code: 'Digit7', note: 10, octaveRelative: 1 }, // A#
+  { code: 'KeyU', note: 11, octaveRelative: 1 }, // B
+  { code: 'KeyI', note: 0, octaveRelative: 2 }, // C (next octave start)
+];
 
 // MIDI note computed as: (baseOctave + octaveRelative) * 12 + note
 ```
@@ -1368,29 +1941,28 @@ export const INSTRUMENT_KEY_MAP: InstrumentKeyMapping[] = [
 
 This table documents key bindings where the same physical key serves different purposes depending on scope, and the designed resolution:
 
-| Key | Global | Instrument Mode | Resolution |
-|---|---|---|---|
-| `Digit1`–`Digit8` | Voice mute toggle | Upper octave notes (2,3,5,6,7 only) | Instrument mode claims these keys; voice mute unavailable in instrument mode. Mixer controls remain accessible via mouse. |
-| `KeyM` | Mute/unmute audio | Lower octave B note | Instrument mode claims; audio mute via mouse or `Ctrl+M` (not bound by default but available as secondary). |
-| `KeyR` | Toggle repeat | Upper octave F note | Instrument mode claims; repeat toggle via mouse. |
-| `KeyS` | Toggle shuffle | Lower octave C# note | Instrument mode claims; shuffle toggle via mouse. |
-| `KeyF` | Toggle fullscreen | Not mapped (instrument) | Falls through to global; fullscreen works in instrument mode. |
-| `Space` | Play/pause | Not mapped (instrument) | **Falls through** to global; playback toggle works in instrument mode via passthrough. Space is physically distant from note keys. |
-| `ArrowUp/Down` | Volume | Not mapped (instrument) | Falls through to global; volume works in instrument mode. |
-| `ArrowLeft/Right` | Seek | Not mapped (instrument) | Falls through to global; seek works in instrument mode. |
-| `Escape` | Close/cancel | Exit instrument mode | Reserved — always exits mode first, then closes overlays. |
-| `Delete` | *Playlist:* remove track | Not mapped | Contextual scope; only active in playlist view. |
-| `BracketLeft` (`[`) | Set loop start (A) | Decrease velocity | Instrument mode (scope 5) claims; A-B loop set-start unavailable in instrument mode. |
-| `BracketRight` (`]`) | Set loop end (B) | Increase velocity | Instrument mode (scope 5) claims; A-B loop set-end unavailable in instrument mode. |
-| `Ctrl+KeyO` | *Global:* open file / *Playlist:* add files | Not mapped | Contextual scope wins when in playlist view; both trigger file picker, contextual version is playlist-aware. |
+| Key                  | Global                                      | Instrument Mode                     | Resolution                                                                                                                         |
+| -------------------- | ------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `Digit1`–`Digit8`    | Voice mute toggle                           | Upper octave notes (2,3,5,6,7 only) | Instrument mode claims these keys; voice mute unavailable in instrument mode. Mixer controls remain accessible via mouse.          |
+| `KeyM`               | Mute/unmute audio                           | Lower octave B note                 | Instrument mode claims; audio mute via mouse or `Ctrl+M` (not bound by default but available as secondary).                        |
+| `KeyR`               | Toggle repeat                               | Upper octave F note                 | Instrument mode claims; repeat toggle via mouse.                                                                                   |
+| `KeyS`               | Toggle shuffle                              | Lower octave C# note                | Instrument mode claims; shuffle toggle via mouse.                                                                                  |
+| `KeyF`               | Toggle fullscreen                           | Not mapped (instrument)             | Falls through to global; fullscreen works in instrument mode.                                                                      |
+| `Space`              | Play/pause                                  | Not mapped (instrument)             | **Falls through** to global; playback toggle works in instrument mode via passthrough. Space is physically distant from note keys. |
+| `ArrowUp/Down`       | Volume                                      | Not mapped (instrument)             | Falls through to global; volume works in instrument mode.                                                                          |
+| `ArrowLeft/Right`    | Seek                                        | Not mapped (instrument)             | Falls through to global; seek works in instrument mode.                                                                            |
+| `Escape`             | Close/cancel                                | Exit instrument mode                | Reserved — always exits mode first, then closes overlays.                                                                          |
+| `Delete`             | _Playlist:_ remove track                    | Not mapped                          | Contextual scope; only active in playlist view.                                                                                    |
+| `BracketLeft` (`[`)  | Set loop start (A)                          | Decrease velocity                   | Instrument mode (scope 5) claims; A-B loop set-start unavailable in instrument mode.                                               |
+| `BracketRight` (`]`) | Set loop end (B)                            | Increase velocity                   | Instrument mode (scope 5) claims; A-B loop set-end unavailable in instrument mode.                                                 |
+| `Ctrl+KeyO`          | _Global:_ open file / _Playlist:_ add files | Not mapped                          | Contextual scope wins when in playlist view; both trigger file picker, contextual version is playlist-aware.                       |
 
 ## Appendix D: Open Questions for Implementation
 
-1. **Shortcut recording UX**: Should the recording mode in settings capture the *first* valid keypress, or should it wait for a full combo (e.g., user presses Ctrl, then K)? Recommendation: capture on keyup of the final key in the combo, with a visual indicator showing the combo building in real time.
+1. **Shortcut recording UX**: Should the recording mode in settings capture the _first_ valid keypress, or should it wait for a full combo (e.g., user presses Ctrl, then K)? Recommendation: capture on keyup of the final key in the combo, with a visual indicator showing the combo building in real time.
 
 2. **Accessibility of instrument mode**: Screen reader users cannot use the instrument keyboard in the same way. Consider an alternative input method — typing note names (e.g., "C4") in an input field, or using MIDI input. The keyboard shortcut help panel should note that instrument mode is a sighted/hearing user feature with MIDI as the accessible alternative.
 
 3. **Gamepad support**: The shortcut system could be extended to support gamepad inputs for playback controls. This is out of scope for the initial implementation but the `ShortcutManager`'s architecture (combo → action mapping) accommodates non-keyboard input sources.
 
 4. **Touch shortcut gestures**: On mobile, swipe gestures could map to actions (swipe left/right for next/previous). This could integrate with the same action ID system but uses a separate gesture recognition layer, not the keyboard `ShortcutManager`.
-

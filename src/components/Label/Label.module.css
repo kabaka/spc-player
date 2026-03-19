@@ -1,0 +1,10 @@
+/* Label.module.css */
+
+.label {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-none);
+  -webkit-user-select: none;
+  user-select: none;
+}

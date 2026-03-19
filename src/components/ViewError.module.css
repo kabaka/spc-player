@@ -1,0 +1,21 @@
+.error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-6);
+  border-radius: var(--spc-radius-md);
+  background-color: var(--spc-color-surface);
+  border: 1px solid var(--spc-color-error);
+  color: var(--spc-color-text);
+}
+
+.error h2 {
+  font-size: var(--spc-font-size-lg);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-error);
+}
+
+.error p {
+  font-size: var(--spc-font-size-md);
+  color: var(--spc-color-text-secondary);
+}

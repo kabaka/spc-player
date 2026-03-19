@@ -1,0 +1,311 @@
+/* src/styles/tokens.css */
+
+/* ============================================================
+   DEFAULT: Dark theme
+   Dark is the default because it matches the SNES aesthetic
+   and is the more common preference for audio/music apps.
+   ============================================================ */
+:root {
+  /* --- Backgrounds --- */
+  --spc-color-bg: #0e0e16;
+  --spc-color-bg-subtle: #161622;
+  --spc-color-surface: #1e1e2e;
+  --spc-color-surface-raised: #282840;
+  --spc-color-overlay: rgba(0, 0, 0, 0.6);
+
+  /* --- Text --- */
+  --spc-color-text: #ededf0;
+  --spc-color-text-secondary: #9999b0;
+  --spc-color-text-muted: #606079;
+  --spc-color-text-inverse: #0e0e16;
+
+  /* --- Borders --- */
+  --spc-color-border: #2e2e44;
+  --spc-color-border-subtle: #232338;
+  --spc-color-border-strong: #3e3e58;
+
+  /* --- Accent --- */
+  --spc-color-accent: #8b5cf6;
+  --spc-color-accent-hover: #7c4dee;
+  --spc-color-accent-active: #6d28d9;
+  --spc-color-accent-subtle: rgba(139, 92, 246, 0.15);
+  --spc-color-accent-text: #c4b5fd;
+
+  /* --- Status --- */
+  --spc-color-success: #22c55e;
+  --spc-color-warning: #f59e0b;
+  --spc-color-error: #ef4444;
+  --spc-color-info: #3b82f6;
+
+  /* --- Interactive --- */
+  --spc-color-hover: rgba(255, 255, 255, 0.06);
+  --spc-color-active: rgba(255, 255, 255, 0.1);
+  --spc-color-disabled-bg: #1a1a26;
+  --spc-color-disabled-text: #4a4a60;
+  --spc-color-focus-ring: #8b5cf6;
+
+  /* --- Selection --- */
+  --spc-color-selection-bg: rgba(139, 92, 246, 0.15);
+  --spc-color-selection-text: #ededf0;
+
+  /* --- Skeleton / Loading --- */
+  --spc-color-skeleton: #1e1e2e;
+
+  /* --- Voice Channels --- */
+  --spc-color-voice-0: #60a5fa;
+  --spc-color-voice-1: #a78bfa;
+  --spc-color-voice-2: #fb7185;
+  --spc-color-voice-3: #fbbf24;
+  --spc-color-voice-4: #34d399;
+  --spc-color-voice-5: #22d3ee;
+  --spc-color-voice-6: #fb923c;
+  --spc-color-voice-7: #f472b6;
+
+  /* --- Voice Channel Subtle Variants --- */
+  --spc-color-voice-0-subtle: color-mix(in srgb, #60a5fa 15%, transparent);
+  --spc-color-voice-1-subtle: color-mix(in srgb, #a78bfa 15%, transparent);
+  --spc-color-voice-2-subtle: color-mix(in srgb, #fb7185 15%, transparent);
+  --spc-color-voice-3-subtle: color-mix(in srgb, #fbbf24 15%, transparent);
+  --spc-color-voice-4-subtle: color-mix(in srgb, #34d399 15%, transparent);
+  --spc-color-voice-5-subtle: color-mix(in srgb, #22d3ee 15%, transparent);
+  --spc-color-voice-6-subtle: color-mix(in srgb, #fb923c 15%, transparent);
+  --spc-color-voice-7-subtle: color-mix(in srgb, #f472b6 15%, transparent);
+
+  /* --- Audio Visualization (theme-independent) --- */
+  --spc-color-vu-green: #22c55e;
+  --spc-color-vu-yellow: #fbbf24;
+  --spc-color-vu-red: #ef4444;
+  --spc-color-vu-bg: #1a1a2a;
+
+  /* --- Waveform --- */
+  --spc-color-waveform: #8b5cf6;
+  --spc-color-waveform-fill: rgba(139, 92, 246, 0.2);
+  --spc-color-waveform-cursor: #ededf0;
+  --spc-color-waveform-bg: #161622;
+
+  /* --- Shadows (dark) --- */
+  --spc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --spc-shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.5);
+  --spc-shadow-lg: 0 10px 20px -4px rgba(0, 0, 0, 0.6);
+  --spc-shadow-xl: 0 20px 30px -6px rgba(0, 0, 0, 0.7);
+
+  /* === Non-color tokens (theme-independent) === */
+
+  /* --- Fonts --- */
+  --spc-font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --spc-font-mono:
+    'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas,
+    'Courier New', monospace;
+
+  /* --- Font Sizes --- */
+  --spc-font-size-xs: 0.75rem;
+  --spc-font-size-sm: 0.875rem;
+  --spc-font-size-md: 1rem;
+  --spc-font-size-lg: 1.125rem;
+  --spc-font-size-xl: 1.25rem;
+  --spc-font-size-2xl: 1.5rem;
+  --spc-font-size-3xl: 1.875rem;
+  --spc-font-size-4xl: 2.25rem;
+
+  /* --- Font Weights --- */
+  --spc-font-weight-normal: 400;
+  --spc-font-weight-medium: 500;
+  --spc-font-weight-semibold: 600;
+  --spc-font-weight-bold: 700;
+
+  /* --- Line Heights --- */
+  --spc-leading-none: 1;
+  --spc-leading-tight: 1.25;
+  --spc-leading-normal: 1.5;
+  --spc-leading-relaxed: 1.75;
+
+  /* --- Spacing --- */
+  --spc-space-0: 0;
+  --spc-space-1: 0.25rem;
+  --spc-space-2: 0.5rem;
+  --spc-space-3: 0.75rem;
+  --spc-space-4: 1rem;
+  --spc-space-5: 1.25rem;
+  --spc-space-6: 1.5rem;
+  --spc-space-8: 2rem;
+  --spc-space-10: 2.5rem;
+  --spc-space-12: 3rem;
+  --spc-space-16: 4rem;
+
+  /* --- Spacing aliases --- */
+  --spc-space-xs: var(--spc-space-1);
+  --spc-space-sm: var(--spc-space-2);
+  --spc-space-md: var(--spc-space-4);
+  --spc-space-lg: var(--spc-space-6);
+  --spc-space-xl: var(--spc-space-8);
+  --spc-space-2xl: var(--spc-space-12);
+
+  /* --- Border Radii --- */
+  --spc-radius-none: 0;
+  --spc-radius-sm: 4px;
+  --spc-radius-md: 8px;
+  --spc-radius-lg: 12px;
+  --spc-radius-xl: 16px;
+  --spc-radius-full: 9999px;
+
+  /* --- Z-Index --- */
+  --spc-z-base: 0;
+  --spc-z-raised: 10;
+  --spc-z-dropdown: 100;
+  --spc-z-sticky: 200;
+  --spc-z-overlay: 300;
+  --spc-z-modal: 400;
+  --spc-z-popover: 500;
+  --spc-z-toast: 600;
+  --spc-z-tooltip: 700;
+
+  /* --- Motion --- */
+  --spc-duration-instant: 50ms;
+  --spc-duration-fast: 100ms;
+  --spc-duration-normal: 200ms;
+  --spc-duration-slow: 300ms;
+  --spc-duration-slower: 500ms;
+
+  --spc-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --spc-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --spc-easing-out: cubic-bezier(0, 0, 0.2, 1);
+  /* Same curve as --spc-easing-default today. Kept as a separate semantic
+     token so symmetric enter/exit transitions can diverge from the
+     general-purpose default independently in a future revision. */
+  --spc-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --spc-easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- Theme transition ---
+     Intentionally always-on. Only background-color and color are
+     transitioned — during normal interaction these values are stable so
+     the transition has no visible effect. It activates only when the
+     theme class changes. prefers-reduced-motion zeroes --spc-duration-normal,
+     disabling this for users who prefer reduced motion. */
+  transition:
+    background-color var(--spc-duration-normal) var(--spc-easing-default),
+    color var(--spc-duration-normal) var(--spc-easing-default);
+}
+
+/* ============================================================
+   LIGHT THEME
+   Applied via .light class on <html>. The blocking <script> in
+   <head> always sets .dark or .light, so no @media fallback is
+   needed (see §8.3).
+   ============================================================ */
+:root.light {
+  /* --- Backgrounds --- */
+  --spc-color-bg: #f5f5f8;
+  --spc-color-bg-subtle: #ededf2;
+  --spc-color-surface: #ffffff;
+  --spc-color-surface-raised: #ffffff;
+  --spc-color-overlay: rgba(0, 0, 0, 0.4);
+
+  /* --- Text --- */
+  --spc-color-text: #1a1a28;
+  --spc-color-text-secondary: #5a5a70;
+  --spc-color-text-muted: #7e7e96;
+  --spc-color-text-inverse: #f5f5f8;
+
+  /* --- Borders --- */
+  --spc-color-border: #d4d4dc;
+  --spc-color-border-subtle: #e4e4ec;
+  --spc-color-border-strong: #b4b4c4;
+
+  /* --- Accent --- */
+  --spc-color-accent: #7c3aed;
+  --spc-color-accent-hover: #6d28d9;
+  --spc-color-accent-active: #5b21b6;
+  --spc-color-accent-subtle: rgba(124, 58, 237, 0.1);
+  --spc-color-accent-text: #6d28d9;
+
+  /* --- Status --- */
+  --spc-color-success: #16a34a;
+  --spc-color-warning: #d97706;
+  --spc-color-error: #dc2626;
+  --spc-color-info: #2563eb;
+
+  /* --- Interactive --- */
+  --spc-color-hover: rgba(0, 0, 0, 0.04);
+  --spc-color-active: rgba(0, 0, 0, 0.07);
+  --spc-color-disabled-bg: #e8e8ee;
+  --spc-color-disabled-text: #a0a0b0;
+  --spc-color-focus-ring: #7c3aed;
+
+  /* --- Selection --- */
+  --spc-color-selection-bg: rgba(124, 58, 237, 0.1);
+  --spc-color-selection-text: #1a1a28;
+
+  /* --- Skeleton / Loading --- */
+  --spc-color-skeleton: #e4e4ec;
+
+  /* --- Voice Channels --- */
+  --spc-color-voice-0: #2563eb;
+  --spc-color-voice-1: #7c3aed;
+  --spc-color-voice-2: #e11d48;
+  --spc-color-voice-3: #d97706;
+  --spc-color-voice-4: #059669;
+  --spc-color-voice-5: #0891b2;
+  --spc-color-voice-6: #ea580c;
+  --spc-color-voice-7: #db2777;
+
+  /* --- Voice Channel Subtle Variants --- */
+  --spc-color-voice-0-subtle: color-mix(in srgb, #2563eb 15%, transparent);
+  --spc-color-voice-1-subtle: color-mix(in srgb, #7c3aed 15%, transparent);
+  --spc-color-voice-2-subtle: color-mix(in srgb, #e11d48 15%, transparent);
+  --spc-color-voice-3-subtle: color-mix(in srgb, #d97706 15%, transparent);
+  --spc-color-voice-4-subtle: color-mix(in srgb, #059669 15%, transparent);
+  --spc-color-voice-5-subtle: color-mix(in srgb, #0891b2 15%, transparent);
+  --spc-color-voice-6-subtle: color-mix(in srgb, #ea580c 15%, transparent);
+  --spc-color-voice-7-subtle: color-mix(in srgb, #db2777 15%, transparent);
+
+  /* --- Waveform --- */
+  --spc-color-waveform: #7c3aed;
+  --spc-color-waveform-fill: rgba(124, 58, 237, 0.15);
+  --spc-color-waveform-cursor: #1a1a28;
+  --spc-color-waveform-bg: #ededf2;
+
+  /* --- Shadows (light) --- */
+  --spc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --spc-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --spc-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.12);
+  --spc-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --spc-duration-instant: 0ms;
+    --spc-duration-fast: 0ms;
+    --spc-duration-normal: 0ms;
+    --spc-duration-slow: 0ms;
+    --spc-duration-slower: 0ms;
+  }
+}
+
+/* ============================================================
+   HIGH CONTRAST
+   Increase contrast for users who request it.
+   ============================================================ */
+@media (prefers-contrast: more) {
+  :root {
+    --spc-color-border: #4e4e68;
+    --spc-color-border-subtle: #3e3e58;
+    --spc-color-text-secondary: #b0b0c8;
+    --spc-color-text-muted: #8888a0;
+    /* Widen focus ring for increased visibility */
+    --spc-focus-ring-width: 3px;
+  }
+
+  :root.light {
+    --spc-color-border: #9a9ab0;
+    --spc-color-border-subtle: #b0b0c0;
+    --spc-color-text-secondary: #444458;
+    --spc-color-text-muted: #666678;
+    /* Widen focus ring for increased visibility */
+    --spc-focus-ring-width: 3px;
+  }
+}

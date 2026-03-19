@@ -25,7 +25,7 @@ import { ZoneContextManager } from '@opentelemetry/context-zone';
 
 const provider = new WebTracerProvider();
 provider.addSpanProcessor(
-  new SimpleSpanProcessor(new OTLPTraceExporter({ url: '/v1/traces' }))
+  new SimpleSpanProcessor(new OTLPTraceExporter({ url: '/v1/traces' })),
 );
 provider.register({ contextManager: new ZoneContextManager() });
 
@@ -34,14 +34,14 @@ const tracer = provider.getTracer('spc-player');
 
 ## What to Instrument
 
-| Operation | Span Name | Key Attributes |
-| --------- | --------- | -------------- |
-| Load SPC file | `spc.file.load` | `file.size`, `file.name` |
-| Parse metadata | `spc.metadata.parse` | `spc.format` (id666/xid6) |
-| Init audio context | `audio.context.init` | `audio.sample_rate` |
-| Start playback | `spc.playback.start` | `spc.game`, `spc.title` |
-| Export audio | `spc.export` | `export.format`, `export.duration` |
-| WASM init | `wasm.init` | `wasm.module_size` |
+| Operation          | Span Name            | Key Attributes                     |
+| ------------------ | -------------------- | ---------------------------------- |
+| Load SPC file      | `spc.file.load`      | `file.size`, `file.name`           |
+| Parse metadata     | `spc.metadata.parse` | `spc.format` (id666/xid6)          |
+| Init audio context | `audio.context.init` | `audio.sample_rate`                |
+| Start playback     | `spc.playback.start` | `spc.game`, `spc.title`            |
+| Export audio       | `spc.export`         | `export.format`, `export.duration` |
+| WASM init          | `wasm.init`          | `wasm.module_size`                 |
 
 ## Semantic Conventions
 

@@ -41,7 +41,10 @@ import { openDB } from 'idb';
 
 const db = await openDB(DB_NAME, DB_VERSION, {
   upgrade(db) {
-    const fileStore = db.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
+    const fileStore = db.createObjectStore('files', {
+      keyPath: 'id',
+      autoIncrement: true,
+    });
     fileStore.createIndex('hash', 'hash', { unique: true });
     fileStore.createIndex('game', 'game');
     db.createObjectStore('settings');
@@ -49,7 +52,14 @@ const db = await openDB(DB_NAME, DB_VERSION, {
 });
 
 // Store a file
-await db.put('files', { hash, name, data: arrayBuffer, game, artist, addedAt: Date.now() });
+await db.put('files', {
+  hash,
+  name,
+  data: arrayBuffer,
+  game,
+  artist,
+  addedAt: Date.now(),
+});
 
 // Get by ID
 const file = await db.get('files', id);

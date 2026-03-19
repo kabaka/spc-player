@@ -19,18 +19,18 @@ type(scope): description
 
 ## Types
 
-| Type | When to Use |
-| ---- | ----------- |
-| `feat` | New feature or capability |
-| `fix` | Bug fix |
-| `docs` | Documentation-only change |
-| `style` | Formatting, whitespace (no logic change) |
+| Type       | When to Use                                             |
+| ---------- | ------------------------------------------------------- |
+| `feat`     | New feature or capability                               |
+| `fix`      | Bug fix                                                 |
+| `docs`     | Documentation-only change                               |
+| `style`    | Formatting, whitespace (no logic change)                |
 | `refactor` | Code change that neither fixes a bug nor adds a feature |
-| `perf` | Performance improvement |
-| `test` | Adding or updating tests |
-| `build` | Build system or dependency changes |
-| `ci` | CI/CD pipeline changes |
-| `chore` | Maintenance tasks (tooling, config) |
+| `perf`     | Performance improvement                                 |
+| `test`     | Adding or updating tests                                |
+| `build`    | Build system or dependency changes                      |
+| `ci`       | CI/CD pipeline changes                                  |
+| `chore`    | Maintenance tasks (tooling, config)                     |
 
 ## Scopes
 
@@ -43,7 +43,7 @@ Use the affected module or feature as scope:
 ## Rules
 
 - Description is imperative mood, lowercase, no period: "add track muting" not "Added track muting."
-- Body explains *what* and *why*, not *how*.
+- Body explains _what_ and _why_, not _how_.
 - Breaking changes: add `!` after type/scope and include `BREAKING CHANGE:` footer.
 - Reference issues in footer: `Fixes #123` or `Refs #456`.
 - One logical change per commit. Don't bundle unrelated changes.

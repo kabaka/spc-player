@@ -41,10 +41,12 @@ The `.ephemeral/` directory is a gitignored scratch space for temporary artifact
 
 Investigating how S-DSP calculates pitch from the pitch register...
 Sources:
+
 - [link to fullsnes documentation]
 - [link to reference implementation]
 
 Findings:
+
 - Pitch register is 14-bit, value represents...
 ```
 

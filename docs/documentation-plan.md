@@ -46,11 +46,11 @@ docs/
 
 ## Bounded Growth Controls
 
-| Document type | Growth pattern | Bound |
-| ------------- | -------------- | ----- |
-| ADRs | Append-only, one per decision | Natural bound: decisions are finite |
-| User guides | One per feature, updated in-place | Bounded by feature count |
-| Dev docs | Updated in-place | Fixed set of topics |
-| Requirements | Single file, updated in-place | Single document |
-| Architecture | Single file, updated in-place | Single document |
-| Ephemeral/scratch | Gitignored, cleaned regularly | Not in repo |
+| Document type     | Growth pattern                    | Bound                               |
+| ----------------- | --------------------------------- | ----------------------------------- |
+| ADRs              | Append-only, one per decision     | Natural bound: decisions are finite |
+| User guides       | One per feature, updated in-place | Bounded by feature count            |
+| Dev docs          | Updated in-place                  | Fixed set of topics                 |
+| Requirements      | Single file, updated in-place     | Single document                     |
+| Architecture      | Single file, updated in-place     | Single document                     |
+| Ephemeral/scratch | Gitignored, cleaned regularly     | Not in repo                         |

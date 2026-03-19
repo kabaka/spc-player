@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -45,42 +45,42 @@ Domain-specific components (VU meters, virtual keyboard, timeline scrubber, memo
 
 #### Tier 1 — Radix Primitives (standard UI patterns)
 
-| Component | Radix Primitive | SPC Player Usage |
-|-----------|-----------------|------------------|
-| Dialog | `Dialog` | Export dialog, settings dialog, file info |
-| Alert Dialog | `AlertDialog` | Destructive confirmations (clear playlist, overwrite export) |
-| Dropdown Menu | `DropdownMenu` | File menu, options menus |
-| Context Menu | `ContextMenu` | Right-click on playlist items |
-| Slider | `Slider` | Volume, playback speed, ADSR parameters, gain |
-| Tabs | `Tabs` | In-view tab patterns (Analysis view sub-tabs: memory/registers/voices/echo, export format tabs). Main view navigation uses TanStack Router links per ADR-0013 |
-| Toggle | `Toggle` | Mute/solo buttons per voice |
-| Toggle Group | `ToggleGroup` | View mode selector, export format selector |
-| Switch | `Switch` | Settings toggles (auto-fade, gapless playback) |
-| Tooltip | `Tooltip` | Control labels, keyboard shortcut hints |
-| Scroll Area | `ScrollArea` | Playlist, memory viewer, register dump |
-| Select | `Select` | Sample rate selection, export format dropdown |
-| Separator | `Separator` | Visual dividers between UI sections |
-| Popover | `Popover` | Info panels, quick settings overlays |
-| Progress | `Progress` | Export progress, file loading |
-| Checkbox | `Checkbox` | Batch selection in playlist, settings checkboxes |
-| Label | `Label` | Form accessibility pairing |
-| Visually Hidden | `VisuallyHidden` | Screen reader-only content for visualizations |
+| Component       | Radix Primitive  | SPC Player Usage                                                                                                                                              |
+| --------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dialog          | `Dialog`         | Export dialog, settings dialog, file info                                                                                                                     |
+| Alert Dialog    | `AlertDialog`    | Destructive confirmations (clear playlist, overwrite export)                                                                                                  |
+| Dropdown Menu   | `DropdownMenu`   | File menu, options menus                                                                                                                                      |
+| Context Menu    | `ContextMenu`    | Right-click on playlist items                                                                                                                                 |
+| Slider          | `Slider`         | Volume, playback speed, ADSR parameters, gain                                                                                                                 |
+| Tabs            | `Tabs`           | In-view tab patterns (Analysis view sub-tabs: memory/registers/voices/echo, export format tabs). Main view navigation uses TanStack Router links per ADR-0013 |
+| Toggle          | `Toggle`         | Mute/solo buttons per voice                                                                                                                                   |
+| Toggle Group    | `ToggleGroup`    | View mode selector, export format selector                                                                                                                    |
+| Switch          | `Switch`         | Settings toggles (auto-fade, gapless playback)                                                                                                                |
+| Tooltip         | `Tooltip`        | Control labels, keyboard shortcut hints                                                                                                                       |
+| Scroll Area     | `ScrollArea`     | Playlist, memory viewer, register dump                                                                                                                        |
+| Select          | `Select`         | Sample rate selection, export format dropdown                                                                                                                 |
+| Separator       | `Separator`      | Visual dividers between UI sections                                                                                                                           |
+| Popover         | `Popover`        | Info panels, quick settings overlays                                                                                                                          |
+| Progress        | `Progress`       | Export progress, file loading                                                                                                                                 |
+| Checkbox        | `Checkbox`       | Batch selection in playlist, settings checkboxes                                                                                                              |
+| Label           | `Label`          | Form accessibility pairing                                                                                                                                    |
+| Visually Hidden | `VisuallyHidden` | Screen reader-only content for visualizations                                                                                                                 |
 
 #### Tier 2 — Custom Domain Components
 
-| Component | Why Custom | Rendering Strategy |
-|-----------|-----------|-------------------|
-| VU Meter | No Radix equivalent; 60fps via rAF | Direct DOM (refs + `requestAnimationFrame`) |
-| Virtual Keyboard | Piano-style MIDI keyboard; no Radix equivalent | React reconciler (interactive frequency) |
-| Timeline Scrubber | Playback position with waveform overlay; domain-specific | Hybrid (React for controls, canvas/rAF for waveform) |
-| Memory/Register Viewer | Hex dump display; no Radix equivalent | React reconciler with virtualized scrolling |
-| Voice Channel Strip | BRR state, envelope, pitch display per voice | Hybrid (React structure, rAF for real-time values) |
-| Echo Buffer Visualization | Echo FIR visualization; no Radix equivalent | Direct DOM (canvas + rAF) |
-| ADSR Envelope Editor | Interactive envelope curve editor | Hybrid (Radix Sliders for parameter controls, canvas/rAF for real-time envelope curve visualization and current-phase indicator) |
-| BRR Waveform Viewer | Sample waveform rendering | Direct DOM (canvas + rAF) |
-| Spectrum Analyzer | FFT-based frequency domain visualization using `AnalyserNode.getFrequencyData()` | Direct DOM (canvas + rAF) |
-| Transport Controls | Play/pause/stop/skip buttons | React reconciler (semantic `<button>` elements) |
-| Playlist Item | Draggable with metadata; uses Radix internals for context menu | React reconciler with drag library |
+| Component                 | Why Custom                                                                       | Rendering Strategy                                                                                                               |
+| ------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| VU Meter                  | No Radix equivalent; 60fps via rAF                                               | Direct DOM (refs + `requestAnimationFrame`)                                                                                      |
+| Virtual Keyboard          | Piano-style MIDI keyboard; no Radix equivalent                                   | React reconciler (interactive frequency)                                                                                         |
+| Timeline Scrubber         | Playback position with waveform overlay; domain-specific                         | Hybrid (React for controls, canvas/rAF for waveform)                                                                             |
+| Memory/Register Viewer    | Hex dump display; no Radix equivalent                                            | React reconciler with virtualized scrolling                                                                                      |
+| Voice Channel Strip       | BRR state, envelope, pitch display per voice                                     | Hybrid (React structure, rAF for real-time values)                                                                               |
+| Echo Buffer Visualization | Echo FIR visualization; no Radix equivalent                                      | Direct DOM (canvas + rAF)                                                                                                        |
+| ADSR Envelope Editor      | Interactive envelope curve editor                                                | Hybrid (Radix Sliders for parameter controls, canvas/rAF for real-time envelope curve visualization and current-phase indicator) |
+| BRR Waveform Viewer       | Sample waveform rendering                                                        | Direct DOM (canvas + rAF)                                                                                                        |
+| Spectrum Analyzer         | FFT-based frequency domain visualization using `AnalyserNode.getFrequencyData()` | Direct DOM (canvas + rAF)                                                                                                        |
+| Transport Controls        | Play/pause/stop/skip buttons                                                     | React reconciler (semantic `<button>` elements)                                                                                  |
+| Playlist Item             | Draggable with metadata; uses Radix internals for context menu                   | React reconciler with drag library                                                                                               |
 
 #### Tier 2 Accessibility Requirements
 
@@ -208,7 +208,7 @@ All Radix primitives are styled via co-located CSS Module files using data-attri
   background: var(--color-overlay);
 }
 
-.overlay[data-state="open"] {
+.overlay[data-state='open'] {
   animation: fadeIn 150ms ease-out;
 }
 
@@ -218,7 +218,7 @@ All Radix primitives are styled via co-located CSS Module files using data-attri
   padding: var(--space-6);
 }
 
-.content[data-state="open"] {
+.content[data-state='open'] {
   animation: slideUp 200ms ease-out;
 }
 ```
@@ -269,17 +269,17 @@ These wrappers re-export Radix's sub-components with project-standard `className
 
 Key accessibility behaviors provided by Radix that would require manual implementation if building custom:
 
-| Primitive | Accessibility Features Provided |
-|-----------|-------------------------------|
-| Dialog | Focus trap, Escape to close, scroll lock, `aria-modal`, title/description association, return focus on close |
-| AlertDialog | Same as Dialog plus required action acknowledgment pattern, cancel-first focus |
-| DropdownMenu | Roving tabindex, typeahead search, `aria-expanded`, sub-menu navigation, Escape to close parent, portal rendering |
-| ContextMenu | Same as DropdownMenu plus right-click trigger, long-press for touch |
-| Slider | `aria-valuemin/max/now`, arrow key stepping, Home/End, Page Up/Down, orientation, range mode |
-| Tabs | `role="tablist"`, `aria-selected`, roving tabindex with arrow keys, automatic/manual activation, panel association via `aria-controls` |
-| Select | `aria-expanded`, typeahead search, `aria-selected`, arrow key navigation, Home/End, collision-aware positioning |
-| Tooltip | Delay management, `aria-describedby` association, Escape to dismiss, provider for global delay |
-| ScrollArea | Custom scrollbar with keyboard scrolling, `aria-orientation`, scroll position tracking |
+| Primitive    | Accessibility Features Provided                                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Dialog       | Focus trap, Escape to close, scroll lock, `aria-modal`, title/description association, return focus on close                           |
+| AlertDialog  | Same as Dialog plus required action acknowledgment pattern, cancel-first focus                                                         |
+| DropdownMenu | Roving tabindex, typeahead search, `aria-expanded`, sub-menu navigation, Escape to close parent, portal rendering                      |
+| ContextMenu  | Same as DropdownMenu plus right-click trigger, long-press for touch                                                                    |
+| Slider       | `aria-valuemin/max/now`, arrow key stepping, Home/End, Page Up/Down, orientation, range mode                                           |
+| Tabs         | `role="tablist"`, `aria-selected`, roving tabindex with arrow keys, automatic/manual activation, panel association via `aria-controls` |
+| Select       | `aria-expanded`, typeahead search, `aria-selected`, arrow key navigation, Home/End, collision-aware positioning                        |
+| Tooltip      | Delay management, `aria-describedby` association, Escape to dismiss, provider for global delay                                         |
+| ScrollArea   | Custom scrollbar with keyboard scrolling, `aria-orientation`, scroll position tracking                                                 |
 
 ### Performance Impact Assessment
 

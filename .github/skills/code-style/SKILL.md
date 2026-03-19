@@ -44,7 +44,7 @@ Group imports in this order, separated by blank lines:
 ### Comments
 
 - Write code that doesn't need comments.
-- When a comment is necessary, explain *why*, not *what*.
+- When a comment is necessary, explain _why_, not _what_.
 - No TODO without a linked issue or ADR reference.
 - No commented-out code. Delete it; git has history.
 

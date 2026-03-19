@@ -1,0 +1,52 @@
+/* Tooltip.module.css */
+
+.content {
+  background-color: var(--spc-color-surface-raised);
+  color: var(--spc-color-text);
+  font-size: var(--spc-font-size-xs);
+  line-height: var(--spc-leading-tight);
+  padding: var(--spc-space-1) var(--spc-space-2);
+  border-radius: var(--spc-radius-sm);
+  box-shadow: var(--spc-shadow-md);
+  z-index: var(--spc-z-tooltip);
+  -webkit-user-select: none;
+  user-select: none;
+  animation: tooltipFadeIn var(--spc-duration-fast) var(--spc-easing-out);
+}
+
+.content[data-state='closed'] {
+  animation: tooltipFadeOut var(--spc-duration-fast) var(--spc-easing-in);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tooltipFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content,
+  .content[data-state='closed'] {
+    animation: none;
+  }
+}
+
+.arrow {
+  fill: var(--spc-color-surface-raised);
+}

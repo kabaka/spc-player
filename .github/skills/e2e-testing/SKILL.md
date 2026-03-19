@@ -37,10 +37,18 @@ Encapsulate page interactions in page object classes:
 class PlayerPage {
   constructor(private page: Page) {}
 
-  async loadSpcFile(path: string) { /* ... */ }
-  async clickPlay() { /* ... */ }
-  async muteTrack(index: number) { /* ... */ }
-  async getPlaybackPosition(): Promise<number> { /* ... */ }
+  async loadSpcFile(path: string) {
+    /* ... */
+  }
+  async clickPlay() {
+    /* ... */
+  }
+  async muteTrack(index: number) {
+    /* ... */
+  }
+  async getPlaybackPosition(): Promise<number> {
+    /* ... */
+  }
 }
 ```
 

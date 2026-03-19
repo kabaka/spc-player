@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: 'accepted'
 date: 2026-03-18
 ---
 
@@ -134,15 +134,15 @@ Ultimately rejected because React's ecosystem maturity — particularly Radix UI
 
 ### Recommended sub-stack
 
-| Layer | Choice | Rationale |
-|-------|--------|-----------|
-| Framework | React 19 + ReactDOM | Largest ecosystem, best LLM code quality |
-| State management | Zustand | ~475 B gzipped, minimal API, excellent devtools |
-| Router | TanStack Router | Type-safe routes, built-in search param serialization |
-| Accessibility primitives | Radix UI | Unstyled, WCAG-compliant, composable |
-| Bundler | Vite | Fast HMR, native WASM plugin support |
-| CSS approach | Deferred to a separate ADR | |
-| Testing | Vitest + React Testing Library + Playwright | Unit/integration/E2E coverage |
+| Layer                    | Choice                                      | Rationale                                             |
+| ------------------------ | ------------------------------------------- | ----------------------------------------------------- |
+| Framework                | React 19 + ReactDOM                         | Largest ecosystem, best LLM code quality              |
+| State management         | Zustand                                     | ~475 B gzipped, minimal API, excellent devtools       |
+| Router                   | TanStack Router                             | Type-safe routes, built-in search param serialization |
+| Accessibility primitives | Radix UI                                    | Unstyled, WCAG-compliant, composable                  |
+| Bundler                  | Vite                                        | Fast HMR, native WASM plugin support                  |
+| CSS approach             | Deferred to a separate ADR                  |                                                       |
+| Testing                  | Vitest + React Testing Library + Playwright | Unit/integration/E2E coverage                         |
 
 ### Performance strategy for real-time visualization
 

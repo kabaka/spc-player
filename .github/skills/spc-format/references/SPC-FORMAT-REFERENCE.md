@@ -25,35 +25,35 @@ The ID666 tag format (text or binary) is not explicitly marked. Common heuristic
 
 Voice registers (8 voices, 16-byte stride each starting at 0x00):
 
-| Offset | Name | Description |
-| ------ | ---- | ----------- |
-| +0x00 | VOLL | Left volume |
-| +0x01 | VOLR | Right volume |
-| +0x02-03 | P | Pitch (14-bit, little-endian) |
-| +0x04 | SRCN | Source (sample) number |
-| +0x05 | ADSR1 | ADSR settings 1 |
-| +0x06 | ADSR2 | ADSR settings 2 |
-| +0x07 | GAIN | GAIN mode settings |
-| +0x08 | ENVX | Current envelope value (read-only) |
-| +0x09 | OUTX | Current sample output (read-only) |
+| Offset   | Name  | Description                        |
+| -------- | ----- | ---------------------------------- |
+| +0x00    | VOLL  | Left volume                        |
+| +0x01    | VOLR  | Right volume                       |
+| +0x02-03 | P     | Pitch (14-bit, little-endian)      |
+| +0x04    | SRCN  | Source (sample) number             |
+| +0x05    | ADSR1 | ADSR settings 1                    |
+| +0x06    | ADSR2 | ADSR settings 2                    |
+| +0x07    | GAIN  | GAIN mode settings                 |
+| +0x08    | ENVX  | Current envelope value (read-only) |
+| +0x09    | OUTX  | Current sample output (read-only)  |
 
 Global registers:
 
-| Offset | Name | Description |
-| ------ | ---- | ----------- |
-| 0x0C | MVOLL | Main volume left |
-| 0x1C | MVOLR | Main volume right |
-| 0x2C | EVOLL | Echo volume left |
-| 0x3C | EVOLR | Echo volume right |
-| 0x4C | KON | Key on (write-only) |
-| 0x5C | KOFF | Key off |
-| 0x6C | FLG | Flags (noise clock, echo write, mute, reset) |
-| 0x7C | ENDX | Voice end flags (read-only) |
-| 0x0D | EFB | Echo feedback volume |
-| 0x2D | PMON | Pitch modulation enable |
-| 0x3D | NON | Noise enable |
-| 0x4D | EON | Echo enable |
-| 0x5D | DIR | Sample directory offset (×256) |
-| 0x6D | ESA | Echo buffer start (×256) |
-| 0x7D | EDL | Echo delay (4-bit, ×16ms) |
-| 0x0F-7F | FIR | Echo FIR filter coefficients (8 taps) |
+| Offset  | Name  | Description                                  |
+| ------- | ----- | -------------------------------------------- |
+| 0x0C    | MVOLL | Main volume left                             |
+| 0x1C    | MVOLR | Main volume right                            |
+| 0x2C    | EVOLL | Echo volume left                             |
+| 0x3C    | EVOLR | Echo volume right                            |
+| 0x4C    | KON   | Key on (write-only)                          |
+| 0x5C    | KOFF  | Key off                                      |
+| 0x6C    | FLG   | Flags (noise clock, echo write, mute, reset) |
+| 0x7C    | ENDX  | Voice end flags (read-only)                  |
+| 0x0D    | EFB   | Echo feedback volume                         |
+| 0x2D    | PMON  | Pitch modulation enable                      |
+| 0x3D    | NON   | Noise enable                                 |
+| 0x4D    | EON   | Echo enable                                  |
+| 0x5D    | DIR   | Sample directory offset (×256)               |
+| 0x6D    | ESA   | Echo buffer start (×256)                     |
+| 0x7D    | EDL   | Echo delay (4-bit, ×16ms)                    |
+| 0x0F-7F | FIR   | Echo FIR filter coefficients (8 taps)        |

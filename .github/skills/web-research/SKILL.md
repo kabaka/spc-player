@@ -36,14 +36,14 @@ Use this skill when conducting technical research, evaluating libraries, or inve
 
 When researching libraries or tools, assess:
 
-| Factor | What to Check |
-| ------ | ------------- |
-| Maintenance | Last commit, release frequency, open issues |
-| Quality | Test coverage, TypeScript support, documentation |
-| Size | Bundle size (bundlephobia), tree-shakeable |
-| License | Must be MIT/Apache-2.0/BSD compatible |
-| Adoption | npm downloads, GitHub stars (as a secondary signal) |
-| Security | Known vulnerabilities (npm audit, Snyk) |
+| Factor      | What to Check                                       |
+| ----------- | --------------------------------------------------- |
+| Maintenance | Last commit, release frequency, open issues         |
+| Quality     | Test coverage, TypeScript support, documentation    |
+| Size        | Bundle size (bundlephobia), tree-shakeable          |
+| License     | Must be MIT/Apache-2.0/BSD compatible               |
+| Adoption    | npm downloads, GitHub stars (as a secondary signal) |
+| Security    | Known vulnerabilities (npm audit, Snyk)             |
 
 ## Recording Research
 

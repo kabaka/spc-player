@@ -1,0 +1,109 @@
+/* AlertDialog.module.css */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--spc-color-overlay);
+  z-index: var(--spc-z-overlay);
+  animation: overlayFadeIn var(--spc-duration-slow) var(--spc-easing-out);
+}
+
+.overlay[data-state='closed'] {
+  animation: overlayFadeOut var(--spc-duration-slow) var(--spc-easing-in);
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlayFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--spc-z-modal);
+  background-color: var(--spc-color-surface);
+  border-radius: var(--spc-radius-lg);
+  box-shadow: var(--spc-shadow-xl);
+  padding: var(--spc-space-6);
+  width: 90vw;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: contentShow var(--spc-duration-slow) var(--spc-easing-out);
+}
+
+.content:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.content[data-state='closed'] {
+  animation: contentHide var(--spc-duration-slow) var(--spc-easing-in);
+}
+
+@keyframes contentShow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes contentHide {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .overlay[data-state='closed'],
+  .content,
+  .content[data-state='closed'] {
+    animation: none;
+  }
+}
+
+.title {
+  font-size: var(--spc-font-size-xl);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin-bottom: var(--spc-space-2);
+}
+
+.description {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-normal);
+  margin-bottom: var(--spc-space-4);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spc-space-3);
+  margin-top: var(--spc-space-4);
+}

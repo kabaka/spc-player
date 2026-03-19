@@ -1,0 +1,16 @@
+/* Separator.module.css */
+
+.separator {
+  background-color: var(--spc-color-border);
+  flex-shrink: 0;
+}
+
+.separator[data-orientation='horizontal'] {
+  height: 1px;
+  width: 100%;
+}
+
+.separator[data-orientation='vertical'] {
+  width: 1px;
+  height: 100%;
+}
