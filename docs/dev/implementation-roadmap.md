@@ -566,6 +566,23 @@ No CI structural changes. Existing lint → typecheck → test → build → dep
 | `docs/adr/0012-component-library-scope.md`         | Radix primitives for playlist (ScrollArea, ContextMenu), mixer (Toggle, Tooltip)  |
 | `docs/design/design-tokens.md`                     | VU meter and voice channel color tokens                                           |
 | `docs/design/worker-protocol.md`                   | SetVoiceMask message semantics                                                    |
+| `docs/adr/0003-audio-pipeline-architecture.md`     | Resampling architecture (deferred from Phase 2/4)                                 |
+| `docs/adr/0007-wasm-build-pipeline.md`             | WASM export interface for resampler                                               |
+
+### Deferred from Prior Phases
+
+The following items were scoped for Phase 2 or Phase 4 but deferred during implementation. They must be completed in this phase before new Phase 5 deliverables.
+
+#### WASM Resampler (Phase 2 carry-over)
+
+- [ ] Linear resampler in Rust (32 kHz → 48 kHz output rate) — listed as a Phase 2 WASM export but not implemented. Currently the worklet outputs 32 kHz samples into a 48 kHz AudioContext, causing incorrect pitch and playback speed. This is the highest-priority deferred item.
+- [ ] Fix sample counting domain mismatch — the worklet counts rendered samples at the DSP rate (32 kHz) but the AudioContext consumes at 48 kHz. Seek positions, duration tracking, and telemetry must account for the resampling ratio.
+- [ ] Wire `dsp_set_speed` to varispeed playback through the resampler — the speed control in the player UI sends `SetSpeed` messages to the worklet, but actual variable-speed playback requires the resampler to adjust its output rate.
+
+#### Player UI Polish (Phase 4 carry-over)
+
+- [ ] Replace hardcoded element IDs in `PlayerView.tsx` with React `useId()` for proper accessibility — avoids ID collisions if multiple instances ever mount.
+- [ ] Optimize `computeTrackId()` in `src/core/track-id.ts` to avoid reading the file twice — currently the file is read once for SPC parsing and a second time for SHA-256 hashing. Accept an `ArrayBuffer` parameter instead of `File` to reuse the already-read buffer.
 
 ### Deliverables
 
@@ -662,6 +679,16 @@ This phase adds the Playwright E2E layer since the app is now feature-rich enoug
 - [ ] Gate CI on coverage not decreasing from Phase 3 baseline.
 
 ### Verification Criteria
+
+#### Deferred Item Verification
+
+- [ ] Audio plays at correct pitch — resampler converts 32 kHz DSP output to 48 kHz AudioContext rate without pitch shift.
+- [ ] Seek bar position and duration display are accurate (sample counting accounts for resampling ratio).
+- [ ] Speed control produces audible speed changes via resampler varispeed.
+- [ ] `PlayerView.tsx` uses `useId()` — no hardcoded element IDs.
+- [ ] `computeTrackId()` accepts `ArrayBuffer` — no redundant file reads.
+
+#### Phase 5 Verification
 
 - [ ] Can add multiple SPC files, see them in playlist, double-click to play.
 - [ ] Next/previous track works (buttons and Ctrl+Arrow keys).
