@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 
 import { ThemeToggle } from '../../components/ThemeToggle/ThemeToggle';
+import { useTheme } from '../../hooks/useTheme';
 import styles from './AppShell.module.css';
 
 export const Route = createRootRoute({
@@ -16,6 +17,9 @@ export const Route = createRootRoute({
 function RootComponent() {
   const mainRef = useRef<HTMLElement>(null);
   const location = useRouterState({ select: (s) => s.location });
+
+  // Apply theme from Zustand store
+  useTheme();
 
   useEffect(() => {
     mainRef.current?.focus();

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
+import { useTheme } from '@/hooks/useTheme';
 import styles from './ThemeToggle.module.css';
 
 type ThemePreference = 'dark' | 'light' | 'system';
-
-const THEME_KEY = 'spc-theme';
 
 const CYCLE: readonly ThemePreference[] = ['dark', 'light', 'system'];
 
@@ -14,50 +13,13 @@ const THEME_META: Record<ThemePreference, { icon: string; label: string }> = {
   system: { icon: '💻', label: 'System' },
 };
 
-const getStoredTheme = (): ThemePreference => {
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === 'dark' || stored === 'light') return stored;
-  return 'system';
-};
-
-const applyTheme = (preference: ThemePreference): void => {
-  const root = document.documentElement;
-  root.classList.remove('dark', 'light');
-
-  if (preference === 'system') {
-    localStorage.removeItem(THEME_KEY);
-    const preferLight = window.matchMedia(
-      '(prefers-color-scheme: light)',
-    ).matches;
-    root.classList.add(preferLight ? 'light' : 'dark');
-  } else {
-    localStorage.setItem(THEME_KEY, preference);
-    root.classList.add(preference);
-  }
-};
-
 export const ThemeToggle = () => {
-  const [theme, setTheme] = useState<ThemePreference>(getStoredTheme);
-
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    if (theme !== 'system') return;
-
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    const handler = () => applyTheme('system');
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [theme]);
+  const { theme, setTheme } = useTheme();
 
   const cycle = useCallback(() => {
-    setTheme((current) => {
-      const idx = CYCLE.indexOf(current);
-      return CYCLE[(idx + 1) % CYCLE.length];
-    });
-  }, []);
+    const idx = CYCLE.indexOf(theme);
+    setTheme(CYCLE[(idx + 1) % CYCLE.length]);
+  }, [theme, setTheme]);
 
   const meta = THEME_META[theme];
 

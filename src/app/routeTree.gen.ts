@@ -13,6 +13,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PlaylistRouteImport } from './routes/playlist'
 import { Route as InstrumentRouteImport } from './routes/instrument'
 import { Route as AnalysisRouteImport } from './routes/analysis'
+import { Route as CatchRouteImport } from './routes/$catch'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -35,6 +36,11 @@ const AnalysisRoute = AnalysisRouteImport.update({
   path: '/analysis',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatchRoute = CatchRouteImport.update({
+  id: '/$catch',
+  path: '/$catch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$catch': typeof CatchRoute
   '/analysis': typeof AnalysisRoute
   '/instrument': typeof InstrumentRoute
   '/playlist': typeof PlaylistRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$catch': typeof CatchRoute
   '/analysis': typeof AnalysisRoute
   '/instrument': typeof InstrumentRoute
   '/playlist': typeof PlaylistRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$catch': typeof CatchRoute
   '/analysis': typeof AnalysisRoute
   '/instrument': typeof InstrumentRoute
   '/playlist': typeof PlaylistRoute
@@ -65,14 +74,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analysis' | '/instrument' | '/playlist' | '/settings'
+  fullPaths:
+    | '/'
+    | '/$catch'
+    | '/analysis'
+    | '/instrument'
+    | '/playlist'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analysis' | '/instrument' | '/playlist' | '/settings'
-  id: '__root__' | '/' | '/analysis' | '/instrument' | '/playlist' | '/settings'
+  to: '/' | '/$catch' | '/analysis' | '/instrument' | '/playlist' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/$catch'
+    | '/analysis'
+    | '/instrument'
+    | '/playlist'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatchRoute: typeof CatchRoute
   AnalysisRoute: typeof AnalysisRoute
   InstrumentRoute: typeof InstrumentRoute
   PlaylistRoute: typeof PlaylistRoute
@@ -109,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalysisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$catch': {
+      id: '/$catch'
+      path: '/$catch'
+      fullPath: '/$catch'
+      preLoaderRoute: typeof CatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatchRoute: CatchRoute,
   AnalysisRoute: AnalysisRoute,
   InstrumentRoute: InstrumentRoute,
   PlaylistRoute: PlaylistRoute,
