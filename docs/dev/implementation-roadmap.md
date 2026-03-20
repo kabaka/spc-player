@@ -32,7 +32,7 @@ This roadmap decomposes SPC Player into 8 phases. Each phase produces a working 
 
 ## Dependency Graph
 
-```
+```text
 Phase 1: Scaffolding, Toolchain & Design System
     ↓
 Phase 2: WASM Pipeline & SPC Parser
@@ -42,6 +42,8 @@ Phase 3: State, Routing & Application Shell
 Phase 4: Audio Engine & Basic Playback  ←── Phase 2 (WASM), Phase 3 (store)
     ↓
 Phase 5: Playlist, Mixer, Metadata & Keyboard Shortcuts  ←── Phase 4
+    ↓
+Phase 5a: Pre-Phase-6 Remediation  ←── Audit-driven gap closure for Phases 1–5
     ↓
 Phase 6: Export Pipeline  ←── Phase 4 (DSP), Phase 5 (playlist for batch)
     ↓
@@ -720,6 +722,99 @@ This phase adds the Playwright E2E layer since the app is now feature-rich enoug
 - [ ] Empty playlist state is announced as `role="status"`.
 - [ ] VU meter ARIA attributes update at ≤ 4 Hz, not 60fps.
 - [ ] Global shortcuts do not fire when a text input has focus.
+
+---
+
+## Phase 5a — Pre-Phase-6 Remediation
+
+**Goal:** Close all Phase 1–5 gaps identified during the 2026-03-20 audit before proceeding to Phase 6. Prior phases left components unrendered, callbacks unwired, and several deferred items incomplete. This phase exists to prevent gap accumulation.
+
+**Date added:** 2026-03-20
+**Audit method:** Multi-agent codebase analysis (5 domain experts + 1 verification pass) cross-referenced against every Phase 1–5 deliverable and verification criterion.
+
+### Context
+
+Multiple Phase 5 components were fully implemented but never integrated into the UI. Several runtime bugs prevent core playlist functionality from working despite correct-looking code. Phase 2–4 deferred items accumulated without being addressed. This remediation brings the application to the state Phase 5 was supposed to deliver before Phase 6 work begins.
+
+### Critical Fixes (P0)
+
+These items represent broken core functionality or fully-built components that are invisible to users.
+
+- [ ] **Render MixerPanel in the UI.** `MixerPanel` (with `VuMeter`) at `src/features/mixer/` is fully implemented but never imported or rendered. Integrate into the player view or a dedicated panel. Users currently cannot see voice strips, VU meters, or mute/solo state — keyboard shortcuts (Digit1–8) work invisibly.
+
+- [ ] **Render MetadataPanel in the UI.** `MetadataPanel` at `src/features/metadata/MetadataPanel.tsx` is fully implemented but never imported. Integrate so users can see full ID666/xid6 metadata beyond the "now playing" line.
+
+- [ ] **Wire PlaybackEnded → nextTrack().** `audioEngine.setOnPlaybackEnded()` exists and the worklet correctly emits `playback-ended`, but no code ever calls `setOnPlaybackEnded(nextTrack)`. Automatic track advancement and continuous playback are broken.
+
+- [ ] **Debug and fix next/prev track runtime failure.** Transport buttons call `handleNext()`/`handlePrevious()` and shortcuts call `nextTrack()`/`previousTrack()` — code is wired correctly. User reports they do nothing. Root cause undiagnosed; investigate orchestration action runtime behavior (audio engine state, IndexedDB load, race conditions).
+
+- [ ] **Debug and fix double-click-to-play runtime failure.** `onDoubleClick={() => playTrackAtIndex(index)}` exists on playlist items. User reports it doesn't work. Same suspected root cause as next/prev — investigate `playTrackAtIndex()` orchestration action end-to-end.
+
+- [ ] **Debug and fix post-reload track loading.** Playlist persists to IndexedDB correctly. After reload, user sees "no track loaded" and must manually select a track — which then also fails to play (see above). Investigate hydration → track selection → audio engine initialization flow.
+
+### High Priority (P1)
+
+These items are required Phase 5 deliverables that were never implemented.
+
+- [ ] **Implement Radix ContextMenu on playlist items.** Right-click context menu with Play, Remove, Export options. Specified in Phase 5 deliverables but not built.
+
+- [ ] **Populate recently-played IndexedDB store.** The `recently-played` store is defined in `db.ts` but nothing writes to it. Write a `{ fileHash, playedAt }` record on each track playback.
+
+- [ ] **Implement channel mixer keyboard grid pattern.** Currently only global Digit shortcuts work. Add roving tabindex and arrow-key navigation within the mixer panel per accessibility-patterns.md §9.
+
+- [ ] **Reconcile accessibility-patterns.md §9 with actual implementation.** §9 still describes volume/pan sliders that were never built. Update to match the mute/solo-only mixer.
+
+- [ ] **Register playlist contextual shortcuts via useShortcut.** Playlist shortcuts (Delete, Enter, Alt+Up/Down, Ctrl+A, Ctrl+Shift+A) work via inline keyboard handlers but bypass the ShortcutManager scope priority system. Refactor to use `useShortcut()` with `scope: 'contextual'`.
+
+### Deferred Items (P1 — Phase 2–4 carry-over)
+
+These items were specified in their original phases, explicitly listed in Phase 5's "Deferred from Prior Phases" section, and still remain unfinished.
+
+- [ ] **CI WASM export surface validation.** Specified in Phases 2 and 4. A CI step that parses the `.wasm` binary's export section and compares against `DspExports`. Never implemented.
+
+- [ ] **AudioWorklet unit tests.** Specified in Phase 4. `src/audio/spc-worklet.test.ts` does not exist. Tests needed for fade ramp accuracy, PlaybackEnded timing, SetPlaybackConfig mid-playback, infinite mode.
+
+- [ ] **Persistence round-trip integration test.** Specified in Phase 3. Settings → IndexedDB → restore verification test never written.
+
+### Medium Priority (P2)
+
+These items are spec deviations or polish issues that don't block functionality.
+
+- [ ] **Replace native `<input type="range">` with Radix Slider.** Seek bar, volume slider, and speed control all use native HTML range inputs instead of Radix `Slider` as specified in Phase 4. Functionally equivalent but inconsistent with the Radix design system.
+
+- [ ] **Enforce coverage baseline in CI.** Phase 5 specifies "Gate CI on coverage not decreasing from Phase 3 baseline." Coverage provider is configured but no CI threshold check exists.
+
+- [ ] **Wire fullscreen shortcut.** `F` key defined in `default-keymap.ts` but no handler registered in `GlobalShortcuts.tsx`.
+
+### Acknowledged Deviations (No action required)
+
+These items deviate from the original spec but are acceptable as-is.
+
+- **WASM resampler in TypeScript, not Rust.** Phase 2 specified a Rust resampler; actual implementation is TypeScript linear interpolation in the worklet. Works correctly at 1× speed. Varispeed quality is adequate for v1. Revisit in Phase 8 performance optimization if needed.
+
+- **Voice numbering 1–8 vs. spec's 0–7.** Implementation shows user-friendly 1–8 labels. This is arguably better UX than the spec's #0–#7. Accept as-is.
+
+- **WASM binary size 258 KB vs. 150 KB target.** CI threshold relaxed to 300 KB. Adding features will increase further. Revisit in Phase 8.
+
+- **`dsp_set_speed` and `brr_decode_sample` not exported from WASM.** Speed control works through TypeScript resampler ratio. `brr_decode_sample` needed for Phase 6 (per-instrument export) and Phase 7 (instrument view) — implement when those phases begin, not now.
+
+- **Export shortcuts (Ctrl+E, Ctrl+Shift+E) are stubs.** Phase 6 feature; expected to be completed then.
+
+- **Analysis shortcuts (Alt+M/R/V/E) not wired.** Phase 7 feature; analysis view is a placeholder.
+
+### Verification Criteria
+
+- [ ] MixerPanel visible in UI with 8 voice strips and VU meters animating during playback.
+- [ ] MetadataPanel visible in UI showing full track metadata.
+- [ ] After a track finishes playing (fade-out complete), the next track in the playlist auto-starts.
+- [ ] Double-clicking a playlist item starts playback of that track.
+- [ ] Next/Previous transport buttons advance through the playlist.
+- [ ] Ctrl+ArrowRight / Ctrl+ArrowLeft advance through the playlist.
+- [ ] After page reload, selecting a track from the persisted playlist starts playback.
+- [ ] Right-click on a playlist item opens a context menu.
+- [ ] Mixer panel navigable via arrow keys (keyboard grid pattern).
+- [ ] All prior phase verification criteria still pass.
+- [ ] `npm run validate` passes.
 
 ---
 
