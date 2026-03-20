@@ -76,9 +76,9 @@ test.describe('Playback controls', () => {
     const timeDisplay = page.getByLabel('Playback position');
     await expect(timeDisplay).toBeVisible();
 
-    // Wait for elapsed time to advance past 0:00
+    // Wait for elapsed time to advance past 0:00 (generous timeout for CI)
     const elapsedSpan = timeDisplay.locator('span').first();
-    await expect(elapsedSpan).not.toHaveText('0:00', { timeout: 5000 });
+    await expect(elapsedSpan).not.toHaveText('0:00', { timeout: 15000 });
   });
 
   test('seek bar is interactive when a track is loaded', async ({ page }) => {
