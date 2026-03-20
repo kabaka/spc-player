@@ -33,8 +33,17 @@ const QUANTUM_FRAMES = 128;
 /** Number of output channels (stereo). */
 const CHANNEL_COUNT = 2;
 
+/** Native S-DSP sample rate in Hz. */
+const DSP_SAMPLE_RATE = 32_000;
+
 /** Number of float32 elements per stereo quantum (128 L + 128 R). */
 const _OUTPUT_BUFFER_FLOATS = QUANTUM_FRAMES * CHANNEL_COUNT;
+
+/**
+ * Maximum DSP frames the WASM output buffer can hold.
+ * Must match MAX_RENDER_FRAMES (4096) in crates/spc-apu-wasm/src/lib.rs.
+ */
+const MAX_DSP_FRAMES_PER_QUANTUM = 4096;
 
 /**
  * Maximum render overrun failures before escalating to a fatal error.
@@ -85,6 +94,12 @@ class SpcProcessor extends AudioWorkletProcessor {
   private resamplerMode = 0;
   private interpolationMode = 0;
 
+  // -- Resampler state (32kHz DSP → output rate) ----------------------------
+  private outputSampleRate = sampleRate; // AudioWorkletGlobalScope.sampleRate
+  private resampleFrac = 0;
+  private prevDspLeft = 0;
+  private prevDspRight = 0;
+
   constructor() {
     super();
     this.port.onmessage = (event: MessageEvent<MainToWorklet>) => {
@@ -123,12 +138,27 @@ class SpcProcessor extends AudioWorkletProcessor {
     }
 
     try {
-      // Render DSP audio. dsp_render produces interleaved float32 stereo
-      // at the output sample rate (WASM resampler handles 32kHz → output rate).
-      // Speed factor adjusts frames requested: at 2×, we ask for 2× frames
-      // and the resampler produces output at the correct rate.
-      const framesToRender = Math.round(QUANTUM_FRAMES * this.speedFactor);
-      const result = this.wasm.dsp_render(this.outputPtr, framesToRender);
+      // Calculate DSP-to-output ratio: how many DSP samples per output sample.
+      // At 1× speed: 32000/48000 ≈ 0.6667 (upsampling from lower to higher rate).
+      // At 2× speed: 0.6667 * 2 ≈ 1.333 (more DSP samples consumed per output).
+      const ratio =
+        (DSP_SAMPLE_RATE / this.outputSampleRate) * this.speedFactor;
+
+      // Determine how many new DSP frames to render. The interpolation of
+      // the last output sample (index 127) accesses combined[idx+1] where
+      // idx = floor(resampleFrac + 127 * ratio), so we need that many + 1
+      // new frames from the DSP. combined[0] is the carry-over sample from
+      // the previous quantum, combined[1..N] are newly rendered frames.
+      const lastOutputPos = this.resampleFrac + (QUANTUM_FRAMES - 1) * ratio;
+      const dspFramesToRender = Math.min(
+        Math.max(
+          Math.floor(lastOutputPos) + 1, // for interpolation
+          Math.floor(this.resampleFrac + QUANTUM_FRAMES * ratio), // for carry-over
+        ),
+        MAX_DSP_FRAMES_PER_QUANTUM,
+      );
+
+      const result = this.wasm.dsp_render(this.outputPtr, dspFramesToRender);
 
       if (result < 0) {
         this.handleRenderError(result);
@@ -139,32 +169,54 @@ class SpcProcessor extends AudioWorkletProcessor {
       // Successful render — reset consecutive failure counter.
       this.consecutiveRenderFailures = 0;
 
-      // Create views over WASM memory for the output buffer.
-      // The buffer layout is interleaved: [L0, R0, L1, R1, ...] as float32.
-      // dsp_render writes `framesToRender` stereo frames, but we only copy
-      // QUANTUM_FRAMES to the AudioWorklet output (the worklet always
-      // outputs exactly 128 frames).
+      // View over the interleaved stereo DSP output in WASM linear memory.
       const memory = this.wasm.memory.buffer;
-      const outputView = new Float32Array(
+      const dspView = new Float32Array(
         memory,
         this.outputPtr,
-        QUANTUM_FRAMES * CHANNEL_COUNT,
+        dspFramesToRender * CHANNEL_COUNT,
       );
 
-      // Deinterleave and copy to output channels.
+      // Linear interpolation: resample dspFramesToRender frames at 32kHz
+      // into exactly QUANTUM_FRAMES output samples at the output rate.
+      // The "combined" buffer is logically:
+      //   [prevDsp, dspView[0], dspView[1], ..., dspView[N-1]]
+      // where prevDsp is the carry-over sample from the previous quantum.
       for (let i = 0; i < QUANTUM_FRAMES; i++) {
-        left[i] = outputView[i * 2];
-        right[i] = outputView[i * 2 + 1];
+        const pos = this.resampleFrac + i * ratio;
+        const idx = Math.trunc(pos);
+        const frac = pos - idx;
+
+        // Sample pair at combined[idx] (left side of interpolation).
+        const s0L = idx === 0 ? this.prevDspLeft : dspView[(idx - 1) * 2];
+        const s0R = idx === 0 ? this.prevDspRight : dspView[(idx - 1) * 2 + 1];
+
+        // Sample pair at combined[idx + 1] → dspView frame idx.
+        const s1L = dspView[idx * 2];
+        const s1R = dspView[idx * 2 + 1];
+
+        left[i] = s0L + (s1L - s0L) * frac;
+        right[i] = s0R + (s1R - s0R) * frac;
       }
 
-      // Track DSP samples rendered. The speed factor scales how many
-      // native 32 kHz DSP samples were consumed. At 2× speed, each
-      // quantum advances twice as many DSP samples through the song.
-      const dspSamplesAdvanced = Math.round(QUANTUM_FRAMES * this.speedFactor);
-      this.renderedSamples += dspSamplesAdvanced;
+      // Advance resampler state. The total DSP-domain advance for this
+      // quantum determines how many integer DSP samples were consumed and
+      // what fractional offset carries into the next quantum.
+      const totalAdvance = this.resampleFrac + QUANTUM_FRAMES * ratio;
+      const intAdvance = Math.trunc(totalAdvance);
+      this.resampleFrac = totalAdvance - intAdvance;
+
+      // Carry over the last consumed DSP sample for next quantum.
+      if (intAdvance > 0) {
+        this.prevDspLeft = dspView[(intAdvance - 1) * 2];
+        this.prevDspRight = dspView[(intAdvance - 1) * 2 + 1];
+      }
+
+      // Track position in DSP sample domain (32kHz) for seek/duration.
+      this.renderedSamples += intAdvance;
 
       // Apply fade gain ramp if we've passed durationSamples.
-      this.applyFade(left, right, dspSamplesAdvanced);
+      this.applyFade(left, right, intAdvance);
 
       // Check if playback just finished after this quantum.
       if (this.isPlaybackFinished()) {
@@ -239,6 +291,9 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         this.isPlaying = false;
         this.renderedSamples = 0;
+        this.resampleFrac = 0;
+        this.prevDspLeft = 0;
+        this.prevDspRight = 0;
         this.postMessage({ type: 'playback-state', state: 'stopped' });
         break;
       case 'seek':
@@ -392,6 +447,12 @@ class SpcProcessor extends AudioWorkletProcessor {
       this.resamplerMode = msg.resamplerMode;
       this.interpolationMode = msg.interpolationMode;
 
+      // Store output sample rate and reset resampler state.
+      this.outputSampleRate = msg.outputSampleRate;
+      this.resampleFrac = 0;
+      this.prevDspLeft = 0;
+      this.prevDspRight = 0;
+
       this.postMessage({ type: 'ready', version: PROTOCOL_VERSION });
     } catch (err) {
       this.postError(
@@ -467,6 +528,11 @@ class SpcProcessor extends AudioWorkletProcessor {
       this.renderDisabled = false;
       this.consecutiveRenderFailures = 0;
 
+      // Reset resampler state for new track.
+      this.resampleFrac = 0;
+      this.prevDspLeft = 0;
+      this.prevDspRight = 0;
+
       this.postMessage({ type: 'playback-state', state: 'stopped' });
     } catch (err) {
       this.postError(
@@ -493,6 +559,9 @@ class SpcProcessor extends AudioWorkletProcessor {
     if (targetPosition <= 0) {
       // Seek to beginning: reset the DSP.
       this.renderedSamples = 0;
+      this.resampleFrac = 0;
+      this.prevDspLeft = 0;
+      this.prevDspRight = 0;
       this.wasm.dsp_reset();
       return;
     }
@@ -524,6 +593,11 @@ class SpcProcessor extends AudioWorkletProcessor {
       }
 
       this.renderedSamples = targetPosition;
+
+      // Reset resampler state — the DSP stream is discontinuous after seek.
+      this.resampleFrac = 0;
+      this.prevDspLeft = 0;
+      this.prevDspRight = 0;
     } catch (err) {
       this.postError(
         'AUDIO_WASM_TRAP',
@@ -579,9 +653,15 @@ class SpcProcessor extends AudioWorkletProcessor {
 
   private handleRestoreSnapshot(msg: MainToWorklet.RestoreSnapshot): void {
     // Placeholder: snapshot restore not yet implemented in WASM.
-    // Store the new output sample rate for future use.
     void msg.snapshotData;
-    void msg.outputSampleRate;
+    if (msg.outputSampleRate > 0) {
+      this.outputSampleRate = msg.outputSampleRate;
+      // Reset resampler state so stale fractional position and carry-over
+      // samples from the old rate don't corrupt the first quantum.
+      this.resampleFrac = 0;
+      this.prevDspLeft = 0;
+      this.prevDspRight = 0;
+    }
   }
 
   // =========================================================================

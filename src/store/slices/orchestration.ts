@@ -238,7 +238,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
     audioEngine.stop();
 
     set(
-      { isLoadingTrack: true, loadingError: null },
+      { isLoadingTrack: true, loadingError: null, activeTrackId: trackId },
       false,
       'orchestration/playTrackAtIndex:start',
     );
@@ -249,7 +249,11 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
       if (!spcData) {
         reportError(storageError('STORAGE_READ_FAILED', { key: trackId }));
         set(
-          { isLoadingTrack: false, loadingError: 'Track data not found' },
+          {
+            isLoadingTrack: false,
+            loadingError: 'Track data not found',
+            activeTrackId: null,
+          },
           false,
           'orchestration/playTrackAtIndex:notFound',
         );
@@ -276,7 +280,11 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
       if (!parseResult.ok) {
         reportError(parseResult.error);
         set(
-          { isLoadingTrack: false, loadingError: parseResult.error.message },
+          {
+            isLoadingTrack: false,
+            loadingError: parseResult.error.message,
+            activeTrackId: null,
+          },
           false,
           'orchestration/playTrackAtIndex:parseError',
         );
@@ -359,7 +367,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
         error instanceof Error ? error.message : 'Failed to play track';
       reportError(audioPipelineError('AUDIO_WASM_INIT_FAILED', { detail }));
       set(
-        { isLoadingTrack: false, loadingError: detail },
+        { isLoadingTrack: false, loadingError: detail, activeTrackId: null },
         false,
         'orchestration/playTrackAtIndex:error',
       );

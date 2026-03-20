@@ -35,10 +35,15 @@ function formatSeekValueText(elapsedSec: number, durationSec: number): string {
   return `${formatSpokenTime(elapsedSec)} of ${formatSpokenTime(durationSec)}`;
 }
 
+function formatSpeed(value: number): string {
+  return `${value}×`;
+}
+
 // ── Component ─────────────────────────────────────────────────────────
 
 export function PlayerView() {
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const preMuteVolumeRef = useRef(1);
 
   // ── Unique IDs for aria references ────────────────────────────────
   const seekLabelId = useId();
@@ -71,6 +76,7 @@ export function PlayerView() {
   const totalSeconds = trackDuration?.totalSeconds ?? 0;
   const currentSeconds = Math.floor(samplesToSeconds(position));
   const isPlaying = playbackStatus === 'playing';
+  const isMuted = volume === 0;
   const hasTrack = metadata !== null;
 
   // ── Sync position from audioStateBuffer during playback ────────────
@@ -163,6 +169,25 @@ export function PlayerView() {
     },
     [setSpeed],
   );
+
+  const handleMuteToggle = useCallback(() => {
+    if (isMuted) {
+      const restored = preMuteVolumeRef.current || 1;
+      audioEngine.setVolume(restored);
+      setVolume(restored);
+    } else {
+      preMuteVolumeRef.current = volume;
+      audioEngine.setVolume(0);
+      setVolume(0);
+    }
+  }, [isMuted, volume, setVolume]);
+
+  const handleSpeedReset = useCallback(() => {
+    if (speed !== 1) {
+      audioEngine.setSpeed(1);
+      setSpeed(1);
+    }
+  }, [speed, setSpeed]);
 
   // ── Toolbar keyboard navigation (WAI-ARIA toolbar pattern) ────────
   const handleToolbarKeyDown = useCallback(
@@ -330,9 +355,15 @@ export function PlayerView() {
 
       {/* Volume Control */}
       <div className={styles.controlGroup}>
-        <label htmlFor={volumeSliderId} className={styles.controlLabel}>
-          Volume
-        </label>
+        <Button
+          variant="icon"
+          size="sm"
+          aria-label={isMuted ? 'Unmute' : 'Mute'}
+          aria-pressed={isMuted}
+          onClick={handleMuteToggle}
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </Button>
         <input
           id={volumeSliderId}
           type="range"
@@ -345,25 +376,43 @@ export function PlayerView() {
           aria-label="Volume"
           aria-valuetext={`${Math.round(volume * 100)}%`}
         />
+        <span className={styles.valueReadout} aria-hidden="true">
+          {Math.round(volume * 100)}%
+        </span>
       </div>
 
       {/* Speed Control */}
       <div className={styles.controlGroup}>
-        <label htmlFor={speedSliderId} className={styles.controlLabel}>
+        <button
+          className={`${styles.speedLabel}${speed !== 1 ? ` ${styles.speedLabelActive}` : ''}`}
+          onClick={handleSpeedReset}
+          aria-label={speed !== 1 ? 'Reset speed to normal' : undefined}
+          disabled={speed === 1}
+          tabIndex={speed !== 1 ? 0 : -1}
+          type="button"
+        >
           Speed
-        </label>
-        <input
-          id={speedSliderId}
-          type="range"
-          className={styles.slider}
-          min={0.25}
-          max={4}
-          value={speed}
-          step={0.25}
-          onChange={handleSpeedChange}
-          aria-label="Playback speed"
-          aria-valuetext={`${speed}x`}
-        />
+        </button>
+        <div className={styles.sliderTrack}>
+          <input
+            id={speedSliderId}
+            type="range"
+            className={styles.slider}
+            min={0.25}
+            max={4}
+            value={speed}
+            step={0.25}
+            onChange={handleSpeedChange}
+            aria-label="Playback speed"
+            aria-valuetext={`${speed}x`}
+          />
+          <span className={styles.tickMark} aria-hidden="true">
+            <span className={styles.tickLabel}>1×</span>
+          </span>
+        </div>
+        <span className={styles.valueReadout} aria-hidden="true">
+          {formatSpeed(speed)}
+        </span>
       </div>
 
       {/* Playback State Announcements (screen reader only) */}

@@ -121,6 +121,80 @@
   cursor: pointer;
 }
 
+/* ── Value Readouts ──────────────────────────────────────────────── */
+
+.valueReadout {
+  width: 3.5rem;
+  flex-shrink: 0;
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text);
+  text-align: right;
+}
+
+/* ── Speed Slider Track & Tick ───────────────────────────────────── */
+
+.sliderTrack {
+  position: relative;
+  flex: 1;
+  /* Tick position = (default - min) / (max - min) = (1 - 0.25) / (4 - 0.25) = 20% */
+  --tick-position: 20%;
+}
+
+.sliderTrack .slider {
+  width: 100%;
+}
+
+.tickMark {
+  position: absolute;
+  left: var(--tick-position);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 8px;
+  background: var(--spc-color-border-strong);
+  pointer-events: none;
+}
+
+.tickLabel {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  white-space: nowrap;
+  margin-bottom: var(--spc-space-1);
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .tickLabel {
+    display: block;
+  }
+}
+
+/* ── Speed Reset Button ──────────────────────────────────────────── */
+
+.speedLabel {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  min-width: 4rem;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: default;
+  font-family: inherit;
+  text-align: left;
+}
+
+.speedLabelActive {
+  color: var(--spc-color-accent-text);
+  cursor: pointer;
+}
+
 /* ── Visually Hidden (screen reader only) ────────────────────────── */
 
 .visuallyHidden {
