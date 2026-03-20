@@ -138,6 +138,11 @@ impl Voice {
     }
 
     fn output(&mut self, channel: StereoChannel) {
+        if self.is_muted {
+            self.amplitude.set(channel, 0);
+            return;
+        }
+
         let amp = dsp_helpers::multiply_volume(self.dsp().l_output, self.volume.into_inner(channel));
 
         let master = dsp_helpers::clamp(dsp_helpers::cast_arb_int(self.dsp().master_output.into_inner(channel) + amp, 17));
