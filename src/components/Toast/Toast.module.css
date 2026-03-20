@@ -1,0 +1,216 @@
+/* Toast notification CSS — styled with --spc- design tokens */
+
+/* ============================================================
+   VIEWPORT — fixed position, bottom-right
+   ============================================================ */
+
+.viewport {
+  position: fixed;
+  bottom: var(--spc-space-4);
+  right: var(--spc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+  width: 360px;
+  max-width: calc(100vw - var(--spc-space-8));
+  max-height: 100vh;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  z-index: var(--spc-z-toast);
+  outline: none;
+}
+
+/* ============================================================
+   TOAST ROOT
+   ============================================================ */
+
+.root {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: var(--spc-space-1);
+  padding: var(--spc-space-3) var(--spc-space-4);
+  border-radius: var(--spc-radius-md);
+  background-color: var(--spc-color-surface-raised);
+  border: 1px solid var(--spc-color-border);
+  box-shadow: var(--spc-shadow-md);
+  font-family: var(--spc-font-sans);
+}
+
+/* Severity variants — left border accent */
+.root::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: var(--spc-radius-md) 0 0 var(--spc-radius-md);
+}
+
+.root {
+  position: relative;
+  overflow: hidden;
+}
+
+.error {
+  border-color: var(--spc-color-error);
+}
+
+.error::before {
+  background-color: var(--spc-color-error);
+}
+
+.warning {
+  border-color: var(--spc-color-warning);
+}
+
+.warning::before {
+  background-color: var(--spc-color-warning);
+}
+
+.info {
+  border-color: var(--spc-color-info);
+}
+
+.info::before {
+  background-color: var(--spc-color-info);
+}
+
+.success {
+  border-color: var(--spc-color-success);
+}
+
+.success::before {
+  background-color: var(--spc-color-success);
+}
+
+/* ============================================================
+   CONTENT
+   ============================================================ */
+
+.title {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  line-height: var(--spc-leading-tight);
+  padding-left: var(--spc-space-2);
+}
+
+.description {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-normal);
+  padding-left: var(--spc-space-2);
+}
+
+/* ============================================================
+   CLOSE BUTTON
+   ============================================================ */
+
+.close {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: var(--spc-space-1);
+  border: none;
+  border-radius: var(--spc-radius-sm);
+  background: transparent;
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-sm);
+  cursor: pointer;
+  transition: background-color var(--spc-duration-fast)
+    var(--spc-easing-default);
+}
+
+.close:hover {
+  background-color: var(--spc-color-hover);
+  color: var(--spc-color-text);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+.root[data-state='open'] {
+  animation: slideIn var(--spc-duration-normal) var(--spc-easing-out);
+}
+
+.root[data-state='closed'] {
+  animation: slideOut var(--spc-duration-fast) var(--spc-easing-in-out);
+}
+
+.root[data-swipe='move'] {
+  transform: translateX(var(--radix-toast-swipe-move-x));
+}
+
+.root[data-swipe='cancel'] {
+  transform: translateX(0);
+  transition: transform var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.root[data-swipe='end'] {
+  animation: swipeOut var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(calc(100% + var(--spc-space-4)));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(calc(100% + var(--spc-space-4)));
+    opacity: 0;
+  }
+}
+
+@keyframes swipeOut {
+  from {
+    transform: translateX(var(--radix-toast-swipe-end-x));
+  }
+  to {
+    transform: translateX(calc(100% + var(--spc-space-4)));
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .root[data-state='open'],
+  .root[data-state='closed'],
+  .root[data-swipe='end'] {
+    animation: none;
+  }
+
+  .root[data-swipe='move'] {
+    transform: none;
+  }
+}

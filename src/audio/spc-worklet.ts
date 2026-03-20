@@ -86,6 +86,13 @@ class SpcProcessor extends AudioWorkletProcessor {
   // -- Voice state buffer (pre-allocated for telemetry) ---------------------
   private voiceStatePtr = 0;
 
+  // -- FIR coefficient buffer (pre-allocated, 8 bytes) ----------------------
+  private firCoefficientsPtr = 0;
+
+  // -- Echo telemetry rate (send every N telemetry cycles) ------------------
+  private echoTelemetryCycle = 0;
+  private static readonly ECHO_TELEMETRY_DIVISOR = 4;
+
   // -- Init queuing -----------------------------------------------------------
   private initPromise: Promise<void> | null = null;
   private pendingMessages: MainToWorklet[] = [];
@@ -403,6 +410,24 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         this.handleRestoreSnapshot(msg);
         break;
+      case 'note-on':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        if (this.wasm) {
+          this.wasm.dsp_voice_note_on(msg.voice, msg.pitch);
+        }
+        break;
+      case 'note-off':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        if (this.wasm) {
+          this.wasm.dsp_voice_note_off(msg.voice);
+        }
+        break;
     }
   }
 
@@ -471,6 +496,7 @@ class SpcProcessor extends AudioWorkletProcessor {
       // Cache the pre-allocated output buffer pointer.
       this.outputPtr = exports.dsp_get_output_ptr();
       this.voiceStatePtr = exports.wasm_alloc(24);
+      this.firCoefficientsPtr = exports.wasm_alloc(8);
       this.wasm = exports;
 
       // Configure playback timing.
@@ -558,6 +584,12 @@ class SpcProcessor extends AudioWorkletProcessor {
         this.wasm.wasm_dealloc(this.voiceStatePtr, 24);
       }
       this.voiceStatePtr = this.wasm.wasm_alloc(24);
+
+      // Re-allocate FIR coefficient buffer after reset.
+      if (this.firCoefficientsPtr !== 0 && this.wasm) {
+        this.wasm.wasm_dealloc(this.firCoefficientsPtr, 8);
+      }
+      this.firCoefficientsPtr = this.wasm.wasm_alloc(8);
 
       // Update output buffer pointer (may change after reset).
       this.outputPtr = this.wasm.dsp_get_output_ptr();
@@ -868,7 +900,48 @@ class SpcProcessor extends AudioWorkletProcessor {
     const voices = this.readVoiceStates();
     const segment = this.computePlaybackSegment();
 
-    this.postMessage({
+    // Read echo buffer data at a lower rate than VU meters.
+    this.echoTelemetryCycle++;
+    const includeEcho =
+      this.wasm !== null &&
+      this.echoTelemetryCycle >= SpcProcessor.ECHO_TELEMETRY_DIVISOR;
+
+    let echoBuffer: ArrayBuffer | undefined;
+    let firCoefficients: ArrayBuffer | undefined;
+    const transferList: ArrayBuffer[] = [];
+
+    if (includeEcho && this.wasm) {
+      this.echoTelemetryCycle = 0;
+
+      const echoPtr = this.wasm.dsp_get_echo_buffer_ptr();
+      const echoLen = this.wasm.dsp_get_echo_buffer_length();
+
+      if (echoPtr !== 0 && echoLen > 0) {
+        // Copy echo buffer out of WASM linear memory (views are invalidated on memory growth).
+        const echoView = new Int16Array(
+          this.wasm.memory.buffer,
+          echoPtr,
+          echoLen,
+        );
+        echoBuffer = new ArrayBuffer(echoLen * 2);
+        new Int16Array(echoBuffer).set(echoView);
+        transferList.push(echoBuffer);
+      }
+
+      // Read FIR coefficients (8 bytes).
+      if (this.firCoefficientsPtr !== 0) {
+        this.wasm.dsp_get_fir_coefficients(this.firCoefficientsPtr);
+        const firView = new Uint8Array(
+          this.wasm.memory.buffer,
+          this.firCoefficientsPtr,
+          8,
+        );
+        firCoefficients = new ArrayBuffer(8);
+        new Uint8Array(firCoefficients).set(firView);
+      }
+    }
+
+    const msg: WorkletToMain.Telemetry = {
       type: 'telemetry',
       positionSamples: this.renderedSamples,
       vuLeft,
@@ -878,7 +951,15 @@ class SpcProcessor extends AudioWorkletProcessor {
       voices,
       generation: this.generation,
       segment,
-    });
+      echoBuffer,
+      firCoefficients,
+    };
+
+    if (transferList.length > 0) {
+      this.port.postMessage(msg, transferList);
+    } else {
+      this.postMessage(msg);
+    }
   }
 
   /**

@@ -4,6 +4,8 @@
  */
 
 import type { AppError } from '../types/errors';
+import { showToast } from '../components/Toast/toast-store';
+import type { ToastSeverity } from '../components/Toast/toast-store';
 
 // ---------------------------------------------------------------------------
 // Error log entry shape
@@ -77,25 +79,27 @@ export function reportError(
   // 3. Display to user unless explicitly silent
   if (options?.silent) return;
 
-  // Stub: actual toast/banner UI does not exist yet.
-  // The switch is exhaustive per ADR-0015 so TypeScript catches missing codes.
+  // Map error codes to toast severity per ADR-0015.
+  // The switch is exhaustive so TypeScript catches missing codes.
+  let severity: ToastSeverity | null = null;
+
   switch (error.code) {
-    // — Action banners: require user intervention —
+    // — Action banners: require user intervention (error severity, manual dismiss) —
     case 'AUDIO_CONTEXT_SUSPENDED':
     case 'AUDIO_WORKLET_CRASHED':
     case 'AUDIO_WASM_TRAP':
     case 'AUDIO_WASM_RENDER_OVERRUN':
     case 'AUDIO_RENDER_OVERRUN_CRITICAL':
     case 'AUDIO_PROTOCOL_VERSION_MISMATCH':
-      console.info('[reportError] Action banner would show:', error.message);
+      severity = 'error';
       break;
 
-    // — Toasts: informational, auto-dismiss —
+    // — Toasts: warnings, auto-dismiss —
     case 'MIDI_DEVICE_DISCONNECTED':
     case 'NETWORK_SW_UPDATE_FAILED':
     case 'STORAGE_QUOTA_EXCEEDED':
     case 'AUDIO_OUTPUT_CHANGED':
-      console.info('[reportError] Warning toast would show:', error.message);
+      severity = 'warning';
       break;
 
     // — Toasts: SPC parse errors —
@@ -105,15 +109,17 @@ export function reportError(
     case 'SPC_CORRUPT_DATA':
     case 'SPC_METADATA_DECODE_ERROR':
     case 'SPC_INVALID_DATA':
-      console.info('[reportError] Error toast would show:', error.message);
+      severity = 'error';
       break;
 
     // — Silent: error boundary already displays fallback UI —
     case 'UI_RENDER_ERROR':
+      severity = null;
       break;
 
     // — Export cancellation: silent (user initiated) —
     case 'EXPORT_CANCELLED':
+      severity = null;
       break;
 
     // — All remaining codes: toast with error severity —
@@ -136,17 +142,19 @@ export function reportError(
     case 'EXPORT_OUT_OF_MEMORY':
     case 'EXPORT_ENCODING_FAILED':
     case 'EXPORT_CODEC_LOAD_FAILED':
-      console.info('[reportError] Error toast would show:', error.message);
+      severity = 'error';
       break;
 
     // — Exhaustiveness check —
     default: {
       const _exhaustive: never = error;
-      console.info(
-        '[reportError] Error toast would show:',
-        (_exhaustive as AppError).message,
-      );
+      severity = 'error';
+      void _exhaustive;
     }
+  }
+
+  if (severity !== null) {
+    showToast(severity, error.message);
   }
 }
 

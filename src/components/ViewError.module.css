@@ -19,3 +19,39 @@
   font-size: var(--spc-font-size-md);
   color: var(--spc-color-text-secondary);
 }
+
+.retryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--spc-space-2) var(--spc-space-4);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  background-color: transparent;
+  color: var(--spc-color-text);
+  font-family: var(--spc-font-sans);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--spc-duration-fast) var(--spc-easing-default),
+    border-color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.retryButton:hover {
+  background-color: var(--spc-color-hover);
+  border-color: var(--spc-color-border-strong);
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  .retryButton:focus-visible {
+    outline-width: 3px;
+  }
+}

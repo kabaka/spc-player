@@ -8,7 +8,12 @@ import {
 
 import { ShortcutHelpDialog } from '@/components/ShortcutHelpDialog/ShortcutHelpDialog';
 import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
+import { ToastContainer } from '@/components/Toast/Toast';
+import { ViewErrorBoundary } from '@/components/ViewErrorBoundary';
 import { useTheme } from '@/hooks/useTheme';
+import { InstallPrompt, UpdatePrompt } from '@/pwa/InstallPrompt';
+import { useMediaSession } from '@/pwa/media-session';
+import { OfflineIndicator } from '@/pwa/OfflineIndicator';
 import { GlobalShortcuts } from '@/shortcuts/GlobalShortcuts';
 import { shortcutManager } from '@/shortcuts/ShortcutManager';
 import { useShortcut } from '@/shortcuts/useShortcut';
@@ -26,6 +31,9 @@ function RootComponent() {
 
   // Apply theme from Zustand store
   useTheme();
+
+  // Activate Media Session for OS-level playback controls
+  useMediaSession();
 
   // Attach keyboard shortcut manager
   useEffect(() => {
@@ -105,7 +113,9 @@ function RootComponent() {
         tabIndex={-1}
         className={styles.main}
       >
-        <Outlet />
+        <ViewErrorBoundary>
+          <Outlet />
+        </ViewErrorBoundary>
       </main>
 
       <div id="player-controls" tabIndex={-1} className={styles.playerBar}>
@@ -116,6 +126,11 @@ function RootComponent() {
         open={showShortcutHelp}
         onOpenChange={setShowShortcutHelp}
       />
+
+      <InstallPrompt />
+      <UpdatePrompt />
+      <OfflineIndicator />
+      <ToastContainer />
     </div>
   );
 }

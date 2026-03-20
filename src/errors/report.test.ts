@@ -3,6 +3,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { AppError } from '../types/errors';
 import type * as ReportModule from './report';
 
+// Mock the toast store so reportError doesn't need a real Zustand store.
+vi.mock('../components/Toast/toast-store', () => ({
+  showToast: vi.fn(),
+}));
+
+import { showToast } from '../components/Toast/toast-store';
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -123,7 +130,7 @@ describe('ring buffer (getRecentErrors)', () => {
 describe('reportError', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(vi.fn());
-    vi.spyOn(console, 'info').mockImplementation(vi.fn());
+    vi.mocked(showToast).mockClear();
   });
 
   afterEach(() => {
@@ -147,10 +154,10 @@ describe('reportError', () => {
   it('skips UI notification when silent is true', () => {
     mod.reportError(makeError('UI_UNEXPECTED_ERROR', 'test'), { silent: true });
     expect(console.error).toHaveBeenCalled();
-    expect(console.info).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
   });
 
-  // -- Action banner codes --------------------------------------------------
+  // -- Action banner codes (error toast, manual dismiss) --------------------
 
   const actionBannerCodes = [
     'AUDIO_CONTEXT_SUSPENDED',
@@ -161,12 +168,9 @@ describe('reportError', () => {
     'AUDIO_PROTOCOL_VERSION_MISMATCH',
   ] as const;
 
-  it.each(actionBannerCodes)('shows action banner for %s', (code) => {
+  it.each(actionBannerCodes)('shows error toast for %s', (code) => {
     mod.reportError(makeError(code, 'banner msg'));
-    expect(console.info).toHaveBeenCalledWith(
-      '[reportError] Action banner would show:',
-      'banner msg',
-    );
+    expect(showToast).toHaveBeenCalledWith('error', 'banner msg');
   });
 
   // -- Warning toast codes ---------------------------------------------------
@@ -180,10 +184,7 @@ describe('reportError', () => {
 
   it.each(warningToastCodes)('shows warning toast for %s', (code) => {
     mod.reportError(makeError(code, 'warn msg'));
-    expect(console.info).toHaveBeenCalledWith(
-      '[reportError] Warning toast would show:',
-      'warn msg',
-    );
+    expect(showToast).toHaveBeenCalledWith('warning', 'warn msg');
   });
 
   // -- SPC parse error toast codes -------------------------------------------
@@ -199,24 +200,21 @@ describe('reportError', () => {
 
   it.each(spcParseErrorCodes)('shows error toast for %s', (code) => {
     mod.reportError(makeError(code, 'spc msg'));
-    expect(console.info).toHaveBeenCalledWith(
-      '[reportError] Error toast would show:',
-      'spc msg',
-    );
+    expect(showToast).toHaveBeenCalledWith('error', 'spc msg');
   });
 
-  // -- Silent codes (no console.info) ----------------------------------------
+  // -- Silent codes (no toast) -----------------------------------------------
 
   it('does not show UI notification for UI_RENDER_ERROR', () => {
     mod.reportError(makeError('UI_RENDER_ERROR', 'render err'));
     expect(console.error).toHaveBeenCalled();
-    expect(console.info).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
   });
 
   it('does not show UI notification for EXPORT_CANCELLED', () => {
     mod.reportError(makeError('EXPORT_CANCELLED', 'cancelled'));
     expect(console.error).toHaveBeenCalled();
-    expect(console.info).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
   });
 
   // -- Remaining error toast codes -------------------------------------------
@@ -245,9 +243,6 @@ describe('reportError', () => {
 
   it.each(remainingErrorCodes)('shows error toast for %s', (code) => {
     mod.reportError(makeError(code, 'error msg'));
-    expect(console.info).toHaveBeenCalledWith(
-      '[reportError] Error toast would show:',
-      'error msg',
-    );
+    expect(showToast).toHaveBeenCalledWith('error', 'error msg');
   });
 });
