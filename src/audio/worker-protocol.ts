@@ -1,7 +1,8 @@
 /**
  * Worker protocol type definitions for SPC Player.
  *
- * Defines all message types for main thread ↔ AudioWorklet communication.
+ * Defines all message types for main thread ↔ AudioWorklet and
+ * main thread ↔ Export Worker communication.
  * This file is shared between both execution contexts and must remain
  * self-contained at runtime — only type-only imports are permitted.
  *
@@ -9,7 +10,7 @@
  * @see docs/design/loop-playback.md §4.1, §4.4
  */
 
-import type { AudioPipelineError } from '../types/errors';
+import type { AudioPipelineError, ExportError } from '../types/errors';
 
 // ---------------------------------------------------------------------------
 // Protocol Version
@@ -344,3 +345,148 @@ export interface PlaybackSegment {
  * to user-facing messages via ADR-0015 error factory functions.
  */
 export type WorkletErrorCode = AudioPipelineError['code'] | 'SPC_INVALID_DATA';
+
+// ---------------------------------------------------------------------------
+// Main → Export Worker Messages (§2.4)
+// ---------------------------------------------------------------------------
+
+/** Messages sent from the main thread to the Export Worker via worker.postMessage(). */
+export type MainToExportWorker =
+  | MainToExportWorker.Init
+  | MainToExportWorker.StartExport
+  | MainToExportWorker.CancelExport;
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace MainToExportWorker {
+  /** Initialize the export worker with DSP WASM bytes. */
+  export interface Init {
+    readonly type: 'init';
+    readonly version: number;
+    /** Raw WASM bytes — cloned (not transferred), so main thread retains a copy for reuse. */
+    readonly wasmBytes: ArrayBuffer;
+  }
+
+  /** Begin an export job. */
+  export interface StartExport {
+    readonly type: 'start-export';
+    /** Unique identifier for this export job (for progress tracking / cancellation). */
+    readonly jobId: string;
+    /** SPC file data. ArrayBuffer is transferred. */
+    readonly spcData: ArrayBuffer;
+    /** Target format. */
+    readonly format: 'wav' | 'flac' | 'ogg-vorbis' | 'mp3';
+    /** Target sample rate for output. */
+    readonly sampleRate: 32000 | 44100 | 48000 | 96000;
+    /** Duration to render in DSP samples. null = render to detected end / fade-out. */
+    readonly durationSamples: number | null;
+    /** Fade-out duration in DSP samples. Applied at the end. 0 = no fade. */
+    readonly fadeOutSamples: number;
+    /** Voice mask for this export. 0xFF = full mix. Single bit = individual voice. */
+    readonly voiceMask: number;
+    /** Quality setting for lossy formats. Ignored for WAV/FLAC. */
+    readonly quality: number;
+    /** Bit depth for WAV output. 16 = apply TPDF dithering. */
+    readonly bitDepth: 16;
+    /** Metadata to embed in the output file. */
+    readonly metadata: ExportMetadata;
+  }
+
+  /** Cancel a running or queued export job. */
+  export interface CancelExport {
+    readonly type: 'cancel-export';
+    readonly jobId: string;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Export Worker → Main Messages (§2.5)
+// ---------------------------------------------------------------------------
+
+/** Messages sent from the Export Worker to the main thread. */
+export type ExportWorkerToMain =
+  | ExportWorkerToMain.Ready
+  | ExportWorkerToMain.Progress
+  | ExportWorkerToMain.Complete
+  | ExportWorkerToMain.Error
+  | ExportWorkerToMain.Cancelled;
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace ExportWorkerToMain {
+  /** Worker initialized, WASM instantiated, ready to accept export jobs. */
+  export interface Ready {
+    readonly type: 'ready';
+    readonly version: number;
+  }
+
+  /** Progress update for a running export job. */
+  export interface Progress {
+    readonly type: 'progress';
+    readonly jobId: string;
+    readonly phase: ExportPhase;
+    /** Fraction complete within current phase. Range [0.0, 1.0]. */
+    readonly fraction: number;
+    /** Overall fraction complete across all phases (weighted). Range [0.0, 1.0]. */
+    readonly overallProgress: number;
+  }
+
+  /** Export job completed successfully. */
+  export interface Complete {
+    readonly type: 'complete';
+    readonly jobId: string;
+    /** The encoded audio file. ArrayBuffer is transferred. */
+    readonly fileData: ArrayBuffer;
+    /** MIME type of the output file. */
+    readonly mimeType: string;
+    /** Suggested filename. */
+    readonly suggestedName: string;
+  }
+
+  /** An error occurred during export. */
+  export interface Error {
+    readonly type: 'error';
+    readonly jobId: string;
+    readonly code: ExportErrorCode;
+    /** Technical description (for logging, not user display). */
+    readonly message: string;
+    /** Structured context for error reporting (ADR-0015 AppError.context). */
+    readonly context: Record<string, unknown>;
+  }
+
+  /** Export job was cancelled in response to a CancelExport request. */
+  export interface Cancelled {
+    readonly type: 'cancelled';
+    readonly jobId: string;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Export Shared Types
+// ---------------------------------------------------------------------------
+
+/** Metadata embedded in exported audio files. */
+export interface ExportMetadata {
+  readonly title?: string;
+  readonly artist?: string;
+  readonly game?: string;
+  readonly comment?: string;
+  readonly dumper?: string;
+  readonly year?: string;
+  /** Voice number for per-track exports (1-based). */
+  readonly trackNumber?: number;
+  /** Duration in seconds, for formats that support it. */
+  readonly duration?: number;
+}
+
+/**
+ * Export progress phases — the canonical 4-phase model.
+ * Completion is signaled by ExportWorkerToMain.Complete, not by a phase.
+ */
+export type ExportPhase = 'rendering' | 'encoding' | 'metadata' | 'packaging';
+
+/**
+ * Export worker error codes — union of export domain + audio pipeline + SPC parse codes.
+ */
+export type ExportErrorCode =
+  | ExportError['code']
+  | AudioPipelineError['code']
+  | 'SPC_INVALID_DATA';

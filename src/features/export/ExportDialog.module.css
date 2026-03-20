@@ -1,0 +1,385 @@
+/* ExportDialog.module.css — Export dialog and progress styling */
+
+/* ── Dialog Content Override ─────────────────────────────────────── */
+
+.dialogContent {
+  max-width: 540px;
+}
+
+/* ── Form Layout ─────────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-5);
+  margin-top: var(--spc-space-4);
+}
+
+/* ── Fieldset ────────────────────────────────────────────────────── */
+
+.fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-secondary);
+  margin-bottom: var(--spc-space-2);
+}
+
+/* ── Field ───────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+/* ── Format Toggle Group ─────────────────────────────────────────── */
+
+.formatGroup {
+  display: flex;
+  gap: 0;
+  border-radius: var(--spc-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--spc-color-border);
+}
+
+.formatOption {
+  flex: 1;
+  display: flex;
+  cursor: pointer;
+}
+
+.formatOption:not(:last-child) {
+  border-right: 1px solid var(--spc-color-border);
+}
+
+.radioInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.formatLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--spc-space-2) var(--spc-space-3);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-secondary);
+  background: var(--spc-color-bg-subtle);
+  transition:
+    background-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.radioInput:checked + .formatLabel {
+  background: var(--spc-color-accent-subtle);
+  color: var(--spc-color-accent-text);
+  font-weight: var(--spc-font-weight-semibold);
+}
+
+.radioInput:focus-visible + .formatLabel {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: -2px;
+}
+
+/* ── Select ──────────────────────────────────────────────────────── */
+
+.select {
+  padding: var(--spc-space-2) var(--spc-space-3);
+  font-size: var(--spc-font-size-sm);
+  font-family: var(--spc-font-sans);
+  color: var(--spc-color-text);
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  appearance: auto;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Mode Group ──────────────────────────────────────────────────── */
+
+.modeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.modeOption {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  cursor: pointer;
+}
+
+.modeOption input[type='radio'] {
+  accent-color: var(--spc-color-accent);
+}
+
+.modeOption input[type='radio']:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Voice Grid ──────────────────────────────────────────────────── */
+
+.voiceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spc-space-2);
+}
+
+.voiceOption {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  cursor: pointer;
+}
+
+.voiceOption input[type='checkbox'] {
+  accent-color: var(--spc-color-accent);
+}
+
+.voiceOption input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.voiceLabel {
+  font-weight: var(--spc-font-weight-medium);
+}
+
+.voiceLabel[data-voice='0'] {
+  color: var(--spc-color-voice-0);
+}
+
+.voiceLabel[data-voice='1'] {
+  color: var(--spc-color-voice-1);
+}
+
+.voiceLabel[data-voice='2'] {
+  color: var(--spc-color-voice-2);
+}
+
+.voiceLabel[data-voice='3'] {
+  color: var(--spc-color-voice-3);
+}
+
+.voiceLabel[data-voice='4'] {
+  color: var(--spc-color-voice-4);
+}
+
+.voiceLabel[data-voice='5'] {
+  color: var(--spc-color-voice-5);
+}
+
+.voiceLabel[data-voice='6'] {
+  color: var(--spc-color-voice-6);
+}
+
+.voiceLabel[data-voice='7'] {
+  color: var(--spc-color-voice-7);
+}
+
+/* ── Duration Controls ───────────────────────────────────────────── */
+
+.durationGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.durationRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-3);
+}
+
+.durationLabel {
+  min-width: 6rem;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+}
+
+.durationValue {
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+}
+
+.numberInput {
+  width: 5rem;
+  padding: var(--spc-space-1) var(--spc-space-2);
+  font-size: var(--spc-font-size-sm);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text);
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+}
+
+.numberInput:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.fieldHint {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+}
+
+.fieldUnit {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
+}
+
+.totalRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-3);
+  padding-top: var(--spc-space-2);
+  border-top: 1px solid var(--spc-color-border-subtle);
+  font-weight: var(--spc-font-weight-semibold);
+}
+
+/* ── Actions ─────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spc-space-3);
+  padding-top: var(--spc-space-2);
+}
+
+/* ── Progress ────────────────────────────────────────────────────── */
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-3);
+  background: var(--spc-color-bg-subtle);
+  border-radius: var(--spc-radius-md);
+}
+
+.progressInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progressLabel {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text);
+}
+
+.progressPercent {
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text-secondary);
+}
+
+.progressBar {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  background: var(--spc-color-surface);
+  border-radius: 9999px;
+}
+
+.progressIndicator {
+  width: 100%;
+  height: 100%;
+  background: var(--spc-color-accent);
+  border-radius: 9999px;
+  transition: transform var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.progressPhase {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
+}
+
+.progressActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Batch Progress ──────────────────────────────────────────────── */
+
+.batchProgress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-3);
+  padding: var(--spc-space-4);
+  background: var(--spc-color-bg-subtle);
+  border-radius: var(--spc-radius-md);
+}
+
+.batchHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.batchTitle {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+}
+
+.batchCount {
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text-secondary);
+}
+
+/* ── Visually Hidden ─────────────────────────────────────────────── */
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .voiceGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressIndicator {
+    transition: none;
+  }
+}

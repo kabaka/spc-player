@@ -327,11 +327,18 @@ export function GlobalShortcuts(): null {
   });
 
   useShortcut('export.openDialog', () => {
-    // TODO(#issue): Wire to export dialog when implemented
+    const hasTrack = useAppStore.getState().metadata !== null;
+    if (hasTrack) {
+      useAppStore.getState().setIsExportDialogOpen(true);
+    }
   });
 
   useShortcut('export.quickExport', () => {
-    // TODO(#issue): Wire to quick export when implemented
+    // Quick export v1: opens the dialog (same as Ctrl+E)
+    const hasTrack = useAppStore.getState().metadata !== null;
+    if (hasTrack) {
+      useAppStore.getState().setIsExportDialogOpen(true);
+    }
   });
 
   useShortcut('general.openFile', () => {
@@ -350,9 +357,13 @@ export function GlobalShortcuts(): null {
     input.click();
   });
 
-  useShortcut('general.closeDialog', () => {
-    // TODO(#issue): Radix handles Escape for dialogs already
-  });
+  useShortcut(
+    'general.closeDialog',
+    () => {
+      // Radix handles Escape for dialogs natively — no action needed here.
+    },
+    { preventDefault: false },
+  );
 
   useShortcut('general.toggleInstrumentMode', () => {
     // TODO(#issue): Wire to instrument mode toggle when implemented

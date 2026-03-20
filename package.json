@@ -27,10 +27,13 @@
   "dependencies": {
     "@tanstack/react-router": "^1",
     "@tanstack/zod-adapter": "^1",
+    "fflate": "^0.8.2",
     "idb": "^8",
+    "libflacjs": "^5.4.0",
     "radix-ui": "^1",
     "react": "^19",
     "react-dom": "^19",
+    "wasm-media-encoders": "^0.7.0",
     "zod": "^3",
     "zustand": "^5"
   },

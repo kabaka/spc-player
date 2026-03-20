@@ -10,6 +10,7 @@ import { audioEngine } from '@/audio/engine';
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
 import { MetadataPanel } from '@/features/metadata/MetadataPanel';
 import { MixerPanel } from '@/features/mixer/MixerPanel';
+import { ExportDialog } from '@/features/export/ExportDialog';
 
 import styles from './PlayerView.module.css';
 
@@ -74,6 +75,10 @@ export function PlayerView() {
 
   // ── Roving tabindex state (toolbar pattern) ───────────────────────
   const [rovingIndex, setRovingIndex] = useState(1);
+
+  // ── Export dialog state (lifted to store for keyboard shortcut access) ──
+  const isExportOpen = useAppStore((s) => s.isExportDialogOpen);
+  const setIsExportOpen = useAppStore((s) => s.setIsExportDialogOpen);
 
   // ── Derived values ────────────────────────────────────────────────
   const totalSeconds = trackDuration?.totalSeconds ?? 0;
@@ -433,6 +438,16 @@ export function PlayerView() {
 
       {/* Mixer Panel */}
       {hasTrack && <MixerPanel />}
+
+      {/* Export */}
+      <Button
+        variant="secondary"
+        onClick={() => setIsExportOpen(true)}
+        disabled={!hasTrack}
+      >
+        Export
+      </Button>
+      <ExportDialog open={isExportOpen} onOpenChange={setIsExportOpen} />
 
       {/* Playback State Announcements (screen reader only) */}
       <div

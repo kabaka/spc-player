@@ -37,6 +37,8 @@ export interface ExportOptions {
   readonly sampleRate: ExportDefaults['sampleRate'];
   readonly loopCount: number;
   readonly fadeSeconds: number;
+  readonly durationSeconds: number;
+  readonly voiceMask: number;
 }
 
 export type ExportProgressPhase = 'rendering' | 'encoding';
@@ -145,8 +147,10 @@ export interface InstrumentSlice {
 export interface UISlice {
   isLoadingTrack: boolean;
   loadingError: string | null;
+  isExportDialogOpen: boolean;
   setIsLoadingTrack: (loading: boolean) => void;
   setLoadingError: (error: string | null) => void;
+  setIsExportDialogOpen: (open: boolean) => void;
 }
 
 export interface ExportSlice {
@@ -171,13 +175,17 @@ export interface ExportSlice {
   clearCompletedJobs: () => void;
   enqueueExport: (
     options: ExportOptions,
-    spcData: Uint8Array,
+    spcSource:
+      | { readonly type: 'buffer'; readonly data: Uint8Array }
+      | { readonly type: 'indexeddb'; readonly hash: string },
     label: string,
   ) => string;
   enqueueBatch: (
     files: {
       options: ExportOptions;
-      spcData: Uint8Array;
+      spcSource:
+        | { readonly type: 'buffer'; readonly data: Uint8Array }
+        | { readonly type: 'indexeddb'; readonly hash: string };
       label: string;
     }[],
   ) => string[];
