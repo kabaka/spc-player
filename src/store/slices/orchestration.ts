@@ -8,6 +8,7 @@ import {
 } from '@/core/track-duration';
 import { audioEngine } from '@/audio/engine';
 import { saveSpcToStorage, loadSpcFromStorage } from '@/storage/spc-storage';
+import { recordRecentPlay } from '@/storage/recently-played';
 import { reportError } from '@/errors/report';
 import { audioPipelineError, storageError } from '@/errors/factories';
 
@@ -360,6 +361,10 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
           { playbackStatus: 'playing' },
           false,
           'orchestration/playTrackAtIndex:play',
+        );
+        // Fire-and-forget — never block playback on history writes
+        void recordRecentPlay(trackId).catch(
+          /* suppress */ Function.prototype as () => void,
         );
       }
     } catch (error) {

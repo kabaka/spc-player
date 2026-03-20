@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import type { ChangeEvent, KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
 import { FileDropZone } from '@/components/FileDropZone/FileDropZone';
+import { Slider } from '@/components/Slider/Slider';
 import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
 import { audioEngine } from '@/audio/engine';
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
+import { MetadataPanel } from '@/features/metadata/MetadataPanel';
+import { MixerPanel } from '@/features/mixer/MixerPanel';
 
 import styles from './PlayerView.module.css';
 
@@ -47,8 +50,6 @@ export function PlayerView() {
 
   // ── Unique IDs for aria references ────────────────────────────────
   const seekLabelId = useId();
-  const volumeSliderId = useId();
-  const speedSliderId = useId();
   const announcementsId = useId();
 
   // ── Store selectors ───────────────────────────────────────────────
@@ -64,6 +65,8 @@ export function PlayerView() {
   const loadFile = useAppStore((s) => s.loadFile);
   const nextTrack = useAppStore((s) => s.nextTrack);
   const previousTrack = useAppStore((s) => s.previousTrack);
+  const playTrackAtIndex = useAppStore((s) => s.playTrackAtIndex);
+  const activeIndex = useAppStore((s) => s.activeIndex);
   const setPlaybackStatus = useAppStore((s) => s.setPlaybackStatus);
   const setPosition = useAppStore((s) => s.setPosition);
   const setVolume = useAppStore((s) => s.setVolume);
@@ -78,6 +81,16 @@ export function PlayerView() {
   const isPlaying = playbackStatus === 'playing';
   const isMuted = volume === 0;
   const hasTrack = metadata !== null;
+
+  // ── Wire playback-ended → nextTrack ────────────────────────────────
+  useEffect(() => {
+    audioEngine.setOnPlaybackEnded(() => {
+      useAppStore.getState().nextTrack();
+    });
+    return () => {
+      audioEngine.setOnPlaybackEnded(null);
+    };
+  }, []);
 
   // ── Sync position from audioStateBuffer during playback ────────────
   useEffect(() => {
@@ -123,9 +136,19 @@ export function PlayerView() {
       if (started) {
         setPlaybackStatus('playing');
         setAnnouncement(`Playing: ${metadata?.title ?? 'Unknown track'}`);
+      } else if (activeIndex >= 0 && !isLoadingTrack) {
+        // Engine not initialized (e.g. after reload) — load track and play
+        void playTrackAtIndex(activeIndex);
       }
     }
-  }, [isPlaying, setPlaybackStatus, metadata]);
+  }, [
+    isPlaying,
+    isLoadingTrack,
+    setPlaybackStatus,
+    metadata,
+    activeIndex,
+    playTrackAtIndex,
+  ]);
 
   const handleStop = useCallback(() => {
     audioEngine.stop();
@@ -143,8 +166,7 @@ export function PlayerView() {
   }, [nextTrack]);
 
   const handleSeek = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const seconds = Number(e.target.value);
+    ([seconds]: number[]) => {
       const samples = Math.round(seconds * DSP_SAMPLE_RATE);
       audioEngine.seek(samples);
       setPosition(samples);
@@ -153,8 +175,8 @@ export function PlayerView() {
   );
 
   const handleVolumeChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number(e.target.value) / 100;
+    ([rawValue]: number[]) => {
+      const value = rawValue / 100;
       audioEngine.setVolume(value);
       setVolume(value);
     },
@@ -162,8 +184,7 @@ export function PlayerView() {
   );
 
   const handleSpeedChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = Number(e.target.value);
+    ([value]: number[]) => {
       audioEngine.setSpeed(value);
       setSpeed(value);
     },
@@ -270,6 +291,9 @@ export function PlayerView() {
         )}
       </section>
 
+      {/* Metadata Panel */}
+      {hasTrack && <MetadataPanel />}
+
       {/* Transport Controls Toolbar */}
       <div
         ref={toolbarRef}
@@ -325,15 +349,13 @@ export function PlayerView() {
         <label id={seekLabelId} className={styles.visuallyHidden}>
           Seek
         </label>
-        <input
-          type="range"
-          className={styles.seekBar}
+        <Slider
           aria-labelledby={seekLabelId}
           min={0}
           max={Math.floor(totalSeconds)}
-          value={Math.min(currentSeconds, Math.floor(totalSeconds))}
+          value={[Math.min(currentSeconds, Math.floor(totalSeconds))]}
           step={5}
-          onChange={handleSeek}
+          onValueChange={handleSeek}
           disabled={!hasTrack}
           aria-valuetext={formatSeekValueText(
             currentSeconds,
@@ -364,15 +386,12 @@ export function PlayerView() {
         >
           {isMuted ? '🔇' : '🔊'}
         </Button>
-        <input
-          id={volumeSliderId}
-          type="range"
-          className={styles.slider}
+        <Slider
           min={0}
           max={100}
-          value={Math.round(volume * 100)}
+          value={[Math.round(volume * 100)]}
           step={1}
-          onChange={handleVolumeChange}
+          onValueChange={handleVolumeChange}
           aria-label="Volume"
           aria-valuetext={`${Math.round(volume * 100)}%`}
         />
@@ -394,15 +413,12 @@ export function PlayerView() {
           Speed
         </button>
         <div className={styles.sliderTrack}>
-          <input
-            id={speedSliderId}
-            type="range"
-            className={styles.slider}
+          <Slider
             min={0.25}
             max={4}
-            value={speed}
+            value={[speed]}
             step={0.25}
-            onChange={handleSpeedChange}
+            onValueChange={handleSpeedChange}
             aria-label="Playback speed"
             aria-valuetext={`${speed}x`}
           />
@@ -414,6 +430,9 @@ export function PlayerView() {
           {formatSpeed(speed)}
         </span>
       </div>
+
+      {/* Mixer Panel */}
+      {hasTrack && <MixerPanel />}
 
       {/* Playback State Announcements (screen reader only) */}
       <div

@@ -2,7 +2,7 @@
 
 .mixer {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--spc-space-3);
   padding: var(--spc-space-4);
   background-color: var(--spc-color-surface);
@@ -10,17 +10,24 @@
   border: 1px solid var(--spc-color-border-subtle);
 }
 
-/* ── Voice strip ───────────────────────────────────────────────────── */
+/* ── Grid container ────────────────────────────────────────────────── */
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+/* ── Voice strip (grid row) ────────────────────────────────────────── */
 
 .strip {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: var(--spc-space-2);
   padding: var(--spc-space-2);
   border-radius: var(--spc-radius-sm);
   background-color: var(--strip-color-subtle, transparent);
-  min-width: 3rem;
 }
 
 /* Voice color accent via --strip-color and --strip-color-subtle */
@@ -57,6 +64,29 @@
   --strip-color-subtle: var(--spc-color-voice-7-subtle);
 }
 
+/* ── Row header cell ────────────────────────────────────────────────── */
+
+.headerCell {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  flex: 1;
+  min-width: 0;
+  cursor: default;
+  border-radius: var(--spc-radius-sm);
+}
+
+.headerCell:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  .headerCell:focus-visible {
+    outline-width: 3px;
+  }
+}
+
 /* ── Voice label ───────────────────────────────────────────────────── */
 
 .voiceLabel {
@@ -65,14 +95,11 @@
   font-weight: var(--spc-font-weight-semibold);
   color: var(--strip-color, var(--spc-color-text));
   line-height: var(--spc-leading-none);
+  min-width: 1.5ch;
+  text-align: center;
 }
 
 /* ── Toggle buttons ────────────────────────────────────────────────── */
-
-.toggleGroup {
-  display: flex;
-  gap: var(--spc-space-1);
-}
 
 .toggle {
   display: inline-flex;

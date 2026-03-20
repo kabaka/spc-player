@@ -36,3 +36,18 @@ if (typeof window.matchMedia !== 'function') {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
+
+// jsdom does not implement ResizeObserver; Radix Slider requires it.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe(): void {
+      /* stub */
+    }
+    unobserve(): void {
+      /* stub */
+    }
+    disconnect(): void {
+      /* stub */
+    }
+  } as unknown as typeof globalThis.ResizeObserver;
+}

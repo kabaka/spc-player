@@ -25,7 +25,7 @@ jobs:
       - run: npm run typecheck
       - name: Create WASM placeholder for tests
         run: mkdir -p src/wasm && touch src/wasm/dsp.wasm
-      - run: npm test
+      - run: npm test -- --coverage
       - run: npm audit --audit-level=high
 
   build:
@@ -55,6 +55,8 @@ jobs:
             echo "::error::WASM binary exceeds 300 KB limit (${SIZE} bytes)"
             exit 1
           fi
+      - name: Validate WASM export surface
+        run: node scripts/validate-wasm-exports.mjs src/wasm/dsp.wasm
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 
+import { parseSpcFile } from '@/core/spc-parser';
+import { calculateTrackDuration } from '@/core/track-duration';
 import { idbStorage } from '@/storage/idb-storage';
+import { loadSpcFromStorage } from '@/storage/spc-storage';
 
 import type { AppStore } from './types';
 import { createPlaybackSlice } from './slices/playback';
@@ -49,10 +52,23 @@ export const useAppStore = create<AppStore>()(
             repeatMode: state.repeatMode,
             // Playback — partial
             volume: state.volume,
+            activeTrackId: state.activeTrackId,
           }) as AppStore,
         onRehydrateStorage: () => (state) => {
           if (state?.theme && state.theme !== 'system') {
             localStorage.setItem('spc-theme', state.theme);
+          }
+
+          // Restore active track metadata from IndexedDB after reload.
+          // This re-parses SPC metadata so transport controls are enabled.
+          if (state) {
+            const trackId = state.activeTrackId;
+            const idx = state.activeIndex;
+            const track = idx >= 0 ? state.tracks[idx] : undefined;
+
+            if (trackId && track) {
+              restoreTrackMetadata(trackId);
+            }
           }
         },
       },
@@ -60,3 +76,53 @@ export const useAppStore = create<AppStore>()(
     { name: 'SpcPlayer' },
   ),
 );
+
+/**
+ * Restore active track metadata from IndexedDB after store rehydration.
+ * Parses the SPC file to extract metadata and duration so the player UI
+ * shows track info and transport controls are enabled.
+ */
+async function restoreTrackMetadata(trackId: string): Promise<void> {
+  try {
+    const spcData = await loadSpcFromStorage(trackId);
+    if (!spcData) return;
+
+    const parseResult = parseSpcFile(new Uint8Array(spcData));
+    if (!parseResult.ok) return;
+
+    const { metadata } = parseResult.value;
+
+    // Re-check that the active track hasn't changed during async load
+    const current = useAppStore.getState();
+    if (current.activeTrackId !== trackId) return;
+
+    const duration = calculateTrackDuration(
+      metadata.xid6Timing,
+      metadata.songLengthSeconds,
+      metadata.fadeLengthMs,
+      null,
+      {
+        durationSeconds: current.defaultPlayDuration,
+        fadeSeconds: current.defaultFadeDuration,
+        loopCount: current.defaultLoopCount,
+      },
+    );
+
+    const loopCount = duration.hasLoopData
+      ? (duration.structure?.loopCount ?? current.defaultLoopCount)
+      : current.defaultLoopCount;
+
+    useAppStore.setState(
+      {
+        metadata,
+        trackDuration: duration,
+        loopCount,
+        playbackStatus: 'stopped',
+        position: 0,
+      },
+      false,
+    );
+  } catch {
+    // Silently fail — user can manually select a track
+  }
+}

@@ -45,7 +45,7 @@ export const defaultKeymap: ReadonlyMap<ShortcutActionId, ShortcutBinding> =
 
     // §2.5 Playlist Actions
     binding('playlist.addFiles', ['Ctrl+KeyO'], 'contextual'),
-    binding('playlist.removeTrack', ['Delete'], 'contextual'),
+    binding('playlist.removeTrack', ['Delete', 'Backspace'], 'contextual'),
     binding('playlist.moveUp', ['Alt+ArrowUp'], 'contextual'),
     binding('playlist.moveDown', ['Alt+ArrowDown'], 'contextual'),
     binding('playlist.selectAll', ['Ctrl+KeyA'], 'contextual'),

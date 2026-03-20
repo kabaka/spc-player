@@ -36,6 +36,12 @@ export default mergeConfig(
           'src/**/*.d.ts',
           'src/wasm/**',
         ],
+        thresholds: {
+          statements: 50,
+          branches: 75,
+          functions: 58,
+          lines: 50,
+        },
       },
     },
   }),

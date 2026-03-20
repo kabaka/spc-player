@@ -3,7 +3,9 @@ import type { ChangeEvent, DragEvent, KeyboardEvent, MouseEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
-import { isMacPlatform } from '@/utils/platform';
+import * as ContextMenu from '@/components/ContextMenu/ContextMenu';
+import { contextMenuStyles } from '@/components/ContextMenu/ContextMenu';
+import { useShortcut } from '@/shortcuts/useShortcut';
 
 import type { PlaylistTrack } from '@/store/types';
 
@@ -141,6 +143,73 @@ export function PlaylistView() {
     setFocusedIndex(Math.max(0, nextFocus));
   }, [selectedIds, tracks, removeTrack, announce, focusedIndex]);
 
+  // ── Playlist shortcuts (via ShortcutManager scope system) ────────
+  useShortcut('playlist.removeTrack', handleRemoveSelected, {
+    scope: 'contextual',
+  });
+
+  useShortcut(
+    'playlist.playSelected',
+    () => {
+      if (tracks.length === 0) return;
+      playTrackAtIndex(focusedIndex);
+    },
+    { scope: 'contextual' },
+  );
+
+  useShortcut(
+    'playlist.moveUp',
+    () => {
+      if (tracks.length === 0 || focusedIndex <= 0) return;
+      reorderTracks(focusedIndex, focusedIndex - 1);
+      const track = tracks[focusedIndex];
+      const newIndex = focusedIndex - 1;
+      setFocusedIndex(newIndex);
+      if (track) {
+        announce(
+          `Moved ${track.title} to position ${newIndex + 1} of ${tracks.length}`,
+        );
+      }
+    },
+    { scope: 'contextual' },
+  );
+
+  useShortcut(
+    'playlist.moveDown',
+    () => {
+      if (tracks.length === 0 || focusedIndex >= tracks.length - 1) return;
+      reorderTracks(focusedIndex, focusedIndex + 1);
+      const track = tracks[focusedIndex];
+      const newIndex = focusedIndex + 1;
+      setFocusedIndex(newIndex);
+      if (track) {
+        announce(
+          `Moved ${track.title} to position ${newIndex + 1} of ${tracks.length}`,
+        );
+      }
+    },
+    { scope: 'contextual' },
+  );
+
+  useShortcut(
+    'playlist.selectAll',
+    () => {
+      if (tracks.length === 0) return;
+      setSelectedIds(new Set(tracks.map((t) => t.id)));
+      announce(`${tracks.length} tracks selected`);
+    },
+    { scope: 'contextual' },
+  );
+
+  useShortcut(
+    'playlist.deselectAll',
+    () => {
+      setSelectedIds(new Set());
+      announce('All tracks deselected');
+    },
+    { scope: 'contextual' },
+  );
+
   // ── Drag-and-drop (files) ─────────────────────────────────────────
   const handleContainerDragOver = useCallback((e: DragEvent) => {
     if (e.dataTransfer.types.includes('Files')) {
@@ -267,61 +336,31 @@ export function PlaylistView() {
     [tracks, toggleSelection, selectRange, focusedIndex],
   );
 
-  // ── Keyboard navigation ───────────────────────────────────────────
+  // ── Listbox keyboard navigation (standard ARIA listbox keys) ─────
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (tracks.length === 0) return;
 
-      const isCtrlOrCmd = isMacPlatform() ? e.metaKey : e.ctrlKey;
-
       switch (e.key) {
         case 'ArrowDown': {
+          if (e.altKey) break; // Handled by playlist.moveDown shortcut
           e.preventDefault();
-          if (e.altKey) {
-            // Reorder down
-            if (focusedIndex < tracks.length - 1) {
-              reorderTracks(focusedIndex, focusedIndex + 1);
-              const track = tracks[focusedIndex];
-              const newIndex = focusedIndex + 1;
-              setFocusedIndex(newIndex);
-              if (track) {
-                announce(
-                  `Moved ${track.title} to position ${newIndex + 1} of ${tracks.length}`,
-                );
-              }
-            }
-          } else {
-            const next = Math.min(focusedIndex + 1, tracks.length - 1);
-            setFocusedIndex(next);
-            if (e.shiftKey) {
-              const anchor = lastShiftAnchor.current ?? focusedIndex;
-              selectRange(anchor, next);
-            }
+          const next = Math.min(focusedIndex + 1, tracks.length - 1);
+          setFocusedIndex(next);
+          if (e.shiftKey) {
+            const anchor = lastShiftAnchor.current ?? focusedIndex;
+            selectRange(anchor, next);
           }
           break;
         }
         case 'ArrowUp': {
+          if (e.altKey) break; // Handled by playlist.moveUp shortcut
           e.preventDefault();
-          if (e.altKey) {
-            // Reorder up
-            if (focusedIndex > 0) {
-              reorderTracks(focusedIndex, focusedIndex - 1);
-              const track = tracks[focusedIndex];
-              const newIndex = focusedIndex - 1;
-              setFocusedIndex(newIndex);
-              if (track) {
-                announce(
-                  `Moved ${track.title} to position ${newIndex + 1} of ${tracks.length}`,
-                );
-              }
-            }
-          } else {
-            const prev = Math.max(focusedIndex - 1, 0);
-            setFocusedIndex(prev);
-            if (e.shiftKey) {
-              const anchor = lastShiftAnchor.current ?? focusedIndex;
-              selectRange(anchor, prev);
-            }
+          const prev = Math.max(focusedIndex - 1, 0);
+          setFocusedIndex(prev);
+          if (e.shiftKey) {
+            const anchor = lastShiftAnchor.current ?? focusedIndex;
+            selectRange(anchor, prev);
           }
           break;
         }
@@ -335,11 +374,6 @@ export function PlaylistView() {
           setFocusedIndex(tracks.length - 1);
           break;
         }
-        case 'Enter': {
-          e.preventDefault();
-          playTrackAtIndex(focusedIndex);
-          break;
-        }
         case ' ': {
           e.preventDefault();
           const track = tracks[focusedIndex];
@@ -349,42 +383,11 @@ export function PlaylistView() {
           }
           break;
         }
-        case 'Delete':
-        case 'Backspace': {
-          e.preventDefault();
-          handleRemoveSelected();
-          break;
-        }
-        case 'a':
-        case 'A': {
-          if (isCtrlOrCmd) {
-            e.preventDefault();
-            if (e.shiftKey) {
-              // Ctrl+Shift+A: deselect all
-              setSelectedIds(new Set());
-              announce('All tracks deselected');
-            } else {
-              // Ctrl+A: select all
-              setSelectedIds(new Set(tracks.map((t) => t.id)));
-              announce(`${tracks.length} tracks selected`);
-            }
-          }
-          break;
-        }
         default:
           break;
       }
     },
-    [
-      tracks,
-      focusedIndex,
-      reorderTracks,
-      announce,
-      selectRange,
-      playTrackAtIndex,
-      toggleSelection,
-      handleRemoveSelected,
-    ],
+    [tracks, focusedIndex, selectRange, toggleSelection],
   );
 
   // ── Shuffle / Repeat ──────────────────────────────────────────────
@@ -498,31 +501,52 @@ export function PlaylistView() {
                 .join(' ');
 
               return (
-                <div
-                  key={track.id}
-                  role="option"
-                  id={trackId(index)}
-                  aria-selected={isSelected}
-                  aria-current={isPlaying ? 'true' : undefined}
-                  aria-label={buildTrackLabel(track, index)}
-                  className={`${rowClass}${dropTargetIndex === index && dragFromIndex !== null ? ` ${styles.dropTarget}` : ''}`}
-                  onClick={(e) => handleTrackClick(e, index)}
-                  onDoubleClick={() => playTrackAtIndex(index)}
-                  draggable="true"
-                  onDragStart={(e) => handleTrackDragStart(e, index)}
-                  onDragOver={(e) => handleTrackDragOver(e, index)}
-                  onDrop={(e) => handleTrackDrop(e, index)}
-                  onDragEnd={handleTrackDragEnd}
-                >
-                  <span aria-hidden="true" className={styles.dragHandle}>
-                    ⠿
-                  </span>
-                  <span className={styles.trackNumber}>{index + 1}</span>
-                  <span className={styles.trackTitle}>{track.title}</span>
-                  <span className={styles.trackDuration}>
-                    {formatTime(track.durationMs)}
-                  </span>
-                </div>
+                <ContextMenu.Root key={track.id}>
+                  <ContextMenu.Trigger asChild>
+                    <div
+                      role="option"
+                      id={trackId(index)}
+                      aria-selected={isSelected}
+                      aria-current={isPlaying ? 'true' : undefined}
+                      aria-label={buildTrackLabel(track, index)}
+                      className={`${rowClass}${dropTargetIndex === index && dragFromIndex !== null ? ` ${styles.dropTarget}` : ''}`}
+                      onClick={(e) => handleTrackClick(e, index)}
+                      onDoubleClick={() => playTrackAtIndex(index)}
+                      draggable="true"
+                      onDragStart={(e) => handleTrackDragStart(e, index)}
+                      onDragOver={(e) => handleTrackDragOver(e, index)}
+                      onDrop={(e) => handleTrackDrop(e, index)}
+                      onDragEnd={handleTrackDragEnd}
+                    >
+                      <span aria-hidden="true" className={styles.dragHandle}>
+                        ⠿
+                      </span>
+                      <span className={styles.trackNumber}>{index + 1}</span>
+                      <span className={styles.trackTitle}>{track.title}</span>
+                      <span className={styles.trackDuration}>
+                        {formatTime(track.durationMs)}
+                      </span>
+                    </div>
+                  </ContextMenu.Trigger>
+                  <ContextMenu.Content>
+                    <ContextMenu.Item onSelect={() => playTrackAtIndex(index)}>
+                      Play
+                    </ContextMenu.Item>
+                    <ContextMenu.Item
+                      className={contextMenuStyles.destructive}
+                      onSelect={() => removeTrack(track.id)}
+                    >
+                      Remove
+                    </ContextMenu.Item>
+                    <ContextMenu.Separator />
+                    <ContextMenu.Item
+                      disabled
+                      title="Available in a future update"
+                    >
+                      Export…
+                    </ContextMenu.Item>
+                  </ContextMenu.Content>
+                </ContextMenu.Root>
               );
             })}
           </div>

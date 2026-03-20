@@ -905,8 +905,8 @@ A grid of controls for 8 DSP voices. Each channel row contains:
 - Channel label (1–8)
 - Mute toggle button
 - Solo toggle button
-- Volume slider (0–100%)
-- Pan knob/slider (−100 to +100, or L100–R100)
+
+> **Future expansion:** Volume and pan sliders may be added in a future phase. When added, they will be additional grid columns with a slider edit mode (Enter to edit, Escape to return to grid navigation).
 
 This is the closest to a standard control surface among the custom components.
 
@@ -915,19 +915,13 @@ This is the closest to a standard control surface among the custom components.
 Use `role="grid"` — the channel mixer is an interactive 2D control surface where arrow key navigation between cells is the expected interaction pattern. Each channel is a row; each control type is a column.
 
 ```html
-<div role="grid" aria-label="Channel mixer" aria-rowcount="8" aria-colcount="5">
-  <!-- Column headers (visually present as labels) -->
-  <div role="row" aria-rowindex="1">
-    <div role="columnheader">Channel</div>
-    <div role="columnheader">Mute</div>
-    <div role="columnheader">Solo</div>
-    <div role="columnheader">Volume</div>
-    <div role="columnheader">Pan</div>
-  </div>
-
+<div role="grid" aria-label="Channel mixer" aria-rowcount="8" aria-colcount="3">
   <!-- Channel 1 -->
-  <div role="row" aria-rowindex="2" aria-label="Channel 1">
-    <div role="rowheader">1</div>
+  <div role="row" aria-rowindex="1">
+    <div role="rowheader" aria-label="Channel 1" tabindex="-1">
+      <span>1</span>
+      <!-- VU meter nested in rowheader (has own role="meter") -->
+    </div>
 
     <div role="gridcell">
       <button aria-label="Mute channel 1" aria-pressed="false" tabindex="-1">
@@ -940,77 +934,32 @@ Use `role="grid"` — the channel mixer is an interactive 2D control surface whe
         S
       </button>
     </div>
-
-    <div role="gridcell">
-      <!-- Radix Slider wrapped in gridcell -->
-      <div
-        role="slider"
-        aria-label="Channel 1 volume"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        aria-valuenow="80"
-        aria-valuetext="80 percent"
-        tabindex="-1"
-      ></div>
-    </div>
-
-    <div role="gridcell">
-      <div
-        role="slider"
-        aria-label="Channel 1 pan"
-        aria-valuemin="-100"
-        aria-valuemax="100"
-        aria-valuenow="0"
-        aria-valuetext="center"
-        tabindex="-1"
-      ></div>
-    </div>
   </div>
 
   <!-- Channels 2–8 follow same pattern -->
 </div>
 ```
 
-**Note on Radix integration:** The volume and pan controls use Radix `Slider` primitives internally, but the Radix slider's own `tabindex` management must be overridden to participate in the grid's roving tabindex. The grid owns focus management; individual Radix sliders defer to it via `tabindex="-1"`.
-
 ### Keyboard Navigation
 
-The grid uses a standard data grid keyboard pattern per WAI-ARIA APG:
+The grid uses a standard data grid keyboard pattern per WAI-ARIA APG with roving tabindex:
 
 | Key           | Behavior                                                                                                                |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Tab           | Focus enters the grid (lands on the previously focused cell, or row 1 / col 1 on first visit). Next Tab exits the grid. |
-| Right Arrow   | Move focus to the next cell in the same row. Wrap: last col → first col of next row.                                    |
-| Left Arrow    | Move focus to the previous cell. Wrap: first col → last col of previous row.                                            |
+| Tab           | Focus enters the grid (lands on the previously focused cell, or row 1 / col 2 on first visit). Next Tab exits the grid. |
+| Right Arrow   | Move focus to the next cell in the same row. No-op on last column.                                                      |
+| Left Arrow    | Move focus to the previous cell. No-op on first column.                                                                 |
 | Down Arrow    | Move focus to the same column in the next row. No-op on last row.                                                       |
-| Up Arrow      | Move focus to the same column in the previous row. No-op on first row (header).                                         |
+| Up Arrow      | Move focus to the same column in the previous row. No-op on first row.                                                  |
 | Home          | Move focus to the first cell in the current row.                                                                        |
 | End           | Move focus to the last cell in the current row.                                                                         |
 | Ctrl + Home   | Move focus to the first cell in the first row.                                                                          |
 | Ctrl + End    | Move focus to the last cell in the last row.                                                                            |
-| Enter / Space | Activate the focused control (toggle mute/solo, or enter slider edit mode).                                             |
-
-#### Slider Interaction Within Grid
-
-When a slider cell is focused, the user interacts with it directly:
-
-| Key                                | Behavior                                                                                                                    |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Enter / Space                      | Enter slider edit mode. Announce: "Editing Channel 1 volume. Use Left and Right to adjust. Press Escape to return to grid." |
-| Left / Right Arrow (in edit mode)  | Adjust slider value by 1 step.                                                                                              |
-| Page Up / Page Down (in edit mode) | Adjust slider value by 10 steps.                                                                                            |
-| Home (in edit mode)                | Set slider to minimum.                                                                                                      |
-| End (in edit mode)                 | Set slider to maximum.                                                                                                      |
-| Escape                             | Exit slider edit mode. Return to grid navigation. Announce: "Returned to grid navigation."                                  |
-
-This two-layer navigation (grid → slider) prevents arrow keys from being ambiguous: in grid mode they navigate cells; in slider edit mode they adjust values. The mode transition is announced via `aria-live` to prevent invisible modal state.
+| Enter / Space | Activate the focused control (toggle mute/solo). No-op on rowheader cells.                                              |
 
 ### State Change Announcements
 
-Channel state changes (mute/solo toggled, volume/pan adjusted) are announced via the button/slider's built-in ARIA semantics. No additional `aria-live` region is needed because:
-
-- `aria-pressed` on mute/solo buttons is announced by screen readers when the button is activated.
-- Radix `Slider` announces `aria-valuenow` / `aria-valuetext` changes while the slider has focus.
+Channel state changes (mute/solo toggled) are announced via the button's built-in ARIA semantics. No additional `aria-live` region is needed because `aria-pressed` on mute/solo buttons is announced by screen readers when the button is activated.
 
 For **global keyboard shortcuts** (pressing `1`–`8` to toggle mute per the music player UX conventions), announce the result via a polite live region:
 
@@ -1024,18 +973,6 @@ For **global keyboard shortcuts** (pressing `1`–`8` to toggle mute per the mus
   <!-- "Channel 3 muted" / "Channel 3 unmuted" / "Channel 5 soloed" -->
 </div>
 ```
-
-### Pan Value Text
-
-Convert numeric pan values to human-readable text:
-
-| `aria-valuenow` | `aria-valuetext`     |
-| --------------- | -------------------- |
-| −100            | `"hard left"`        |
-| −50             | `"50 percent left"`  |
-| 0               | `"center"`           |
-| 50              | `"50 percent right"` |
-| 100             | `"hard right"`       |
 
 ---
 

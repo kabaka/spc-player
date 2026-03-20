@@ -9,6 +9,7 @@ import styles from './MixerPanel.module.css';
 // ── Constants ─────────────────────────────────────────────────────────
 
 const VOICE_COUNT = 8;
+const COL_COUNT = 3;
 
 const VOICE_STYLE_CLASSES = [
   styles.voice0,
@@ -33,12 +34,10 @@ function computeVoiceMask(
   let mask = 0;
   for (let i = 0; i < VOICE_COUNT; i++) {
     if (hasSolo) {
-      // Solo mode: only soloed voices are active
       if (voiceSolo[i]) {
         mask |= 1 << i;
       }
     } else {
-      // Normal mode: un-muted voices are active
       if (!voiceMuted[i]) {
         mask |= 1 << i;
       }
@@ -70,6 +69,87 @@ export function MixerPanel() {
 
   const [announcement, setAnnouncement] = useState('');
 
+  // ── Grid keyboard navigation ──────────────────────────────────────
+
+  const [activeCell, setActiveCell] = useState<[number, number]>([0, 1]);
+  const cellRefs = useRef<(HTMLElement | null)[][]>(
+    Array.from({ length: VOICE_COUNT }, () =>
+      new Array<HTMLElement | null>(COL_COUNT).fill(null),
+    ),
+  );
+  const isNavigatingRef = useRef(false);
+
+  useEffect(() => {
+    if (isNavigatingRef.current) {
+      const [row, col] = activeCell;
+      cellRefs.current[row]?.[col]?.focus();
+      isNavigatingRef.current = false;
+    }
+  }, [activeCell]);
+
+  const handleGridKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const [row, col] = activeCell;
+      let newRow = row;
+      let newCol = col;
+      let handled = true;
+
+      switch (e.key) {
+        case 'ArrowRight':
+          newCol = Math.min(col + 1, COL_COUNT - 1);
+          break;
+        case 'ArrowLeft':
+          newCol = Math.max(col - 1, 0);
+          break;
+        case 'ArrowDown':
+          newRow = Math.min(row + 1, VOICE_COUNT - 1);
+          break;
+        case 'ArrowUp':
+          newRow = Math.max(row - 1, 0);
+          break;
+        case 'Home':
+          if (e.ctrlKey || e.metaKey) {
+            newRow = 0;
+            newCol = 0;
+          } else {
+            newCol = 0;
+          }
+          break;
+        case 'End':
+          if (e.ctrlKey || e.metaKey) {
+            newRow = VOICE_COUNT - 1;
+            newCol = COL_COUNT - 1;
+          } else {
+            newCol = COL_COUNT - 1;
+          }
+          break;
+        default:
+          handled = false;
+      }
+
+      if (handled) {
+        e.preventDefault();
+        if (newRow !== row || newCol !== col) {
+          isNavigatingRef.current = true;
+          setActiveCell([newRow, newCol]);
+        }
+      }
+    },
+    [activeCell],
+  );
+
+  const handleCellFocus = useCallback((row: number, col: number) => {
+    setActiveCell([row, col]);
+  }, []);
+
+  const getTabIndex = useCallback(
+    (row: number, col: number): 0 | -1 =>
+      row === activeCell[0] && col === activeCell[1] ? 0 : -1,
+    [activeCell],
+  );
+
+  // ── Mute/Solo handlers ────────────────────────────────────────────
+
   const handleMute = useCallback(
     (index: number) => {
       toggleMute(index);
@@ -96,43 +176,79 @@ export function MixerPanel() {
   const hasAnyMuteOrSolo = hasSolo || voiceMuted.some(Boolean);
 
   return (
-    <div role="group" aria-label="Voice mixer" className={styles.mixer}>
-      {Array.from({ length: VOICE_COUNT }, (_, i) => {
-        const isMuted = voiceMuted[i];
-        const isSoloed = voiceSolo[i];
+    <div className={styles.mixer}>
+      <div
+        role="grid"
+        aria-label="Channel mixer"
+        aria-rowcount={VOICE_COUNT}
+        aria-colcount={COL_COUNT}
+        onKeyDown={handleGridKeyDown}
+        className={styles.grid}
+      >
+        {Array.from({ length: VOICE_COUNT }, (_, i) => {
+          const isMuted = voiceMuted[i];
+          const isSoloed = voiceSolo[i];
 
-        return (
-          <div
-            key={i}
-            role="group"
-            aria-label={`Channel ${i + 1}`}
-            className={`${styles.strip} ${VOICE_STYLE_CLASSES[i]}`}
-          >
-            <span className={styles.voiceLabel}>{i + 1}</span>
-
-            <VuMeter voiceIndex={i} label={`Channel ${i + 1} level`} />
-
-            <div className={styles.toggleGroup}>
-              <button
-                className={`${styles.toggle} ${isMuted ? styles.muteActive : ''}`}
-                aria-label={`Mute channel ${i + 1}`}
-                aria-pressed={!!isMuted}
-                onClick={() => handleMute(i)}
+          return (
+            <div
+              key={i}
+              role="row"
+              aria-rowindex={i + 1}
+              className={`${styles.strip} ${VOICE_STYLE_CLASSES[i]}`}
+            >
+              <div
+                role="rowheader"
+                aria-label={`Channel ${i + 1}`}
+                tabIndex={getTabIndex(i, 0)}
+                onFocus={() => handleCellFocus(i, 0)}
+                ref={(el) => {
+                  cellRefs.current[i][0] = el;
+                }}
+                className={styles.headerCell}
               >
-                M
-              </button>
-              <button
-                className={`${styles.toggle} ${isSoloed ? styles.soloActive : ''}`}
-                aria-label={`Solo channel ${i + 1}`}
-                aria-pressed={!!isSoloed}
-                onClick={() => handleSolo(i)}
-              >
-                S
-              </button>
+                <span className={styles.voiceLabel}>{i + 1}</span>
+                <VuMeter
+                  voiceIndex={i}
+                  label={`Channel ${i + 1} level`}
+                  orientation="horizontal"
+                />
+              </div>
+
+              <div role="gridcell">
+                <button
+                  tabIndex={getTabIndex(i, 1)}
+                  onFocus={() => handleCellFocus(i, 1)}
+                  ref={(el) => {
+                    cellRefs.current[i][1] = el;
+                  }}
+                  className={`${styles.toggle} ${isMuted ? styles.muteActive : ''}`}
+                  aria-label={`Mute channel ${i + 1}`}
+                  aria-pressed={!!isMuted}
+                  onClick={() => handleMute(i)}
+                >
+                  M
+                </button>
+              </div>
+
+              <div role="gridcell">
+                <button
+                  tabIndex={getTabIndex(i, 2)}
+                  onFocus={() => handleCellFocus(i, 2)}
+                  ref={(el) => {
+                    cellRefs.current[i][2] = el;
+                  }}
+                  className={`${styles.toggle} ${isSoloed ? styles.soloActive : ''}`}
+                  aria-label={`Solo channel ${i + 1}`}
+                  aria-pressed={!!isSoloed}
+                  onClick={() => handleSolo(i)}
+                >
+                  S
+                </button>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       <button
         className={styles.resetButton}
