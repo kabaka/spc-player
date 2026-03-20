@@ -6,7 +6,8 @@ use std::io::Cursor;
 use std::ptr::addr_of_mut;
 
 use snes_apu_spcp::Apu;
-use spc_spcp::spc::Spc;
+use snes_apu_spcp::ResamplingMode;
+use spc_spcp::spc::{Spc, RAM_LEN};
 
 /// Maximum render size in frames. 4096 frames * 2 channels * 4 bytes = 32 KB.
 const MAX_RENDER_FRAMES: usize = 4096;
@@ -15,6 +16,124 @@ const OUTPUT_BUF_LEN: usize = MAX_RENDER_FRAMES * 2;
 static mut APU: Option<Box<Apu>> = None;
 static mut SPC_DATA: Option<Vec<u8>> = None;
 static mut OUTPUT_BUF: [f32; OUTPUT_BUF_LEN] = [0.0; OUTPUT_BUF_LEN];
+
+// ---------------------------------------------------------------------------
+// Sinc resampler state (Lanczos-3)
+// ---------------------------------------------------------------------------
+
+/// Number of taps in the Lanczos-3 kernel (3 lobes × 2 sides).
+const SINC_TAPS: usize = 6;
+/// Number of polyphase sub-positions for fractional delay.
+const SINC_PHASES: usize = 256;
+/// Maximum output frames per resample call (stereo).
+const MAX_RESAMPLE_OUTPUT_FRAMES: usize = 256;
+
+/// Pre-computed Lanczos-3 polyphase FIR table: [phase][tap].
+/// Phase p corresponds to fractional delay p/256.
+static LANCZOS3_TABLE: [[f32; SINC_TAPS]; SINC_PHASES] = {
+    const fn sinc_approx(x: f64) -> f64 {
+        if x > -1e-12 && x < 1e-12 {
+            return 1.0;
+        }
+        let pi_x = x * std::f64::consts::PI;
+        let sin_pi_x = sin_approx(pi_x);
+        sin_pi_x / pi_x
+    }
+
+    /// Taylor series sin approximation — sufficient precision for the table.
+    const fn sin_approx(x: f64) -> f64 {
+        let x2 = x * x;
+        let x3 = x2 * x;
+        let x5 = x3 * x2;
+        let x7 = x5 * x2;
+        let x9 = x7 * x2;
+        let x11 = x9 * x2;
+        let x13 = x11 * x2;
+        x - x3 / 6.0 + x5 / 120.0 - x7 / 5040.0 + x9 / 362880.0
+            - x11 / 39916800.0 + x13 / 6227020800.0
+    }
+
+    const fn lanczos3(x: f64) -> f64 {
+        let a = 3.0; // Lanczos parameter
+        if x < -a || x > a {
+            return 0.0;
+        }
+        sinc_approx(x) * sinc_approx(x / a)
+    }
+
+    const fn build_table() -> [[f32; SINC_TAPS]; SINC_PHASES] {
+        let mut table = [[0.0f32; SINC_TAPS]; SINC_PHASES];
+        let half_taps = (SINC_TAPS / 2) as i32; // 3
+        let mut phase = 0usize;
+        while phase < SINC_PHASES {
+            let frac = phase as f64 / SINC_PHASES as f64;
+            let mut sum = 0.0f64;
+            let mut tap = 0usize;
+            while tap < SINC_TAPS {
+                let x = (tap as i32 - half_taps) as f64 + (1.0 - frac);
+                let w = lanczos3(x);
+                table[phase][tap] = w as f32;
+                sum += w;
+                tap += 1;
+            }
+            // Normalize to unity gain
+            if sum > 1e-12 || sum < -1e-12 {
+                let inv = 1.0 / sum as f64;
+                let mut t = 0usize;
+                while t < SINC_TAPS {
+                    table[phase][t] = (table[phase][t] as f64 * inv) as f32;
+                    t += 1;
+                }
+            }
+            phase += 1;
+        }
+        table
+    }
+
+    build_table()
+};
+
+/// Per-channel ring buffer history for the sinc resampler.
+struct SincResamplerState {
+    history_left: [f32; SINC_TAPS],
+    history_right: [f32; SINC_TAPS],
+    /// Write position in ring buffer (0..SINC_TAPS-1).
+    history_pos: usize,
+    /// Fractional accumulator in 8.24 fixed-point (256 phases).
+    frac: u32,
+}
+
+static mut SINC_STATE: SincResamplerState = SincResamplerState {
+    history_left: [0.0; SINC_TAPS],
+    history_right: [0.0; SINC_TAPS],
+    history_pos: 0,
+    frac: 0,
+};
+
+/// Scratch buffer for sinc resampler output.
+static mut RESAMPLE_OUTPUT_BUF: [f32; MAX_RESAMPLE_OUTPUT_FRAMES * 2] =
+    [0.0; MAX_RESAMPLE_OUTPUT_FRAMES * 2];
+
+// ---------------------------------------------------------------------------
+// Snapshot constants
+// ---------------------------------------------------------------------------
+
+/// Snapshot layout (all values little-endian):
+///   [0..4)         magic: 0x53504353 ("SPCS")
+///   [4..8)         version: 1
+///   [8..12)        total size
+///   [12..16)       SPC700 register block offset
+///   [16..65552)    RAM (64 KB)
+///   [65552..65680) DSP registers (128 bytes)
+///   [65680..65688) SPC700 registers: PC(u16) + A + X + Y + SP + PSW + pad
+const SNAPSHOT_MAGIC: u32 = 0x5350_4353; // "SPCS"
+const SNAPSHOT_VERSION: u32 = 1;
+const SNAPSHOT_HEADER_SIZE: usize = 16;
+const SNAPSHOT_RAM_SIZE: usize = RAM_LEN; // 65536
+const SNAPSHOT_DSP_REGS_SIZE: usize = 128;
+const SNAPSHOT_SPC700_REGS_SIZE: usize = 8; // PC(2) + A + X + Y + SP + PSW + pad
+const SNAPSHOT_TOTAL_SIZE: usize =
+    SNAPSHOT_HEADER_SIZE + SNAPSHOT_RAM_SIZE + SNAPSHOT_DSP_REGS_SIZE + SNAPSHOT_SPC700_REGS_SIZE;
 
 // Scratch buffers for the separate L/R i16 samples the library produces.
 static mut LEFT_BUF: [i16; MAX_RENDER_FRAMES] = [0; MAX_RENDER_FRAMES];
@@ -269,4 +388,270 @@ pub extern "C" fn wasm_dealloc(ptr: *mut u8, size: u32) {
         Err(_) => return,
     };
     unsafe { dealloc(ptr, layout) }
+}
+
+// ---------------------------------------------------------------------------
+// S-DSP interpolation mode (ADR-0014)
+// ---------------------------------------------------------------------------
+
+/// Set the S-DSP source sample interpolation mode.
+///
+/// Mode values (matching ADR-0014):
+///   0 = Gaussian (hardware-authentic, maps to ResamplingMode::Accurate)
+///   1 = Linear
+///   2 = Cubic
+///   3 = Sinc
+///
+/// Invalid values are silently ignored (no-op).
+#[no_mangle]
+pub extern "C" fn dsp_set_interpolation_mode(mode: u32) {
+    let resampling_mode = match mode {
+        0 => ResamplingMode::Accurate,
+        1 => ResamplingMode::Linear,
+        2 => ResamplingMode::Cubic,
+        3 => ResamplingMode::Sinc,
+        _ => return,
+    };
+
+    unsafe {
+        if let Some(apu) = get_apu() {
+            apu.set_resampling_mode(resampling_mode);
+        }
+    }
+}
+
+/// Get the current S-DSP interpolation mode as a u32 matching ADR-0014.
+/// Returns 0 (Gaussian) if the APU is not initialized.
+#[no_mangle]
+pub extern "C" fn dsp_get_interpolation_mode() -> u32 {
+    unsafe {
+        match get_apu() {
+            Some(apu) => match apu.resampling_mode() {
+                ResamplingMode::Accurate | ResamplingMode::Gaussian => 0,
+                ResamplingMode::Linear => 1,
+                ResamplingMode::Cubic => 2,
+                ResamplingMode::Sinc => 3,
+            },
+            None => 0,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Output sinc resampler (Lanczos-3) — ADR-0014
+// ---------------------------------------------------------------------------
+
+/// Resample interleaved stereo f32 from input rate to output rate using
+/// Lanczos-3 sinc interpolation.
+///
+/// - `input_ptr`:  pointer to interleaved stereo input (f32, L R L R …)
+/// - `input_len`:  number of stereo *frames* in input
+/// - `output_ptr`: pointer to output buffer (f32, L R L R …)
+/// - `output_len`: number of stereo *frames* to produce
+/// - `ratio_num`:  input sample rate (numerator of ratio)
+/// - `ratio_den`:  output sample rate (denominator of ratio)
+///
+/// Returns the number of input frames consumed, or -1 on error.
+/// Maintains internal state (fractional position + history ring buffer)
+/// across calls for gapless streaming.
+#[no_mangle]
+pub extern "C" fn dsp_resample_sinc(
+    input_ptr: *const f32,
+    input_len: u32,
+    output_ptr: *mut f32,
+    output_len: u32,
+    ratio_num: u32,
+    ratio_den: u32,
+) -> i32 {
+    if input_ptr.is_null() || output_ptr.is_null() || ratio_den == 0 {
+        return -1;
+    }
+
+    let in_frames = input_len as usize;
+    let out_frames = output_len as usize;
+
+    unsafe {
+        let input = std::slice::from_raw_parts(input_ptr, in_frames * 2);
+        let output = std::slice::from_raw_parts_mut(output_ptr, out_frames * 2);
+        let state = &mut *addr_of_mut!(SINC_STATE);
+
+        // Step size in fixed-point: ratio_num/ratio_den * 256
+        // (how many input samples to advance per output sample, scaled by 256 phases)
+        let step = ((ratio_num as u64 * SINC_PHASES as u64) / ratio_den as u64) as u32;
+
+        let mut in_pos: usize = 0;
+        let mut out_pos: usize = 0;
+
+        while out_pos < out_frames {
+            let phase = (state.frac >> 0) & 0xFF;
+            let int_part = (state.frac >> 8) as usize;
+
+            // Feed input samples into history up to the needed position
+            while in_pos <= int_part && in_pos < in_frames {
+                state.history_left[state.history_pos] = input[in_pos * 2];
+                state.history_right[state.history_pos] = input[in_pos * 2 + 1];
+                state.history_pos = (state.history_pos + 1) % SINC_TAPS;
+                in_pos += 1;
+            }
+
+            // If we don't have enough input, stop
+            if in_pos < in_frames || int_part < in_pos {
+                // Perform convolution from history ring buffer
+                let coeffs = &LANCZOS3_TABLE[phase as usize];
+                let mut sum_l: f32 = 0.0;
+                let mut sum_r: f32 = 0.0;
+
+                for tap in 0..SINC_TAPS {
+                    let idx = (state.history_pos + tap) % SINC_TAPS;
+                    sum_l += state.history_left[idx] * coeffs[tap];
+                    sum_r += state.history_right[idx] * coeffs[tap];
+                }
+
+                output[out_pos * 2] = sum_l;
+                output[out_pos * 2 + 1] = sum_r;
+                out_pos += 1;
+
+                state.frac += step;
+            } else {
+                break;
+            }
+        }
+
+        // Subtract consumed input from fractional accumulator
+        let consumed = in_pos;
+        if consumed > 0 {
+            state.frac = state.frac.saturating_sub((consumed as u32) << 8);
+        }
+
+        consumed as i32
+    }
+}
+
+/// Reset the sinc resampler's internal state (history buffer + fractional position).
+/// Call when switching tracks, seeking, or changing resampler mode.
+#[no_mangle]
+pub extern "C" fn dsp_resample_sinc_reset() {
+    unsafe {
+        let state = &mut *addr_of_mut!(SINC_STATE);
+        state.history_left = [0.0; SINC_TAPS];
+        state.history_right = [0.0; SINC_TAPS];
+        state.history_pos = 0;
+        state.frac = 0;
+    }
+}
+
+/// Return a pointer to the pre-allocated sinc resampler output buffer.
+#[no_mangle]
+pub extern "C" fn dsp_get_resample_output_ptr() -> *mut f32 {
+    unsafe { (*addr_of_mut!(RESAMPLE_OUTPUT_BUF)).as_mut_ptr() }
+}
+
+// ---------------------------------------------------------------------------
+// Snapshot / Restore
+// ---------------------------------------------------------------------------
+
+/// Return the size in bytes needed for a full emulation state snapshot.
+#[no_mangle]
+pub extern "C" fn dsp_snapshot_size() -> u32 {
+    SNAPSHOT_TOTAL_SIZE as u32
+}
+
+/// Serialize the current APU state into the buffer at `out_ptr`.
+/// The buffer must be at least `dsp_snapshot_size()` bytes.
+/// Returns the number of bytes written, or 0 on failure.
+#[no_mangle]
+pub extern "C" fn dsp_snapshot(out_ptr: *mut u8) -> u32 {
+    if out_ptr.is_null() {
+        return 0;
+    }
+
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return 0,
+        };
+
+        let buf = std::slice::from_raw_parts_mut(out_ptr, SNAPSHOT_TOTAL_SIZE);
+
+        // Header
+        buf[0..4].copy_from_slice(&SNAPSHOT_MAGIC.to_le_bytes());
+        buf[4..8].copy_from_slice(&SNAPSHOT_VERSION.to_le_bytes());
+        buf[8..12].copy_from_slice(&(SNAPSHOT_TOTAL_SIZE as u32).to_le_bytes());
+        let spc700_offset = (SNAPSHOT_HEADER_SIZE + SNAPSHOT_RAM_SIZE + SNAPSHOT_DSP_REGS_SIZE) as u32;
+        buf[12..16].copy_from_slice(&spc700_offset.to_le_bytes());
+
+        // RAM (64 KB)
+        let ram_start = SNAPSHOT_HEADER_SIZE;
+        buf[ram_start..ram_start + SNAPSHOT_RAM_SIZE].copy_from_slice(&apu.ram[..]);
+
+        // DSP registers (128 bytes) — read each via the port interface
+        let dsp_start = ram_start + SNAPSHOT_RAM_SIZE;
+        for i in 0u8..128 {
+            apu.write_u8(0xF2_u32, i);
+            buf[dsp_start + i as usize] = apu.read_u8(0xF3_u32);
+        }
+
+        // SPC700 registers
+        let spc_start = dsp_start + SNAPSHOT_DSP_REGS_SIZE;
+        let smp = apu.smp.as_ref().unwrap();
+        let pc_bytes = smp.reg_pc.to_le_bytes();
+        buf[spc_start] = pc_bytes[0];
+        buf[spc_start + 1] = pc_bytes[1];
+        buf[spc_start + 2] = smp.reg_a;
+        buf[spc_start + 3] = smp.reg_x;
+        buf[spc_start + 4] = smp.reg_y;
+        buf[spc_start + 5] = smp.reg_sp;
+        buf[spc_start + 6] = smp.get_psw();
+        buf[spc_start + 7] = 0; // padding
+
+        SNAPSHOT_TOTAL_SIZE as u32
+    }
+}
+
+/// Restore APU state from a previously captured snapshot.
+/// Returns 0 on success, -1 on invalid data.
+#[no_mangle]
+pub extern "C" fn dsp_restore(in_ptr: *const u8, len: u32) -> u32 {
+    if in_ptr.is_null() || (len as usize) < SNAPSHOT_TOTAL_SIZE {
+        return u32::MAX; // -1 as unsigned
+    }
+
+    unsafe {
+        let buf = std::slice::from_raw_parts(in_ptr, len as usize);
+
+        // Validate magic and version
+        let magic = u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]);
+        let version = u32::from_le_bytes([buf[4], buf[5], buf[6], buf[7]]);
+        if magic != SNAPSHOT_MAGIC || version != SNAPSHOT_VERSION {
+            return u32::MAX;
+        }
+
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return u32::MAX,
+        };
+
+        // Restore RAM
+        let ram_start = SNAPSHOT_HEADER_SIZE;
+        apu.ram[..].copy_from_slice(&buf[ram_start..ram_start + SNAPSHOT_RAM_SIZE]);
+
+        // Restore DSP registers
+        let dsp_start = ram_start + SNAPSHOT_RAM_SIZE;
+        for i in 0u8..128 {
+            apu.write_u8(0xF2_u32, i);
+            apu.write_u8(0xF3_u32, buf[dsp_start + i as usize]);
+        }
+
+        // Restore SPC700 registers
+        let spc_start = dsp_start + SNAPSHOT_DSP_REGS_SIZE;
+        let smp = apu.smp.as_mut().unwrap();
+        smp.reg_pc = u16::from_le_bytes([buf[spc_start], buf[spc_start + 1]]);
+        smp.reg_a = buf[spc_start + 2];
+        smp.reg_x = buf[spc_start + 3];
+        smp.reg_y = buf[spc_start + 4];
+        smp.reg_sp = buf[spc_start + 5];
+        smp.set_psw(buf[spc_start + 6]);
+
+        0
+    }
 }

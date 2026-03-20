@@ -1,0 +1,40 @@
+/* PlaybackSettings.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+}
+
+.numberInput {
+  width: 5rem;
+  padding: var(--spc-space-1) var(--spc-space-2);
+  font-size: var(--spc-font-size-sm);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text);
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+}
+
+.numberInput:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.unit {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
+}

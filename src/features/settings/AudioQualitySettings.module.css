@@ -1,0 +1,63 @@
+/* AudioQualitySettings.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.select {
+  padding: var(--spc-space-2) var(--spc-space-3);
+  font-size: var(--spc-font-size-sm);
+  font-family: var(--spc-font-sans);
+  color: var(--spc-color-text);
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  appearance: auto;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.customControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+  padding: var(--spc-space-4);
+  background: var(--spc-color-bg-subtle);
+  border-radius: var(--spc-radius-md);
+  border: 1px solid var(--spc-color-border-subtle);
+}
+
+.hint {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  font-style: italic;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-3);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-warning);
+  background: color-mix(in srgb, var(--spc-color-warning) 10%, transparent);
+  border-radius: var(--spc-radius-md);
+  border: 1px solid
+    color-mix(in srgb, var(--spc-color-warning) 30%, transparent);
+}
+
+.warningIcon {
+  flex-shrink: 0;
+  line-height: 1;
+}

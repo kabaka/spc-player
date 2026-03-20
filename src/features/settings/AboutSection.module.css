@@ -1,0 +1,33 @@
+/* AboutSection.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.appName {
+  font-size: var(--spc-font-size-md);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin: 0;
+}
+
+.version {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  font-family: var(--spc-font-mono);
+}
+
+.description {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-normal);
+  margin: 0;
+}
+
+.license {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  margin: 0;
+}

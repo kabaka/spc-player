@@ -23,6 +23,7 @@ import { audioPipelineError, spcParseError } from '@/errors/factories';
 const TARGET_SAMPLE_RATE = 48_000;
 const DEFAULT_RESAMPLER_MODE = 0; // linear
 const DEFAULT_INTERPOLATION_MODE = 0; // gaussian
+const SNAPSHOT_TIMEOUT_MS = 5_000;
 
 // ---------------------------------------------------------------------------
 // AudioEngine
@@ -33,6 +34,7 @@ class AudioEngine {
   private workletNode: AudioWorkletNode | null = null;
   private gainNode: GainNode | null = null;
   private wasmBytes: ArrayBuffer | null = null;
+  private spcData: ArrayBuffer | null = null;
   private isInitialized = false;
   private onPlaybackEnded: (() => void) | null = null;
   private visibilityHandler: (() => void) | null = null;
@@ -119,6 +121,9 @@ class AudioEngine {
     }
 
     if (!this.workletNode || !this.audioContext || !this.wasmBytes) return;
+
+    // Keep a copy so recreateAudioContext can re-init the worklet
+    this.spcData = spcData.slice(0);
 
     const port = this.workletNode.port;
     const actualSampleRate = this.audioContext.sampleRate;
@@ -220,6 +225,203 @@ class AudioEngine {
     this.postCommand(config);
   }
 
+  /** Set S-DSP interpolation mode (ADR-0014). 0=gaussian, 1=linear, 2=cubic, 3=sinc. */
+  setInterpolationMode(mode: number): void {
+    this.postCommand({ type: 'set-interpolation-mode', mode });
+  }
+
+  /** Set output resampler mode. 0=linear (JS), 1=sinc (WASM Lanczos-3). */
+  setResamplerMode(mode: 'linear' | 'sinc'): void {
+    this.postCommand({
+      type: 'set-resampler-mode',
+      mode: mode === 'sinc' ? 1 : 0,
+    });
+  }
+
+  /**
+   * Request a full emulation state snapshot from the worklet.
+   * Returns a Promise that resolves with the serialized state.
+   */
+  requestSnapshot(): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      if (!this.workletNode) {
+        reject(new Error('Worklet not initialized'));
+        return;
+      }
+
+      const port = this.workletNode.port;
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        port.removeEventListener('message', handler);
+      };
+
+      const handler = (event: MessageEvent<WorkletToMain>) => {
+        if (event.data.type === 'snapshot') {
+          cleanup();
+          resolve(event.data.snapshotData);
+        }
+      };
+
+      const timer = setTimeout(() => {
+        port.removeEventListener('message', handler);
+        reject(new Error('Snapshot request timed out after 5000ms'));
+      }, SNAPSHOT_TIMEOUT_MS);
+
+      port.addEventListener('message', handler);
+      this.postCommand({ type: 'request-snapshot' });
+    });
+  }
+
+  /** Restore a previously captured emulation state snapshot. */
+  restoreSnapshot(data: ArrayBuffer, outputSampleRate?: number): void {
+    const rate =
+      outputSampleRate ?? this.audioContext?.sampleRate ?? TARGET_SAMPLE_RATE;
+    this.postCommand({
+      type: 'restore-snapshot',
+      snapshotData: data,
+      outputSampleRate: rate,
+    });
+  }
+
+  /**
+   * Recreate the AudioContext at a new sample rate while preserving emulation state.
+   *
+   * Flow:
+   * 1. Pause playback
+   * 2. Request snapshot from worklet
+   * 3. Close old AudioContext
+   * 4. Create new AudioContext at new sample rate
+   * 5. Create new AudioWorkletNode
+   * 6. Send init message with WASM bytes (cloned ArrayBuffer — Chromium bug)
+   * 7. Send restore-snapshot message
+   * 8. Resume playback if it was playing
+   */
+  async recreateAudioContext(newSampleRate: number): Promise<void> {
+    if (!this.isInitialized || !this.wasmBytes) {
+      throw new Error('Engine not initialized');
+    }
+
+    const wasPlaying = this.userIntentPlaying;
+
+    // 1. Pause playback
+    this.pause();
+
+    // 2. Request snapshot
+    let snapshotData: ArrayBuffer;
+    try {
+      snapshotData = await this.requestSnapshot();
+    } catch {
+      // If snapshot fails (empty worklet), use empty buffer.
+      snapshotData = new ArrayBuffer(0);
+    }
+
+    // 3. Tear down old graph
+    await this.teardownGraph();
+
+    try {
+      // 4. Create new AudioContext at new sample rate
+      this.audioContext = new AudioContext({ sampleRate: newSampleRate });
+
+      // 5. Load AudioWorklet processor and create new node
+      await this.audioContext.audioWorklet.addModule(spcWorkletUrl);
+
+      this.workletNode = new AudioWorkletNode(
+        this.audioContext,
+        'spc-processor',
+        {
+          numberOfInputs: 0,
+          numberOfOutputs: 1,
+          outputChannelCount: [2],
+        },
+      );
+
+      this.gainNode = this.audioContext.createGain();
+      this.workletNode.connect(this.gainNode);
+      this.gainNode.connect(this.audioContext.destination);
+
+      this.workletNode.port.onmessage = (event: MessageEvent<WorkletToMain>) =>
+        this.handleWorkletMessage(event.data);
+
+      this.workletNode.onprocessorerror = () => {
+        reportError(
+          audioPipelineError('AUDIO_WORKLET_CRASHED', {
+            workletProcessorName: 'spc-processor',
+          }),
+        );
+      };
+
+      this.visibilityHandler = () => this.handleVisibilityChange();
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+
+      // 6. Send init message with WASM bytes (clone, do NOT transfer — Chromium bug)
+      // Use stored SPC data so dsp_init receives valid data
+      const spcClone = this.spcData
+        ? this.spcData.slice(0)
+        : new ArrayBuffer(0);
+      const initReady = new Promise<void>((resolve, reject) => {
+        const port = this.workletNode?.port;
+        if (!port) {
+          reject(new Error('Worklet not initialized'));
+          return;
+        }
+
+        const cleanup = () => {
+          clearTimeout(timer);
+          port.removeEventListener('message', handler);
+        };
+
+        const handler = (event: MessageEvent<WorkletToMain>) => {
+          if (event.data.type === 'ready') {
+            cleanup();
+            resolve();
+          } else if (event.data.type === 'error') {
+            cleanup();
+            reject(new Error(event.data.message));
+          }
+        };
+
+        const timer = setTimeout(() => {
+          port.removeEventListener('message', handler);
+          reject(new Error('Worklet init timed out after 5000ms'));
+        }, SNAPSHOT_TIMEOUT_MS);
+
+        port.addEventListener('message', handler);
+      });
+
+      const initMsg: MainToWorklet.Init = {
+        type: 'init',
+        version: PROTOCOL_VERSION,
+        wasmBytes: this.wasmBytes,
+        spcData: spcClone,
+        outputSampleRate: newSampleRate,
+        resamplerMode: DEFAULT_RESAMPLER_MODE,
+        interpolationMode: DEFAULT_INTERPOLATION_MODE,
+        durationSamples: null,
+        fadeOutSamples: 0,
+      };
+
+      this.workletNode.port.postMessage(initMsg);
+
+      await initReady;
+
+      // 7. Restore snapshot
+      if (snapshotData.byteLength > 0) {
+        this.restoreSnapshot(snapshotData, newSampleRate);
+      }
+
+      // 8. Resume playback if it was playing
+      if (wasPlaying) {
+        this.play();
+      }
+    } catch (error) {
+      await this.teardownGraph();
+      const detail = error instanceof Error ? error.message : String(error);
+      reportError(audioPipelineError('AUDIO_WORKLET_LOAD_FAILED', { detail }));
+      throw error;
+    }
+  }
+
   /** Set callback for when playback ends naturally (duration exceeded). */
   setOnPlaybackEnded(callback: (() => void) | null): void {
     this.onPlaybackEnded = callback;
@@ -230,6 +432,7 @@ class AudioEngine {
     await this.teardownGraph();
     this.isInitialized = false;
     this.wasmBytes = null;
+    this.spcData = null;
     resetAudioStateBuffer();
   }
 

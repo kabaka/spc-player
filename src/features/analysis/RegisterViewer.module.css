@@ -1,0 +1,96 @@
+/* RegisterViewer.module.css — DSP register display */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-3);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-sm);
+  line-height: var(--spc-leading-normal);
+}
+
+.table thead th {
+  text-align: left;
+  padding: var(--spc-space-2) var(--spc-space-3);
+  color: var(--spc-color-text-muted);
+  font-weight: var(--spc-font-weight-medium);
+  font-size: var(--spc-font-size-xs);
+  border-bottom: 1px solid var(--spc-color-border);
+  background: var(--spc-color-surface-raised);
+  position: sticky;
+  top: 0;
+  z-index: var(--spc-z-raised);
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: var(--spc-color-bg-subtle);
+}
+
+.table tbody tr:hover {
+  background-color: var(--spc-color-hover);
+}
+
+.groupHeader {
+  padding: var(--spc-space-2) var(--spc-space-3);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-accent-text);
+  background: var(--spc-color-surface);
+  font-size: var(--spc-font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.addressCell {
+  padding: var(--spc-space-1) var(--spc-space-3);
+  color: var(--spc-color-accent-text);
+  font-weight: var(--spc-font-weight-medium);
+  width: 4em;
+  white-space: nowrap;
+}
+
+.nameCell {
+  padding: var(--spc-space-1) var(--spc-space-3);
+  color: var(--spc-color-text-secondary);
+  width: 12em;
+  white-space: nowrap;
+}
+
+.valueCell {
+  padding: var(--spc-space-1) var(--spc-space-3);
+  color: var(--spc-color-text);
+  font-weight: var(--spc-font-weight-semibold);
+  width: 5em;
+}
+
+.frozen {
+  opacity: 0.6;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .valueCell {
+    transition: none;
+  }
+}

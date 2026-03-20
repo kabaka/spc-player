@@ -74,6 +74,14 @@ function createMockDspExports(): DspExports {
     dsp_get_voice_state: vi.fn().mockReturnValue(0),
     dsp_get_register: vi.fn().mockReturnValue(0),
     dsp_set_register: vi.fn(),
+    dsp_set_interpolation_mode: vi.fn(),
+    dsp_get_interpolation_mode: vi.fn().mockReturnValue(0),
+    dsp_resample_sinc: vi.fn().mockReturnValue(0),
+    dsp_resample_sinc_reset: vi.fn(),
+    dsp_get_resample_output_ptr: vi.fn().mockReturnValue(0),
+    dsp_snapshot_size: vi.fn().mockReturnValue(0),
+    dsp_snapshot: vi.fn().mockReturnValue(0),
+    dsp_restore: vi.fn().mockReturnValue(0),
     wasm_alloc: vi.fn(() => {
       const ptr = nextAlloc;
       nextAlloc += 4096;

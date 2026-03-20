@@ -1,0 +1,27 @@
+/* InstrumentControls.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.label {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-secondary);
+}
+
+.valueDisplay {
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text-muted);
+  min-width: 6ch;
+  text-align: right;
+}

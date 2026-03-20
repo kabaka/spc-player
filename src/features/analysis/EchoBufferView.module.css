@@ -1,0 +1,145 @@
+/* EchoBufferView.module.css — Echo FIR visualization */
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spc-space-4);
+  align-items: start;
+}
+
+.canvasWrapper {
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  background: var(--spc-color-surface);
+  overflow: hidden;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+}
+
+.params {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-3);
+  background: var(--spc-color-surface);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+}
+
+.paramList {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spc-space-1) var(--spc-space-3);
+  margin: 0;
+  padding: 0;
+}
+
+.paramLabel {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-muted);
+  font-weight: var(--spc-font-weight-normal);
+}
+
+.paramValue {
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  font-weight: var(--spc-font-weight-medium);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    opacity: 0.7;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Legend ─────────────────────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  gap: var(--spc-space-4);
+  padding: var(--spc-space-2) 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-1);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-muted);
+}
+
+.legendDotL,
+.legendDotR {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legendDotL {
+  background: var(--spc-color-accent);
+}
+
+.legendDotR {
+  background: var(--spc-color-accent-subtle);
+}
+
+/* ── FIR Coefficients ──────────────────────────────────────────────── */
+
+.firSection {
+  grid-column: 1 / -1;
+}
+
+.firHeading {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text);
+  margin: 0 0 var(--spc-space-2);
+}
+
+.firUnavailable {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-muted);
+  font-style: italic;
+  margin: 0 0 var(--spc-space-2);
+}
+
+.firList {
+  display: flex;
+  gap: var(--spc-space-3);
+  margin: 0;
+  padding: 0;
+}
+
+.firItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spc-space-1);
+}
+
+.firLabel {
+  font-size: var(--spc-font-size-xs, 0.75rem);
+  color: var(--spc-color-text-muted);
+  font-weight: var(--spc-font-weight-normal);
+}
+
+.firValue {
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  font-weight: var(--spc-font-weight-medium);
+  margin: 0;
+}

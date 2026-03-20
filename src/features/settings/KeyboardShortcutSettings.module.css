@@ -1,0 +1,55 @@
+/* KeyboardShortcutSettings.module.css */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--spc-font-size-sm);
+}
+
+.table th {
+  text-align: left;
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text-secondary);
+  padding: var(--spc-space-2) var(--spc-space-3);
+  border-bottom: 1px solid var(--spc-color-border);
+}
+
+.table td {
+  padding: var(--spc-space-2) var(--spc-space-3);
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  color: var(--spc-color-text);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.keyBinding {
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+}
+
+.kbd {
+  display: inline-block;
+  padding: var(--spc-space-1) var(--spc-space-2);
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text);
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  line-height: 1;
+}
+
+.scope {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  text-transform: capitalize;
+}
+
+.readOnlyNote {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  margin-top: var(--spc-space-2);
+  font-style: italic;
+}

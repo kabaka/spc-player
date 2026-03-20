@@ -70,6 +70,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit, firefox]
+        include:
+          - browser: chromium
+            continue-on-error: false
+          - browser: webkit
+            continue-on-error: false
+          - browser: firefox
+            continue-on-error: true
+    continue-on-error: ${{ matrix.continue-on-error }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -82,26 +94,26 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: playwright-
-      - name: Install Playwright browsers
+          key: playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: playwright-${{ matrix.browser }}-
+      - name: Install Playwright browser
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps ${{ matrix.browser }}
       - name: Download dist artifact
         uses: actions/download-artifact@v4
         with:
           name: dist-artifact
           path: dist
-      - name: Run E2E tests
-        run: npx playwright test
+      - name: Run E2E tests (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }}
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.browser }}
           path: playwright-report/
           retention-days: 7
 

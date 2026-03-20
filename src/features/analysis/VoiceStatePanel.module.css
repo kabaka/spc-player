@@ -1,0 +1,118 @@
+/* VoiceStatePanel.module.css — Per-voice state cards */
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spc-space-3);
+}
+
+.voiceCard {
+  background: var(--spc-color-surface);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  padding: var(--spc-space-3);
+  border-left: 3px solid var(--voice-color, var(--spc-color-border));
+  transition: opacity var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.voiceCard.inactive {
+  opacity: 0.5;
+}
+
+.voiceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spc-space-2);
+}
+
+.voiceName {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin: 0;
+}
+
+.phaseIndicator {
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  padding: var(--spc-space-1) var(--spc-space-2);
+  border-radius: var(--spc-radius-full);
+  background: var(--spc-color-bg-subtle);
+  color: var(--spc-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.phaseIndicator[data-phase='attack'] {
+  background: color-mix(in srgb, var(--spc-color-success) 20%, transparent);
+  color: var(--spc-color-success);
+}
+
+.phaseIndicator[data-phase='decay'] {
+  background: color-mix(in srgb, var(--spc-color-warning) 20%, transparent);
+  color: var(--spc-color-warning);
+}
+
+.phaseIndicator[data-phase='sustain'] {
+  background: color-mix(in srgb, var(--spc-color-info) 20%, transparent);
+  color: var(--spc-color-info);
+}
+
+.phaseIndicator[data-phase='release'] {
+  background: color-mix(in srgb, var(--spc-color-error) 20%, transparent);
+  color: var(--spc-color-error);
+}
+
+.dataList {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spc-space-1) var(--spc-space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.dtLabel {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  font-weight: var(--spc-font-weight-normal);
+}
+
+.ddValue {
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text);
+  font-weight: var(--spc-font-weight-medium);
+  margin: 0;
+  text-align: right;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

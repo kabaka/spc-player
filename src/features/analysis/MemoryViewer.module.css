@@ -1,0 +1,101 @@
+/* MemoryViewer.module.css — 64KB hex dump with virtual scrolling */
+
+.container {
+  position: relative;
+  overflow-y: auto;
+  max-height: 70vh;
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  background: var(--spc-color-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  line-height: var(--spc-leading-tight);
+  table-layout: fixed;
+}
+
+.thead {
+  position: sticky;
+  top: 0;
+  z-index: var(--spc-z-raised);
+}
+
+.thead th {
+  background: var(--spc-color-surface-raised);
+  padding: var(--spc-space-1) var(--spc-space-1);
+  text-align: center;
+  color: var(--spc-color-text-muted);
+  font-weight: var(--spc-font-weight-medium);
+  font-size: var(--spc-font-size-xs);
+  border-bottom: 1px solid var(--spc-color-border);
+  white-space: nowrap;
+}
+
+.addressCol {
+  width: 4.5em;
+  text-align: left;
+  padding-left: var(--spc-space-2);
+}
+
+.asciiCol {
+  width: 10em;
+  text-align: left;
+}
+
+.addressCell {
+  color: var(--spc-color-accent-text);
+  font-weight: var(--spc-font-weight-medium);
+  padding: var(--spc-space-1) var(--spc-space-1);
+  padding-left: var(--spc-space-2);
+  white-space: nowrap;
+}
+
+.dataCell {
+  text-align: center;
+  padding: var(--spc-space-1) var(--spc-space-1);
+  color: var(--spc-color-text);
+  min-width: 2em;
+}
+
+.asciiCell {
+  color: var(--spc-color-text-secondary);
+  padding: var(--spc-space-1) var(--spc-space-2);
+  white-space: pre;
+  letter-spacing: 0.05em;
+}
+
+.spacer {
+  padding: 0;
+  border: none;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .asciiCol,
+  .asciiCell {
+    display: none;
+  }
+
+  .table {
+    font-size: 0.625rem;
+  }
+
+  .container {
+    max-height: 60vh;
+  }
+}

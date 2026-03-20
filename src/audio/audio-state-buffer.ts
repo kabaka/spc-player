@@ -23,6 +23,8 @@ export interface AudioStateBuffer {
   masterVuLeft: number;
   masterVuRight: number;
   voices: VoiceStateSnapshot[];
+  echoBuffer: Int16Array | null;
+  firCoefficients: Uint8Array;
   /** Monotonically increasing counter for change detection by rAF consumers. */
   generation: number;
 }
@@ -47,6 +49,8 @@ function createDefaultBuffer(): AudioStateBuffer {
     masterVuLeft: 0,
     masterVuRight: 0,
     voices: Array.from({ length: 8 }, (_, i) => createDefaultVoice(i)),
+    echoBuffer: null,
+    firCoefficients: new Uint8Array(8),
     generation: 0,
   };
 }
@@ -72,6 +76,9 @@ export function resetAudioStateBuffer(): void {
     voice.keyOn = false;
     voice.active = false;
   }
+
+  audioStateBuffer.echoBuffer = null;
+  audioStateBuffer.firCoefficients.fill(0);
 
   audioStateBuffer.generation = 0;
 }

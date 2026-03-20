@@ -1,0 +1,35 @@
+/* SettingsView.module.css */
+
+.container {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--spc-space-6) var(--spc-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-6);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+}
+
+.heading {
+  font-size: var(--spc-font-size-lg);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin: 0;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

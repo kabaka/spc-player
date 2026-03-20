@@ -51,6 +51,7 @@
     "binaryen": "^125.0.0",
     "eslint": "^9",
     "eslint-plugin-react-hooks": "^5",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^16",
     "husky": "^9",
     "jsdom": "^26",

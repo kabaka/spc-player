@@ -93,11 +93,12 @@ static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
 ];
 
 pub struct Apu {
-    pub(crate) ram: Box<[u8; RAM_LEN]>,
+    pub ram: Box<[u8; RAM_LEN]>,
     pub(crate) ipl_rom: Box<[u8]>,
     pub(crate) output_ports: [u8; 4],
 
-    pub(crate) smp: Option<Box<Smp>>,
+    pub smp: Option<Box<Smp>>,
+
     pub dsp: Option<Box<Dsp>>,
     pub(crate) script700_runtime: Option<Box<Runtime>>,
 

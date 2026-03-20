@@ -1,0 +1,42 @@
+/* AdsrDisplay.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-3);
+}
+
+.canvas {
+  width: 100%;
+  height: auto;
+  border-radius: var(--spc-radius-md);
+  background: var(--spc-color-surface);
+}
+
+.phaseIndicator {
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-accent);
+  text-align: center;
+}
+
+.sliders {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spc-space-3);
+}
+
+.sliderGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+  align-items: center;
+}
+
+.value {
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text-muted);
+  min-width: 3ch;
+  text-align: center;
+}
