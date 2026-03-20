@@ -1066,6 +1066,46 @@ These items deviate from the original spec but are acceptable as-is.
 - [ ] Real-time value ARIA updates throttled at ≤ 4 Hz.
 - [ ] axe-core automated scan passes on every route.
 
+### Deferred Items
+
+The following Phase 7 deliverables have partial implementations but require additional work to satisfy their verification criteria. They are carried forward to Phase 8.
+
+#### A-B Loop Enforcement and Visual Overlay
+
+**Completed:** Store state (`loopRegion`, `setLoopStart`, `setLoopEnd`, `toggleLoop`, `clearLoop`) and keyboard shortcut definitions (`[`, `]`, `L`, `Shift+L`).
+
+**Remaining:**
+
+- `src/features/player/LoopMarkers.tsx` — visual overlay on seek bar with draggable start/end handles, reactive to `loopRegion` store state.
+- Loop enforcement logic — monitor playback position and seek to `loopRegion.startTime` when position reaches `loopRegion.endTime`.
+- Integration with `PlayerView.tsx` seek bar component.
+
+**Blocked by:** UI component not yet created; enforcement logic not yet wired to the audio position sync loop.
+
+#### Echo Buffer Telemetry
+
+**Completed:** `audioStateBuffer` fields (`echoBuffer: Int16Array | null`, `firCoefficients: Uint8Array`), `EchoBufferView.tsx` component with graceful "not available" fallback.
+
+**Remaining:**
+
+- WASM exports to expose echo buffer pointer and FIR coefficient data (e.g., `dsp_get_echo_buffer_ptr`, `dsp_get_fir_coefficients`).
+- Extend `WorkletToMain.Telemetry` protocol to include echo/FIR data.
+- Worklet telemetry handler to serialize and send echo data on each emission cycle.
+
+**Blocked by:** WASM library (`snes-apu-spcp`) does not currently expose echo buffer or FIR coefficient read access in a way suitable for real-time telemetry.
+
+#### Instrument Note-On/Note-Off Playback
+
+**Completed:** Full UI infrastructure — `VirtualKeyboard.tsx`, `useInstrumentKeyboard.ts`, `useMidi.ts` hook, `InstrumentView.tsx` composition. Callbacks fire correctly from keyboard input, mouse/touch interaction, and MIDI devices.
+
+**Remaining:**
+
+- WASM export for per-voice key-on/key-off (e.g., `dsp_voice_note_on(voice, pitch, velocity)`, `dsp_voice_note_off(voice)`), or direct DSP register writes to simulate key-on via `dsp_set_register`.
+- Wire `handleNoteOn` / `handleNoteOff` in `InstrumentView.tsx` to the audio engine.
+- Worker protocol messages for note-on/note-off commands.
+
+**Blocked by:** The WASM library (`snes-apu-spcp`) does not expose per-voice key-on/key-off exports. Implementing this requires either patching the vendor library or using the existing `dsp_set_register` export to write directly to S-DSP key-on registers (KON at address `$4C`).
+
 ---
 
 ## Phase 8 — PWA, Polish & Production Hardening
@@ -1081,6 +1121,12 @@ These items deviate from the original spec but are acceptable as-is.
 | `docs/design/keyboard-shortcuts.md` §6-8           | Customization persistence, Help UI, browser tab unfocus                             |
 
 ### Deliverables
+
+#### Phase 7 Carry-Forward
+
+- [ ] **A-B Loop:** `LoopMarkers.tsx` visual overlay on seek bar with draggable handles. Loop enforcement logic in `PlayerView.tsx` position sync loop (seek to loop start when position reaches loop end).
+- [ ] **Echo Buffer Telemetry:** WASM exports for echo buffer and FIR coefficient access. Extend `WorkletToMain.Telemetry` to carry echo data. Wire worklet to populate `audioStateBuffer.echoBuffer` and `firCoefficients`.
+- [ ] **Instrument Note Playback:** WASM export or register-write approach for per-voice key-on/key-off. Wire `InstrumentView.tsx` callbacks to audio engine via worker protocol.
 
 #### Service Worker & PWA
 
