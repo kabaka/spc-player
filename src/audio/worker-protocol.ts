@@ -38,7 +38,9 @@ export type MainToWorklet =
   | MainToWorklet.SetTelemetryRate
   | MainToWorklet.RequestSnapshot
   | MainToWorklet.RestoreSnapshot
-  | MainToWorklet.SetPlaybackConfig;
+  | MainToWorklet.SetPlaybackConfig
+  | MainToWorklet.NoteOn
+  | MainToWorklet.NoteOff;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace MainToWorklet {
@@ -156,6 +158,22 @@ export namespace MainToWorklet {
     readonly outputSampleRate: number;
   }
 
+  /** Trigger a note-on for a specific voice with a given pitch value. */
+  export interface NoteOn {
+    readonly type: 'note-on';
+    /** Voice index 0–7. */
+    readonly voice: number;
+    /** S-DSP 14-bit pitch value. */
+    readonly pitch: number;
+  }
+
+  /** Trigger a note-off (key release) for a specific voice. */
+  export interface NoteOff {
+    readonly type: 'note-off';
+    /** Voice index 0–7. */
+    readonly voice: number;
+  }
+
   /**
    * Update playback timing configuration mid-playback.
    * Sent when the user changes loop count during playback.
@@ -263,6 +281,17 @@ export namespace WorkletToMain {
      * @see docs/design/loop-playback.md §4.4
      */
     readonly segment: PlaybackSegment | null;
+    /**
+     * Echo buffer data snapshot. Sent at a lower rate than VU meters (~15 Hz).
+     * Present only when echo data is available and this is an echo telemetry cycle.
+     * ArrayBuffer containing interleaved stereo Int16 samples (copied from WASM memory).
+     */
+    readonly echoBuffer?: ArrayBuffer;
+    /**
+     * FIR filter coefficients (8 unsigned bytes). Sent alongside echo buffer data.
+     * Present only when echo data is included in this telemetry message.
+     */
+    readonly firCoefficients?: ArrayBuffer;
   }
 
   /** Full emulation state snapshot, sent in response to 'request-snapshot'. */

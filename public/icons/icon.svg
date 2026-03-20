@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background: SNES purple rounded square -->
+  <rect width="512" height="512" rx="96" fill="#8B5CF6"/>
+  <!-- Play triangle (rounded corners via stroke) -->
+  <path d="M131 142 L131 370 L284 256 Z" fill="#fff" stroke="#fff" stroke-width="12" stroke-linejoin="round"/>
+  <!-- Audio level bars: descending height = sound emanating from play -->
+  <rect x="306" y="156" width="24" height="220" rx="4" fill="#fff"/>
+  <rect x="336" y="206" width="24" height="170" rx="4" fill="#fff"/>
+  <rect x="366" y="256" width="24" height="120" rx="4" fill="#fff"/>
+</svg>

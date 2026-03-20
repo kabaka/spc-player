@@ -1,12 +1,20 @@
 /* SettingsView.module.css */
 
 .container {
-  max-width: 40rem;
+  max-width: none;
   margin: 0 auto;
-  padding: var(--spc-space-6) var(--spc-space-4);
+  padding: var(--spc-space-4) var(--spc-space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--spc-space-6);
+  gap: var(--spc-space-5);
+}
+
+@media (min-width: 640px) {
+  .container {
+    max-width: 40rem;
+    padding: var(--spc-space-6) var(--spc-space-4);
+    gap: var(--spc-space-6);
+  }
 }
 
 .section {

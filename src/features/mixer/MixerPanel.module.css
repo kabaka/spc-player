@@ -3,11 +3,18 @@
 .mixer {
   display: flex;
   flex-direction: column;
-  gap: var(--spc-space-3);
-  padding: var(--spc-space-4);
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-2);
   background-color: var(--spc-color-surface);
   border-radius: var(--spc-radius-md);
   border: 1px solid var(--spc-color-border-subtle);
+}
+
+@media (min-width: 640px) {
+  .mixer {
+    gap: var(--spc-space-3);
+    padding: var(--spc-space-4);
+  }
 }
 
 /* ── Grid container ────────────────────────────────────────────────── */

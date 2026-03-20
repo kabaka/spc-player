@@ -7,11 +7,13 @@ import { Label } from '@/components/Label/Label';
 import { useMidi } from '@/hooks/useMidi';
 import { useAppStore } from '@/store/store';
 import { useShortcut } from '@/shortcuts/useShortcut';
+import { audioEngine } from '@/audio/engine';
 
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { InstrumentControls } from './InstrumentControls';
 import { AdsrDisplay } from './AdsrDisplay';
 import { useInstrumentKeyboard } from './useInstrumentKeyboard';
+import { midiNoteToPitch } from './note-mapping';
 import styles from './InstrumentView.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -33,14 +35,20 @@ export function InstrumentView() {
 
   const selectedVoice = activeInstrumentIndex ?? instrument ?? 0;
 
-  const handleNoteOn = useCallback((_midiNote: number, _velocity?: number) => {
-    // Note-on routing will be wired to the audio engine
-    // when per-voice key-on WASM exports are available
-  }, []);
+  const handleNoteOn = useCallback(
+    (midiNote: number, _velocity?: number) => {
+      const pitch = midiNoteToPitch(midiNote, 60);
+      audioEngine.noteOn(selectedVoice, pitch);
+    },
+    [selectedVoice],
+  );
 
-  const handleNoteOff = useCallback((_midiNote: number) => {
-    // Note-off routing placeholder
-  }, []);
+  const handleNoteOff = useCallback(
+    (_midiNote: number) => {
+      audioEngine.noteOff(selectedVoice);
+    },
+    [selectedVoice],
+  );
 
   const midi = useMidi({ onNoteOn: handleNoteOn, onNoteOff: handleNoteOff });
 

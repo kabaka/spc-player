@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
 
@@ -42,7 +42,7 @@ function readLevel(voiceIndex: number): number {
 
 // ── Component ─────────────────────────────────────────────────────────
 
-export function VuMeter({
+export const VuMeter = memo(function VuMeter({
   voiceIndex,
   label,
   orientation = 'vertical',
@@ -127,4 +127,4 @@ export function VuMeter({
       <div ref={fillRef} className={styles.fill} aria-hidden="true" />
     </div>
   );
-}
+});

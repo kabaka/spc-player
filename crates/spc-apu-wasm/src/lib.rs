@@ -360,6 +360,154 @@ pub extern "C" fn dsp_set_register(addr: u8, value: u8) {
 }
 
 // ---------------------------------------------------------------------------
+// Echo buffer telemetry
+// ---------------------------------------------------------------------------
+
+/// Return a pointer to the echo buffer region within APU RAM.
+///
+/// The echo buffer starts at ESA×256 in the 64 KB APU RAM. The returned
+/// pointer points directly into WASM linear memory, so JS can create a
+/// typed-array view over it for zero-copy reads.
+///
+/// Returns null if the APU is not initialised.
+///
+/// SAFETY: The returned pointer is valid only until the next WASM memory
+/// growth. Callers must create typed array views and copy data immediately
+/// after calling this function, before any other WASM calls that might
+/// allocate memory.
+#[no_mangle]
+pub extern "C" fn dsp_get_echo_buffer_ptr() -> *const u8 {
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return std::ptr::null(),
+        };
+        let dsp = match apu.dsp.as_ref() {
+            Some(d) => d,
+            None => return std::ptr::null(),
+        };
+        let start = dsp.get_echo_start_address() as usize;
+        apu.ram.as_ptr().add(start)
+    }
+}
+
+/// Return the length of the echo buffer in bytes.
+///
+/// The echo buffer length is EDL × 2048, where EDL is the 4-bit echo delay
+/// register (0x7D). Returns 0 if the APU is not initialised or EDL is 0.
+#[no_mangle]
+pub extern "C" fn dsp_get_echo_buffer_length() -> u32 {
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return 0,
+        };
+        let dsp = match apu.dsp.as_mut() {
+            Some(d) => d,
+            None => return 0,
+        };
+        // EDL is at DSP register 0x7D (4-bit, 0-15)
+        let edl = dsp.get_register(0x7D) & 0x0F;
+        (edl as u32) * 0x800
+    }
+}
+
+/// Write the 8 FIR filter coefficients to `out_ptr`.
+///
+/// FIR coefficients are at DSP registers 0x0F, 0x1F, … 0x7F (signed 8-bit).
+/// The 8 bytes are written in tap order (coefficient 0 first).
+///
+/// Returns 8 on success, -1 if the APU is not initialised or `out_ptr` is null.
+#[no_mangle]
+pub extern "C" fn dsp_get_fir_coefficients(out_ptr: *mut u8) -> i32 {
+    if out_ptr.is_null() {
+        return -1;
+    }
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return -1,
+        };
+        let dsp = match apu.dsp.as_mut() {
+            Some(d) => d,
+            None => return -1,
+        };
+        let out = std::slice::from_raw_parts_mut(out_ptr, 8);
+        for i in 0..8_usize {
+            // FIR coefficients are at DSP registers 0x0F, 0x1F, … 0x7F
+            out[i] = dsp.get_register((i as u8) << 4 | 0x0F);
+        }
+        8
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Instrument note-on / note-off
+// ---------------------------------------------------------------------------
+
+/// Trigger key-on for a specific voice with the given 14-bit pitch value.
+///
+/// Sets the voice pitch registers (0xX2 low, 0xX3 high) and writes
+/// the key-on bitmask to KON (0x4C). Voice index must be 0-7.
+///
+/// Returns 0 on success, -1 if voice index is invalid or APU uninitialised.
+///
+/// NOTE: This writes via the APU port interface (0xF2/0xF3). If the SPC700
+/// program is actively writing KON or pitch registers, those writes may
+/// overwrite ours before the DSP latches them. This is an inherent limitation
+/// of injecting note events into a running SPC program.
+#[no_mangle]
+pub extern "C" fn dsp_voice_note_on(voice: u8, pitch: u16) -> i32 {
+    if voice >= 8 {
+        return -1;
+    }
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return -1,
+        };
+        let base = voice << 4;
+
+        // Write pitch low byte — register (voice << 4) | 0x02
+        apu.write_u8(0xF2_u32, base | 0x02);
+        apu.write_u8(0xF3_u32, (pitch & 0xFF) as u8);
+
+        // Write pitch high byte — register (voice << 4) | 0x03
+        apu.write_u8(0xF2_u32, base | 0x03);
+        apu.write_u8(0xF3_u32, ((pitch >> 8) & 0x3F) as u8);
+
+        // Write key-on bitmask — KON register 0x4C
+        apu.write_u8(0xF2_u32, 0x4C);
+        apu.write_u8(0xF3_u32, 1 << voice);
+
+        0
+    }
+}
+
+/// Trigger key-off for a specific voice.
+///
+/// Writes the key-off bitmask to KOFF (0x5C). Voice index must be 0-7.
+///
+/// Returns 0 on success, -1 if voice index is invalid or APU uninitialised.
+#[no_mangle]
+pub extern "C" fn dsp_voice_note_off(voice: u8) -> i32 {
+    if voice >= 8 {
+        return -1;
+    }
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return -1,
+        };
+        // Write key-off bitmask — KOFF register 0x5C
+        apu.write_u8(0xF2_u32, 0x5C);
+        apu.write_u8(0xF3_u32, 1 << voice);
+
+        0
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Memory management
 // ---------------------------------------------------------------------------
 

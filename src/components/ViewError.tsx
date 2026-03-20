@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 import styles from './ViewError.module.css';
 
 interface ViewErrorProps {
@@ -6,9 +8,17 @@ interface ViewErrorProps {
 }
 
 export const ViewError = ({ message, onRetry }: ViewErrorProps) => {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
   return (
     <div className={styles.error} role="alert">
-      <h2>Something went wrong</h2>
+      <h2 ref={headingRef} tabIndex={-1}>
+        Something went wrong
+      </h2>
       <p>{message}</p>
       {onRetry && (
         <button type="button" className={styles.retryButton} onClick={onRetry}>

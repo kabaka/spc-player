@@ -17,6 +17,15 @@ export interface DspExports {
   dsp_get_register(addr: number): number;
   dsp_set_register(addr: number, value: number): void;
 
+  // Echo buffer telemetry
+  dsp_get_echo_buffer_ptr(): number;
+  dsp_get_echo_buffer_length(): number;
+  dsp_get_fir_coefficients(outPtr: number): number;
+
+  // Instrument note-on/note-off
+  dsp_voice_note_on(voice: number, pitch: number): number;
+  dsp_voice_note_off(voice: number): number;
+
   // S-DSP interpolation mode (ADR-0014)
   dsp_set_interpolation_mode(mode: number): void;
   dsp_get_interpolation_mode(): number;

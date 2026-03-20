@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Simplified icon for 16–32px favicon: play triangle only, no bars -->
+  <rect width="32" height="32" rx="6" fill="#8B5CF6"/>
+  <path d="M10 7.5 L10 24.5 L25 16 Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+</svg>

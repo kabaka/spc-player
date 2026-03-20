@@ -415,8 +415,9 @@ class SpcProcessor extends AudioWorkletProcessor {
           this.pendingMessages.push(msg);
           return;
         }
-        if (this.wasm) {
-          this.wasm.dsp_voice_note_on(msg.voice, msg.pitch);
+        if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
+          const clampedPitch = Math.max(0, Math.min(0x3fff, msg.pitch));
+          this.wasm.dsp_voice_note_on(msg.voice, clampedPitch);
         }
         break;
       case 'note-off':
@@ -424,7 +425,7 @@ class SpcProcessor extends AudioWorkletProcessor {
           this.pendingMessages.push(msg);
           return;
         }
-        if (this.wasm) {
+        if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           this.wasm.dsp_voice_note_off(msg.voice);
         }
         break;
@@ -918,12 +919,14 @@ class SpcProcessor extends AudioWorkletProcessor {
 
       if (echoPtr !== 0 && echoLen > 0) {
         // Copy echo buffer out of WASM linear memory (views are invalidated on memory growth).
+        // echoLen is in bytes; convert to Int16 element count.
+        const echoElementCount = echoLen >>> 1;
         const echoView = new Int16Array(
           this.wasm.memory.buffer,
           echoPtr,
-          echoLen,
+          echoElementCount,
         );
-        echoBuffer = new ArrayBuffer(echoLen * 2);
+        echoBuffer = new ArrayBuffer(echoLen);
         new Int16Array(echoBuffer).set(echoView);
         transferList.push(echoBuffer);
       }

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SPC Player</title>
+    <script>
+      // GitHub Pages serves this for any URL not found.
+      // Redirect to the SPA root so the client-side router can handle it.
+      // With hash routing this is rarely needed, but serves as a safety net.
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      window.location.replace(
+        '/spc-player/' + (hash || '#/') + (search || '')
+      );
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <p>Redirecting to <a href="/spc-player/">SPC Player</a>…</p>
+    </noscript>
+  </body>
+</html>

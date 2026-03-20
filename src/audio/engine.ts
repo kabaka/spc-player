@@ -230,6 +230,16 @@ class AudioEngine {
     this.postCommand({ type: 'set-interpolation-mode', mode });
   }
 
+  /** Trigger a note-on for a specific voice. */
+  noteOn(voice: number, pitch: number): void {
+    this.postCommand({ type: 'note-on', voice, pitch });
+  }
+
+  /** Trigger a note-off (key release) for a specific voice. */
+  noteOff(voice: number): void {
+    this.postCommand({ type: 'note-off', voice });
+  }
+
   /** Set output resampler mode. 0=linear (JS), 1=sinc (WASM Lanczos-3). */
   setResamplerMode(mode: 'linear' | 'sinc'): void {
     this.postCommand({
@@ -509,6 +519,16 @@ class AudioEngine {
       dst.sampleSource = src.sampleSource;
       dst.keyOn = src.keyOn;
       dst.active = src.active;
+    }
+
+    // Update echo buffer data when present (sent at ~15 Hz).
+    if (msg.echoBuffer) {
+      audioStateBuffer.echoBuffer = new Int16Array(msg.echoBuffer);
+    }
+
+    // Update FIR coefficients when present (sent alongside echo data).
+    if (msg.firCoefficients) {
+      audioStateBuffer.firCoefficients.set(new Uint8Array(msg.firCoefficients));
     }
 
     audioStateBuffer.generation = msg.generation;

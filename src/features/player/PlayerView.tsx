@@ -11,6 +11,9 @@ import { audioStateBuffer } from '@/audio/audio-state-buffer';
 import { MetadataPanel } from '@/features/metadata/MetadataPanel';
 import { MixerPanel } from '@/features/mixer/MixerPanel';
 import { ExportDialog } from '@/features/export/ExportDialog';
+import { CollapsiblePanel } from '@/components/CollapsiblePanel/CollapsiblePanel';
+import { WaveformDisplay } from './WaveformDisplay';
+import { LoopMarkers } from './LoopMarkers';
 
 import styles from './PlayerView.module.css';
 
@@ -63,6 +66,8 @@ export function PlayerView() {
   const isLoadingTrack = useAppStore((s) => s.isLoadingTrack);
   const loadingError = useAppStore((s) => s.loadingError);
 
+  const loopRegion = useAppStore((s) => s.loopRegion);
+
   const loadFile = useAppStore((s) => s.loadFile);
   const nextTrack = useAppStore((s) => s.nextTrack);
   const previousTrack = useAppStore((s) => s.previousTrack);
@@ -98,6 +103,10 @@ export function PlayerView() {
   }, []);
 
   // ── Sync position from audioStateBuffer during playback ────────────
+  // Keep a ref to loopRegion for the rAF loop to avoid re-creating it.
+  const loopRegionRef = useRef(loopRegion);
+  loopRegionRef.current = loopRegion;
+
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -108,6 +117,19 @@ export function PlayerView() {
       if (pos !== lastPosition) {
         lastPosition = pos;
         setPosition(pos);
+
+        // ── A-B Loop enforcement ─────────────────────────────────────
+        const region = loopRegionRef.current;
+        if (region?.active) {
+          const currentSec = samplesToSeconds(pos);
+          if (currentSec >= region.endTime) {
+            const targetSamples = Math.round(
+              region.startTime * DSP_SAMPLE_RATE,
+            );
+            audioEngine.seek(targetSamples);
+            setPosition(targetSamples);
+          }
+        }
       }
       rafId = requestAnimationFrame(sync);
     };
@@ -297,7 +319,11 @@ export function PlayerView() {
       </section>
 
       {/* Metadata Panel */}
-      {hasTrack && <MetadataPanel />}
+      {hasTrack && (
+        <CollapsiblePanel title="Track Info">
+          <MetadataPanel />
+        </CollapsiblePanel>
+      )}
 
       {/* Transport Controls Toolbar */}
       <div
@@ -349,24 +375,30 @@ export function PlayerView() {
         </Button>
       </div>
 
+      {/* Waveform Visualization */}
+      {hasTrack && <WaveformDisplay />}
+
       {/* Seek Bar */}
       <div className={styles.seekBarContainer}>
         <label id={seekLabelId} className={styles.visuallyHidden}>
           Seek
         </label>
-        <Slider
-          aria-labelledby={seekLabelId}
-          min={0}
-          max={Math.floor(totalSeconds)}
-          value={[Math.min(currentSeconds, Math.floor(totalSeconds))]}
-          step={5}
-          onValueChange={handleSeek}
-          disabled={!hasTrack}
-          aria-valuetext={formatSeekValueText(
-            currentSeconds,
-            Math.floor(totalSeconds),
-          )}
-        />
+        <div className={styles.seekBarRelative}>
+          <Slider
+            aria-labelledby={seekLabelId}
+            min={0}
+            max={Math.floor(totalSeconds)}
+            value={[Math.min(currentSeconds, Math.floor(totalSeconds))]}
+            step={5}
+            onValueChange={handleSeek}
+            disabled={!hasTrack}
+            aria-valuetext={formatSeekValueText(
+              currentSeconds,
+              Math.floor(totalSeconds),
+            )}
+          />
+          {loopRegion && <LoopMarkers maxTime={Math.floor(totalSeconds)} />}
+        </div>
       </div>
 
       {/* Time Display */}
@@ -437,7 +469,11 @@ export function PlayerView() {
       </div>
 
       {/* Mixer Panel */}
-      {hasTrack && <MixerPanel />}
+      {hasTrack && (
+        <CollapsiblePanel title="Channel Mixer" defaultOpen>
+          <MixerPanel />
+        </CollapsiblePanel>
+      )}
 
       {/* Export */}
       <Button

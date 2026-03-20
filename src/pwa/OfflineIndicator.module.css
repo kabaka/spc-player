@@ -1,0 +1,21 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spc-space-xs);
+  padding: 2px var(--spc-space-sm);
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-warning);
+  background-color: var(--spc-color-surface);
+  border: 1px solid var(--spc-color-border-subtle);
+  border-radius: var(--spc-radius-full, 9999px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.text {
+  font-weight: var(--spc-font-weight-medium, 500);
+}

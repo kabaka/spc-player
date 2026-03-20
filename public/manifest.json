@@ -1,0 +1,31 @@
+{
+  "name": "SPC Player",
+  "short_name": "SPC Player",
+  "description": "Play, analyze, and export SNES SPC music files in your browser. Cycle-accurate S-DSP emulation with per-voice control, MIDI support, and offline playback.",
+  "start_url": "/spc-player/",
+  "scope": "/spc-player/",
+  "id": "/spc-player/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0E0E16",
+  "background_color": "#0E0E16",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "/spc-player/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/spc-player/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/spc-player/icons/icon-maskable-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

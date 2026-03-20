@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /spc-player/
+Sitemap: https://kabaka.github.io/spc-player/sitemap.xml

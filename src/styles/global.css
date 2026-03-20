@@ -26,6 +26,9 @@ html {
 
 body {
   min-height: 100dvh;
+  /* Safe area insets for notched devices */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 img,
@@ -135,6 +138,25 @@ html {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ============================================================
+   TOUCH TARGETS
+   Ensure all interactive elements meet 44×44px minimum on touch
+   ============================================================ */
+
+@media (pointer: coarse) {
+  button,
+  [role='button'],
+  [role='slider'],
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* ============================================================

@@ -1,0 +1,81 @@
+/* LoopMarkers.module.css — A-B loop region overlay for the seek bar */
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.region {
+  position: absolute;
+  top: 50%;
+  height: 0.25rem;
+  transform: translateY(-50%);
+  background-color: var(--spc-color-accent-subtle);
+  border-radius: var(--spc-radius-full);
+  pointer-events: none;
+}
+
+.region[data-active='true'] {
+  background-color: var(--spc-color-accent-subtle);
+  opacity: 0.8;
+}
+
+.handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.75rem;
+  height: 1.25rem;
+  background-color: var(--spc-color-accent);
+  border: 1.5px solid var(--spc-color-surface);
+  border-radius: var(--spc-radius-sm);
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: background-color var(--spc-duration-fast) var(--spc-easing-out);
+  /* Triangle notch for visual grab affordance */
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% 40%,
+    60% 50%,
+    100% 60%,
+    100% 100%,
+    0% 100%,
+    0% 60%,
+    40% 50%,
+    0% 40%
+  );
+}
+
+.handle:hover {
+  background-color: var(--spc-color-accent-hover);
+}
+
+.handle:active,
+.handle[data-dragging='true'] {
+  background-color: var(--spc-color-accent-active);
+}
+
+.handle:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Enlarge touch hit area without changing visual size */
+@media (pointer: coarse) {
+  .handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+  }
+}

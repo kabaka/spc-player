@@ -2,10 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-l8bQfEHdqJP8fV1bvCKgt+bu1eibHr0JZBRQ1et43xc='; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'"
+    />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless" />
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta name="theme-color" content="#0E0E16" />
+    <meta
+      name="description"
+      content="Play, analyze, and export SNES SPC music files in the browser. Cycle-accurate DSP emulation, 8-voice mixer, instrument performer, and audio export — no plugins required."
+    />
+    <meta property="og:title" content="SPC Player" />
+    <meta
+      property="og:description"
+      content="Play, analyze, and export SNES SPC music files in the browser with cycle-accurate DSP emulation."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kabaka.github.io/spc-player/" />
     <title>SPC Player</title>
+    <link rel="manifest" href="/spc-player/manifest.json" />
+    <link rel="apple-touch-icon" href="/spc-player/icons/icon-192.svg" />
     <script>
       (function () {
         var theme = localStorage.getItem('spc-theme');

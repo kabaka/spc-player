@@ -1,0 +1,64 @@
+/* CollapsiblePanel.module.css — Collapsible wrapper for mobile panels */
+
+.details {
+  border: 1px solid var(--spc-color-border-subtle);
+  border-radius: var(--spc-radius-md);
+  background-color: var(--spc-color-surface);
+  overflow: hidden;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-3) var(--spc-space-4);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  cursor: pointer;
+  min-height: 44px;
+  user-select: none;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary::marker {
+  content: '';
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--spc-color-text-secondary);
+  transition: transform var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.details[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.content {
+  padding: 0 var(--spc-space-4) var(--spc-space-4);
+}
+
+/* On tablet+ show content inline, hide the collapsible chrome */
+@media (min-width: 640px) {
+  .details {
+    border: none;
+    background: none;
+  }
+
+  .summary {
+    display: none;
+  }
+
+  .content {
+    padding: 0;
+    /* Override <details> UA stylesheet hiding when not [open] */
+    display: block;
+  }
+}

@@ -3,6 +3,15 @@ import { fileURLToPath } from 'node:url';
 
 import { test, expect } from '@playwright/test';
 
+/**
+ * Console error messages that are benign in the test environment.
+ * The CSP frame-ancestors directive is always ignored in <meta> tags;
+ * browsers log a console error but it has no runtime effect.
+ */
+const IGNORED_CONSOLE_ERRORS = [
+  "The Content Security Policy directive 'frame-ancestors' is ignored when delivered via",
+];
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.resolve(__dirname, '..', 'fixtures');
 const MINIMAL_SPC = path.join(FIXTURES_DIR, 'minimal-valid.spc');
@@ -73,7 +82,9 @@ test.describe('SPC file loading', () => {
     const fileInput = page.locator('input[type="file"][accept=".spc"]');
     await fileInput.setInputFiles(CORRUPT_SPC);
 
-    const errorMessage = page.getByRole('alert');
+    // Use .first() because both the inline error and the toast notification
+    // render with role="alert", causing a strict mode violation.
+    const errorMessage = page.getByRole('alert').first();
     await expect(errorMessage).toBeVisible();
     await expect(errorMessage).not.toBeEmpty();
 
@@ -116,7 +127,10 @@ test.describe('SPC file loading', () => {
   test('no console errors during SPC load and playback', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
+      if (
+        msg.type() === 'error' &&
+        !IGNORED_CONSOLE_ERRORS.some((ignored) => msg.text().includes(ignored))
+      ) {
         consoleErrors.push(msg.text());
       }
     });

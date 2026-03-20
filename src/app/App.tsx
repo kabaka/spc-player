@@ -4,6 +4,7 @@ import {
   RouterProvider,
 } from '@tanstack/react-router';
 
+import { ViewSkeleton } from '@/components/ViewSkeleton';
 import { routeTree } from './routeTree.gen';
 
 const hashHistory = createHashHistory();
@@ -11,6 +12,7 @@ const hashHistory = createHashHistory();
 const router = createRouter({
   routeTree,
   history: hashHistory,
+  defaultPendingComponent: ViewSkeleton,
 });
 
 declare module '@tanstack/react-router' {

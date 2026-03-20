@@ -1,5 +1,14 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * Console error messages that are benign in the test environment.
+ * The CSP frame-ancestors directive is always ignored in <meta> tags;
+ * browsers log a console error but it has no runtime effect.
+ */
+const IGNORED_CONSOLE_ERRORS = [
+  "The Content Security Policy directive 'frame-ancestors' is ignored when delivered via",
+];
+
 test.describe('Smoke tests', () => {
   test('app loads without JavaScript errors', async ({ page }) => {
     const errors: string[] = [];
@@ -58,7 +67,10 @@ test.describe('Smoke tests', () => {
   test('no console errors during initial load', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
+      if (
+        msg.type() === 'error' &&
+        !IGNORED_CONSOLE_ERRORS.some((ignored) => msg.text().includes(ignored))
+      ) {
         consoleErrors.push(msg.text());
       }
     });
@@ -92,7 +104,10 @@ test.describe('Route navigation', () => {
   test('no console errors across all route navigations', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
+      if (
+        msg.type() === 'error' &&
+        !IGNORED_CONSOLE_ERRORS.some((ignored) => msg.text().includes(ignored))
+      ) {
         consoleErrors.push(msg.text());
       }
     });

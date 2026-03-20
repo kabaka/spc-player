@@ -1,0 +1,167 @@
+# Third-Party Licenses
+
+SPC Player includes the following third-party software. Each entry lists the
+package name, license type, and a brief description.
+
+---
+
+## Production Dependencies
+
+### React
+- **License:** MIT
+- **Copyright:** Meta Platforms, Inc. and affiliates
+- **Description:** UI component library
+
+### ReactDOM
+- **License:** MIT
+- **Copyright:** Meta Platforms, Inc. and affiliates
+- **Description:** React renderer for the browser DOM
+
+### Zustand
+- **License:** MIT
+- **Copyright:** Paul Henschel
+- **Description:** Lightweight state management for React
+
+### TanStack Router (`@tanstack/react-router`)
+- **License:** MIT
+- **Copyright:** Tanner Linsley
+- **Description:** Type-safe client-side router for React
+
+### TanStack Zod Adapter (`@tanstack/zod-adapter`)
+- **License:** MIT
+- **Copyright:** Tanner Linsley
+- **Description:** Zod schema integration for TanStack Router search params
+
+### Radix UI (`radix-ui`)
+- **License:** MIT
+- **Copyright:** WorkOS
+- **Description:** Accessible, unstyled UI component primitives
+
+### idb
+- **License:** ISC
+- **Copyright:** Jake Archibald
+- **Description:** Promise-based wrapper for IndexedDB
+
+### libflacjs
+- **License:** LGPL-2.1
+- **Copyright:** nickinade
+- **Description:** FLAC audio encoder/decoder compiled to JavaScript.
+  Used as a runtime-loaded JavaScript library. The LGPL permits use in
+  non-GPL projects when the library is dynamically linked, which is the
+  case here — libflacjs is loaded as-is at runtime without modification
+  or static linking.
+
+### wasm-media-encoders
+- **License:** MIT
+- **Copyright:** AnthumChris
+- **Description:** OGG Vorbis and MP3 audio encoders compiled to WebAssembly
+
+### fflate
+- **License:** MIT
+- **Copyright:** Arjun Barrett
+- **Description:** High-performance compression library (used for zip export)
+
+### Zod
+- **License:** MIT
+- **Copyright:** Colin McDonnell
+- **Description:** TypeScript-first schema validation
+
+---
+
+## Development Dependencies
+
+### Vite
+- **License:** MIT
+- **Copyright:** Evan You and Vite contributors
+- **Description:** Build tool and development server
+
+### Vitest
+- **License:** MIT
+- **Copyright:** Anthony Fu and Vitest contributors
+- **Description:** Unit test framework
+
+### Playwright (`@playwright/test`)
+- **License:** Apache-2.0
+- **Copyright:** Microsoft Corporation
+- **Description:** End-to-end testing framework
+
+### TypeScript
+- **License:** Apache-2.0
+- **Copyright:** Microsoft Corporation
+- **Description:** Typed superset of JavaScript
+
+### ESLint
+- **License:** MIT
+- **Copyright:** OpenJS Foundation
+- **Description:** JavaScript/TypeScript linter
+
+### Prettier
+- **License:** MIT
+- **Copyright:** James Long and contributors
+- **Description:** Code formatter
+
+### Testing Library (`@testing-library/react`, `@testing-library/jest-dom`)
+- **License:** MIT
+- **Copyright:** Kent C. Dodds and contributors
+- **Description:** React component testing utilities
+
+### Husky
+- **License:** MIT
+- **Copyright:** typicode
+- **Description:** Git hooks manager
+
+### lint-staged
+- **License:** MIT
+- **Copyright:** Andrey Okonetchnikov
+- **Description:** Run linters on staged git files
+
+### jsdom
+- **License:** MIT
+- **Copyright:** Elijah Insua and jsdom contributors
+- **Description:** JavaScript DOM implementation for testing
+
+### fake-indexeddb
+- **License:** Apache-2.0
+- **Copyright:** Jeremy Scheff
+- **Description:** In-memory IndexedDB implementation for testing
+
+### binaryen (wasm-opt)
+- **License:** Apache-2.0
+- **Copyright:** WebAssembly contributors
+- **Description:** WebAssembly optimizer
+
+### @vitejs/plugin-react
+- **License:** MIT
+- **Copyright:** Evan You and Vite contributors
+- **Description:** React integration for Vite (Fast Refresh, JSX transform)
+
+### @tanstack/router-plugin
+- **License:** MIT
+- **Copyright:** Tanner Linsley
+- **Description:** Vite plugin for TanStack Router code generation
+
+### @vitest/coverage-v8
+- **License:** MIT
+- **Copyright:** Anthony Fu and Vitest contributors
+- **Description:** V8-based code coverage for Vitest
+
+---
+
+## Vendor Libraries
+
+### snes-apu-spcp
+- **License:** MIT (current fork by nununoisy)
+- **Original License:** BSD-2-Clause (original by Jake "ferris" Taylor)
+- **Copyright:** 2024 nununoisy; originally 2015 Jake "ferris" Taylor
+- **Description:** Cycle-accurate SNES/SFC SMP and DSP emulator. Rust library
+  compiled to WebAssembly for SPC audio playback. Fork of the emu-rs/snes-apu
+  crate, extended for SPCPresenter.
+- **Source:** `vendor/snes-apu-spcp/`
+
+### spc-spcp
+- **License:** MIT (current fork by nununoisy)
+- **Original License:** BSD-2-Clause (original by Jake "ferris" Taylor)
+- **Copyright:** 2023 nununoisy; originally 2015 Jake "ferris" Taylor
+- **Description:** SPC file parser for the SNES audio emulator. Rust library
+  used by snes-apu-spcp.
+- **Source:** `vendor/spc-spcp/`

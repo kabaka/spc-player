@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAppStore } from '@/store/store';
 import { audioEngine } from '@/audio/engine';
@@ -48,7 +48,7 @@ function computeVoiceMask(
 
 // ── Component ─────────────────────────────────────────────────────────
 
-export function MixerPanel() {
+export const MixerPanel = memo(function MixerPanel() {
   const voiceMuted = useAppStore((s) => s.voiceMuted);
   const voiceSolo = useAppStore((s) => s.voiceSolo);
   const toggleMute = useAppStore((s) => s.toggleMute);
@@ -264,4 +264,4 @@ export function MixerPanel() {
       </div>
     </div>
   );
-}
+});

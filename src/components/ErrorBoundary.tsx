@@ -44,7 +44,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       import.meta.env.DEV && error instanceof Error ? error.stack : undefined;
 
     reportError(
-      uiError('UI_UNEXPECTED_ERROR', {
+      uiError('UI_RENDER_ERROR', {
         componentName: info.componentStack?.split('\n')[1]?.trim(),
         detail,
         stack,

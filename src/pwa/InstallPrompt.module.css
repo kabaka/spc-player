@@ -1,0 +1,79 @@
+.banner {
+  position: fixed;
+  bottom: var(--spc-space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--spc-z-toast, 600);
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-md);
+  padding: var(--spc-space-sm) var(--spc-space-md);
+  background-color: var(--spc-color-surface-raised);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  box-shadow: var(--spc-shadow-lg);
+  max-width: calc(100vw - var(--spc-space-lg) * 2);
+}
+
+.text {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spc-space-xs);
+}
+
+.installButton {
+  padding: var(--spc-space-xs) var(--spc-space-md);
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium, 500);
+  color: var(--spc-color-text-inverse);
+  background-color: var(--spc-color-accent);
+  border: none;
+  border-radius: var(--spc-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.installButton:hover {
+  background-color: var(--spc-color-accent-hover);
+}
+
+.installButton:active {
+  background-color: var(--spc-color-accent-active);
+}
+
+.installButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.installButton:disabled {
+  background-color: var(--spc-color-disabled-bg);
+  color: var(--spc-color-disabled-text);
+  cursor: not-allowed;
+}
+
+.dismissButton {
+  padding: var(--spc-space-xs) var(--spc-space-sm);
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--spc-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dismissButton:hover {
+  color: var(--spc-color-text);
+  background-color: var(--spc-color-hover);
+}
+
+.dismissButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}

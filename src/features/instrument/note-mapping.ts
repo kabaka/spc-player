@@ -126,10 +126,15 @@ export function midiNoteToSpokenName(midiNote: number): string {
   return `${name} ${octave}`;
 }
 
+/** Maximum 14-bit DSP pitch register value. */
+const MAX_DSP_PITCH = 0x3fff;
+
 /** Convert MIDI note to SPC DSP pitch value relative to a base note. */
 export function midiNoteToPitch(midiNote: number, baseNote: number): number {
   const semitones = midiNote - baseNote;
-  return Math.round(4096 * Math.pow(2, semitones / 12));
+  return Math.round(
+    Math.min(MAX_DSP_PITCH, Math.max(0, 4096 * Math.pow(2, semitones / 12))),
+  );
 }
 
 /** All codes claimed by instrument mode (notes + control keys). */

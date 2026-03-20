@@ -8,6 +8,7 @@ import {
 
 import { ShortcutHelpDialog } from '@/components/ShortcutHelpDialog/ShortcutHelpDialog';
 import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
+import { BottomNav } from '@/components/BottomNav/BottomNav';
 import { ToastContainer } from '@/components/Toast/Toast';
 import { ViewErrorBoundary } from '@/components/ViewErrorBoundary';
 import { useTheme } from '@/hooks/useTheme';
@@ -121,6 +122,8 @@ function RootComponent() {
       <div id="player-controls" tabIndex={-1} className={styles.playerBar}>
         {/* Player transport controls placeholder */}
       </div>
+
+      <BottomNav />
 
       <ShortcutHelpDialog
         open={showShortcutHelp}
