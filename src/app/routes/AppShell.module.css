@@ -6,9 +6,10 @@
 .shell {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   /* topbar | content | transport | bottomnav */
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: auto;
 }
 
 /* ============================================================
@@ -34,34 +35,6 @@
   font-size: var(--spc-font-size-md);
   font-weight: var(--spc-font-weight-semibold);
   color: var(--spc-color-text);
-}
-
-.menuButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: none;
-  border-radius: var(--spc-radius-md);
-  background: transparent;
-  color: var(--spc-color-text-secondary);
-  cursor: pointer;
-  transition:
-    color var(--spc-duration-fast) var(--spc-easing-default),
-    background-color var(--spc-duration-fast) var(--spc-easing-default);
-}
-
-.menuButton:hover {
-  color: var(--spc-color-text);
-  background-color: var(--spc-color-hover);
-}
-
-.menuButton svg {
-  width: 24px;
-  height: 24px;
-  fill: currentcolor;
 }
 
 /* ============================================================
@@ -180,8 +153,7 @@
 
 @media (min-width: 768px) {
   .shell {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     /* topnav | content | transport — no bottom nav row */
   }
 
@@ -197,6 +169,7 @@
   .layoutBody {
     flex-direction: row;
     min-height: 0;
+    grid-column: 1 / -1;
   }
 
   .sidebar {
@@ -205,6 +178,8 @@
     flex-shrink: 0;
     border-right: 1px solid var(--spc-color-border);
     overflow-y: auto;
+    padding-bottom: var(--spc-transport-bar-height);
+    position: relative;
   }
 
   .main {
@@ -220,11 +195,6 @@
    ============================================================ */
 
 @media (min-width: 1024px) {
-  .shell {
-    grid-template-columns: 280px 1fr;
-    grid-template-rows: auto 1fr auto;
-  }
-
   .sidebar {
     width: 280px;
   }
@@ -232,15 +202,5 @@
   .main {
     padding: var(--spc-space-6);
     padding-bottom: calc(var(--spc-space-6) + var(--spc-transport-bar-height));
-  }
-}
-
-/* ============================================================
-   WIDE DESKTOP (≥ 1440px)
-   ============================================================ */
-
-@media (min-width: 1440px) {
-  .shell {
-    grid-template-columns: 280px 1fr 320px;
   }
 }

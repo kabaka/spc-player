@@ -15,7 +15,7 @@
   border-top: 1px solid var(--spc-color-border);
   padding: var(--spc-space-2) var(--spc-space-4);
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 2fr minmax(100px, 1fr);
+  grid-template-columns: minmax(150px, 1.5fr) 2fr minmax(100px, 1fr);
   align-items: center;
   gap: var(--spc-space-3);
 }
@@ -98,12 +98,6 @@
   .leftZone {
     grid-row: 2;
     grid-column: 1;
-  }
-}
-
-@media (min-width: 1024px) {
-  .leftZone {
-    max-width: 30%;
   }
 }
 

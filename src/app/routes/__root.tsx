@@ -76,17 +76,6 @@ function RootComponent() {
         <span className={styles.logo} aria-hidden="true">
           🎮 SPC Player
         </span>
-        <button
-          type="button"
-          className={styles.menuButton}
-          aria-label="Menu"
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
-          </svg>
-        </button>
       </div>
 
       {/* Top nav — hidden on mobile, horizontal on tablet+ */}
