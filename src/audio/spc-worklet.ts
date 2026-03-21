@@ -26,6 +26,10 @@ import { findNearestCheckpoint, validateCheckpoint } from './checkpoint-utils';
 // from the main bundle are forbidden in AudioWorklet context.
 const PROTOCOL_VERSION = 1;
 
+/** Whether the `performance` timing API is available in this context. */
+const hasPerformanceApi =
+  typeof performance !== 'undefined' && typeof performance.now === 'function';
+
 /** Number of S-DSP voices. */
 const VOICE_COUNT = 8;
 
@@ -214,7 +218,7 @@ class SpcProcessor extends AudioWorkletProcessor {
 
     try {
       // D15: Measure processing time for load calculation.
-      const processStart = performance.now();
+      const processStart = hasPerformanceApi ? performance.now() : 0;
 
       // Calculate DSP-to-output ratio: how many DSP samples per output sample.
       // At 1× speed: 32000/48000 ≈ 0.6667 (upsampling from lower to higher rate).
@@ -360,15 +364,17 @@ class SpcProcessor extends AudioWorkletProcessor {
       }
 
       // D15: Update process load measurement (EMA, alpha ≈ 0.1).
-      const processElapsed = performance.now() - processStart;
-      const quantumMs = (QUANTUM_FRAMES / this.outputSampleRate) * 1000;
-      const loadPercent = (processElapsed / quantumMs) * 100;
-      this.processLoadEma = this.processLoadEma * 0.9 + loadPercent * 0.1;
-      if (this.processLoadEma > this.peakLoadPercent) {
-        this.peakLoadPercent = this.processLoadEma;
-      }
-      if (processElapsed > quantumMs) {
-        this.totalUnderruns++;
+      if (hasPerformanceApi) {
+        const processElapsed = performance.now() - processStart;
+        const quantumMs = (QUANTUM_FRAMES / this.outputSampleRate) * 1000;
+        const loadPercent = (processElapsed / quantumMs) * 100;
+        this.processLoadEma = this.processLoadEma * 0.9 + loadPercent * 0.1;
+        if (this.processLoadEma > this.peakLoadPercent) {
+          this.peakLoadPercent = this.processLoadEma;
+        }
+        if (processElapsed > quantumMs) {
+          this.totalUnderruns++;
+        }
       }
 
       // D16: Emit audio stats at ~1 Hz.
