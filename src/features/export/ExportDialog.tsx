@@ -15,18 +15,19 @@ import { Label } from '@/components/Label/Label';
 import { calculateTrackDuration } from '@/core/track-duration';
 
 import type { TimingDefaults } from '@/core/track-duration';
+import { isOpusEncoderAvailable } from '@/export/encoders/opus-encoder';
 
 import styles from './ExportDialog.module.css';
 
 // ── Local types ───────────────────────────────────────────────────────
 
-type ExportFormat = 'wav' | 'flac' | 'ogg' | 'mp3';
+type ExportFormat = 'wav' | 'flac' | 'ogg' | 'mp3' | 'opus';
 type ExportMode = 'fullMix' | 'perTrack' | 'perInstrument' | 'batch';
 type SampleRate = 32000 | 44100 | 48000 | 96000;
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const FORMAT_OPTIONS: readonly { value: ExportFormat; label: string }[] = [
+const BASE_FORMAT_OPTIONS: readonly { value: ExportFormat; label: string }[] = [
   { value: 'wav', label: 'WAV' },
   { value: 'flac', label: 'FLAC' },
   { value: 'ogg', label: 'OGG' },
@@ -99,8 +100,39 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const activeTrackId = useAppStore((s) => s.activeTrackId);
   const playlistTracks = useAppStore((s) => s.tracks);
 
+  // ── Opus availability ───────────────────────────────────────────
+  const [opusAvailable, setOpusAvailable] = useState(false);
+
+  useEffect(() => {
+    let stale = false;
+    isOpusEncoderAvailable()
+      .then((v) => {
+        if (!stale) setOpusAvailable(v);
+      })
+      .catch(() => {
+        // Opus unavailable — keep default false
+      });
+    return () => {
+      stale = true;
+    };
+  }, []);
+
+  const formatOptions = useMemo(() => {
+    if (opusAvailable) {
+      return [
+        ...BASE_FORMAT_OPTIONS,
+        { value: 'opus' as ExportFormat, label: 'Opus' },
+      ];
+    }
+    return BASE_FORMAT_OPTIONS;
+  }, [opusAvailable]);
+
   // ── Local state ─────────────────────────────────────────────────
-  const [format, setFormat] = useState<ExportFormat>(exportDefaults.format);
+  const initialFormat =
+    exportDefaults.format === 'opus' && !opusAvailable
+      ? 'wav'
+      : exportDefaults.format;
+  const [format, setFormat] = useState<ExportFormat>(initialFormat);
   const [sampleRate, setSampleRate] = useState<SampleRate>(
     exportDefaults.sampleRate,
   );
@@ -115,7 +147,11 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      setFormat(exportDefaults.format);
+      const resetFormat =
+        exportDefaults.format === 'opus' && !opusAvailable
+          ? 'wav'
+          : exportDefaults.format;
+      setFormat(resetFormat);
       setSampleRate(exportDefaults.sampleRate);
       setMode('fullMix');
       setVoiceMask(0xff);
@@ -151,6 +187,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     defaultLoopCount,
     defaultPlayDuration,
     defaultFadeDuration,
+    opusAvailable,
   ]);
 
   // ── Timing computation ──────────────────────────────────────────
@@ -301,7 +338,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               role="radiogroup"
               aria-labelledby={formatGroupId}
             >
-              {FORMAT_OPTIONS.map(({ value, label }) => (
+              {formatOptions.map(({ value, label }) => (
                 <label key={value} className={styles.formatOption}>
                   <input
                     type="radio"

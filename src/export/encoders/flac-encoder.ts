@@ -87,12 +87,8 @@ async function loadLibFlac(): Promise<LibFlac> {
 
   try {
     // Dynamic import — Vite code-splits this into a separate chunk.
-    // The variable indirection prevents Vite's import-analysis from resolving
-    // (and erroring on) this bare specifier at build time. The package is
-    // only present at runtime in the export worker.
-    const specifier = 'libflacjs';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- WASM interop module has no published types
-    const mod = (await import(/* @vite-ignore */ specifier)) as any;
+    const mod = (await import('libflacjs')) as any;
     const flac: LibFlac = mod.default ?? mod;
 
     // Some builds require waiting for the WASM to be ready.

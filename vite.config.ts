@@ -94,6 +94,12 @@ export default defineConfig({
           ) {
             return 'react-vendor';
           }
+          if (id.includes('node_modules/wasm-media-encoders')) {
+            return 'wasm-media-encoder';
+          }
+          if (id.includes('node_modules/libflacjs')) {
+            return 'libflac-encoder';
+          }
         },
       },
     },
@@ -107,6 +113,18 @@ export default defineConfig({
 
   worker: {
     format: 'es',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/wasm-media-encoders')) {
+            return 'wasm-media-encoder';
+          }
+          if (id.includes('node_modules/libflacjs')) {
+            return 'libflac-encoder';
+          }
+        },
+      },
+    },
   },
 
   server: {

@@ -12,7 +12,7 @@ export interface PlaylistTrack {
 }
 
 export interface ExportDefaults {
-  readonly format: 'wav' | 'flac' | 'ogg' | 'mp3';
+  readonly format: 'wav' | 'flac' | 'ogg' | 'mp3' | 'opus';
   readonly sampleRate: 32000 | 44100 | 48000 | 96000;
   readonly loopCount: number;
 }

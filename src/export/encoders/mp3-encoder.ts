@@ -184,9 +184,8 @@ export class Mp3Encoder implements Encoder {
     if (this.injectedEncoder) {
       encoder = this.injectedEncoder;
     } else {
-      const specifier = 'wasm-media-encoders';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- WASM interop module
-      const mod = (await import(/* @vite-ignore */ specifier)) as any;
+      const mod = (await import('wasm-media-encoders')) as any;
       encoder = (await mod.createMp3Encoder()) as WmeMp3Encoder;
     }
 

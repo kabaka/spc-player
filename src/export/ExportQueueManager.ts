@@ -32,6 +32,7 @@ const FORMAT_TO_WIRE = {
   flac: 'flac',
   ogg: 'ogg-vorbis',
   mp3: 'mp3',
+  opus: 'opus',
 } as const;
 
 const MIME_TYPES: Record<string, string> = {
@@ -39,6 +40,8 @@ const MIME_TYPES: Record<string, string> = {
   flac: 'audio/flac',
   ogg: 'audio/ogg',
   mp3: 'audio/mpeg',
+  opus: 'audio/webm',
+  webm: 'audio/webm',
   zip: 'application/zip',
 };
 
@@ -49,7 +52,7 @@ const DSP_SAMPLE_RATE = 32_000;
 export interface ExportJobDescriptor {
   readonly id: string;
   readonly label: string;
-  readonly format: 'wav' | 'flac' | 'ogg' | 'mp3';
+  readonly format: 'wav' | 'flac' | 'ogg' | 'mp3' | 'opus';
   readonly sampleRate: 32000 | 44100 | 48000 | 96000;
   readonly durationSeconds: number;
   readonly fadeSeconds: number;
