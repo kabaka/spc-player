@@ -1,0 +1,134 @@
+/* SeekBar.module.css — Canvas-based seek bar with A-B loop markers */
+
+/* ============================================================
+   ROOT CONTAINER
+   role="group" wrapper, touch-friendly min-height
+   ============================================================ */
+
+.seekBar {
+  --seek-track-height-idle: var(--spc-seek-track-height-idle, 3px);
+  --seek-track-height-hover: var(--spc-seek-track-height-hover, 5px);
+  --seek-thumb-size: var(--spc-seek-thumb-size, 12px);
+  --seek-thumb-size-dragging: var(--spc-seek-thumb-size-dragging, 16px);
+
+  position: relative;
+  min-height: 44px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.dragging {
+  cursor: grabbing;
+}
+
+/* ============================================================
+   CANVAS — renders played/remaining regions + thumb
+   ============================================================ */
+
+.seekCanvas {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  pointer-events: none;
+}
+
+/* ============================================================
+   HIDDEN RANGE INPUT — keyboard + screen reader accessible
+   opacity: 0 but NOT pointer-events: none
+   ============================================================ */
+
+.seekInput {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  z-index: 2;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Focus-visible styling is handled by the canvas renderer
+   which checks document.activeElement to show thumb/tooltip */
+
+/* ============================================================
+   LOOP MARKERS — thin vertical lines at A/B positions
+   ============================================================ */
+
+.loopMarker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 16px;
+  background: var(--spc-color-accent);
+  opacity: 0.8;
+  z-index: 1;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+/* Expand hit area to 44×44px while keeping visual at 2×16px */
+.loopMarker::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+}
+
+.loopMarker:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   LOOP REGION OVERLAY — sits between A and B markers
+   ============================================================ */
+
+.loopRegionOverlay {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  background: var(--spc-color-accent-subtle);
+  border-top: 1px dashed var(--spc-color-accent);
+  border-bottom: 1px dashed var(--spc-color-accent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   TIME TOOLTIP — follows pointer or thumb position
+   ============================================================ */
+
+.timeTooltip {
+  position: absolute;
+  bottom: calc(50% + 14px);
+  z-index: 3;
+  background: var(--spc-color-surface-raised);
+  color: var(--spc-color-text);
+  font-family: var(--spc-font-mono);
+  font-size: var(--spc-font-size-xs);
+  padding: var(--spc-space-1) var(--spc-space-2);
+  border-radius: var(--spc-radius-sm);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.timeTooltipVisible {
+  opacity: 1;
+}

@@ -39,6 +39,8 @@ export type MainToWorklet =
   | MainToWorklet.RequestSnapshot
   | MainToWorklet.RestoreSnapshot
   | MainToWorklet.SetPlaybackConfig
+  | MainToWorklet.SetCheckpointConfig
+  | MainToWorklet.ImportCheckpoints
   | MainToWorklet.NoteOn
   | MainToWorklet.NoteOff;
 
@@ -156,6 +158,30 @@ export namespace MainToWorklet {
     readonly snapshotData: ArrayBuffer;
     /** New output sample rate the resampler should target. */
     readonly outputSampleRate: number;
+  }
+
+  /**
+   * Update checkpoint capture configuration.
+   * Clears existing checkpoints and resets capture position.
+   */
+  export interface SetCheckpointConfig {
+    readonly type: 'set-checkpoint-config';
+    /** Interval in DSP samples between checkpoint captures. */
+    readonly intervalSamples: number;
+    /** Maximum number of checkpoints to store. */
+    readonly maxCheckpoints: number;
+  }
+
+  /**
+   * Import pre-computed checkpoints (e.g., from a precompute worker).
+   * Each checkpoint's stateData ArrayBuffer is transferred (zero-copy).
+   */
+  export interface ImportCheckpoints {
+    readonly type: 'import-checkpoints';
+    readonly checkpoints: readonly {
+      readonly positionSamples: number;
+      readonly stateData: ArrayBuffer;
+    }[];
   }
 
   /** Trigger a note-on for a specific voice with a given pitch value. */

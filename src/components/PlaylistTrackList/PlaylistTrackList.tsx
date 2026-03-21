@@ -31,6 +31,39 @@ export function PlaylistTrackList({ compact = false }: PlaylistTrackListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const lastShiftAnchor = useRef<number | null>(null);
 
+  // ── Type-ahead search ─────────────────────────────────────────────
+  const typeAheadBuffer = useRef('');
+  const typeAheadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const TYPE_AHEAD_TIMEOUT_MS = 500;
+
+  const clearTypeAheadBuffer = useCallback(() => {
+    typeAheadBuffer.current = '';
+    typeAheadTimer.current = null;
+  }, []);
+
+  const handleTypeAhead = useCallback(
+    (char: string) => {
+      if (typeAheadTimer.current !== null) {
+        clearTimeout(typeAheadTimer.current);
+      }
+      typeAheadBuffer.current += char.toLowerCase();
+      typeAheadTimer.current = setTimeout(
+        clearTypeAheadBuffer,
+        TYPE_AHEAD_TIMEOUT_MS,
+      );
+
+      const query = typeAheadBuffer.current;
+      const matchIndex = tracks.findIndex((t) =>
+        t.title.toLowerCase().startsWith(query),
+      );
+      if (matchIndex !== -1) {
+        setFocusedIndex(matchIndex);
+      }
+    },
+    [tracks, clearTypeAheadBuffer],
+  );
+
   // ── Derived ───────────────────────────────────────────────────────
   const trackId = (index: number) => `${idPrefix}track-${index}`;
   const focusedId = tracks.length > 0 ? trackId(focusedIndex) : undefined;
@@ -169,6 +202,11 @@ export function PlaylistTrackList({ compact = false }: PlaylistTrackListProps) {
           break;
         }
         default:
+          // Type-ahead: alphanumeric characters trigger search
+          if (e.key.length === 1 && /^[a-z0-9]$/i.test(e.key)) {
+            e.preventDefault();
+            handleTypeAhead(e.key);
+          }
           break;
       }
     },
@@ -179,6 +217,7 @@ export function PlaylistTrackList({ compact = false }: PlaylistTrackListProps) {
       toggleSelection,
       playTrackAtIndex,
       announce,
+      handleTypeAhead,
     ],
   );
 

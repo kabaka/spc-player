@@ -1,0 +1,58 @@
+/* SeekPerformanceSettings — radio group for checkpoint preset */
+
+.radioGroup {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-1);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  cursor: pointer;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  padding: var(--spc-space-1) 0;
+}
+
+.option input[type='radio'] {
+  accent-color: var(--spc-color-accent);
+}
+
+.option input[type='radio']:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.option input[type='radio']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.optionDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: var(--spc-space-1) 0 0;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  font-style: italic;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

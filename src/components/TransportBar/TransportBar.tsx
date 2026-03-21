@@ -1,22 +1,17 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
 import { Slider } from '@/components/Slider/Slider';
+import { SeekBar } from '@/components/SeekBar/SeekBar';
 import { audioEngine } from '@/audio/engine';
 import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
-import { formatTime, formatSpokenTime } from '@/utils/format-time';
+import { formatTime } from '@/utils/format-time';
 
 import { formatSubtitle } from '@/utils/format-metadata';
 
 import styles from './TransportBar.module.css';
-
-// ── Utility ───────────────────────────────────────────────────────────
-
-function formatSeekValueText(elapsedSec: number, durationSec: number): string {
-  return `${formatSpokenTime(elapsedSec)} of ${formatSpokenTime(durationSec)}`;
-}
 
 // ── Component ─────────────────────────────────────────────────────────
 
@@ -24,20 +19,21 @@ export function TransportBar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const preMuteVolumeRef = useRef(1);
 
-  const seekLabelId = useId();
-
   // ── Store selectors ───────────────────────────────────────────────
   const playbackStatus = useAppStore((s) => s.playbackStatus);
   const position = useAppStore((s) => s.position);
   const volume = useAppStore((s) => s.volume);
   const metadata = useAppStore((s) => s.metadata);
   const trackDuration = useAppStore((s) => s.trackDuration);
+  const loopRegion = useAppStore((s) => s.loopRegion);
   const isLoadingTrack = useAppStore((s) => s.isLoadingTrack);
   const activeIndex = useAppStore((s) => s.activeIndex);
 
   const setPlaybackStatus = useAppStore((s) => s.setPlaybackStatus);
   const setPosition = useAppStore((s) => s.setPosition);
   const setVolume = useAppStore((s) => s.setVolume);
+  const setLoopStart = useAppStore((s) => s.setLoopStart);
+  const setLoopEnd = useAppStore((s) => s.setLoopEnd);
   const nextTrack = useAppStore((s) => s.nextTrack);
   const previousTrack = useAppStore((s) => s.previousTrack);
   const playTrackAtIndex = useAppStore((s) => s.playTrackAtIndex);
@@ -96,12 +92,23 @@ export function TransportBar() {
   }, [nextTrack]);
 
   const handleSeek = useCallback(
-    ([seconds]: number[]) => {
+    (seconds: number) => {
       const samples = Math.round(seconds * DSP_SAMPLE_RATE);
       audioEngine.seek(samples);
       setPosition(samples);
     },
     [setPosition],
+  );
+
+  const handleLoopMarkerChange = useCallback(
+    (marker: 'A' | 'B', seconds: number) => {
+      if (marker === 'A') {
+        setLoopStart(seconds);
+      } else {
+        setLoopEnd(seconds);
+      }
+    },
+    [setLoopStart, setLoopEnd],
   );
 
   const handleVolumeChange = useCallback(
@@ -236,23 +243,16 @@ export function TransportBar() {
         </div>
 
         <div className={styles.seekGroup}>
-          <label id={seekLabelId} className="visually-hidden">
-            Seek
-          </label>
-          <Slider
-            className={styles.seekSlider}
-            aria-labelledby={seekLabelId}
-            min={0}
-            max={Math.floor(totalSeconds)}
-            value={[Math.min(currentSeconds, Math.floor(totalSeconds))]}
-            step={5}
-            onValueChange={handleSeek}
-            disabled={!hasTrack}
-            aria-valuetext={formatSeekValueText(
-              currentSeconds,
-              Math.floor(totalSeconds),
-            )}
-          />
+          <div className={styles.seekSlider}>
+            <SeekBar
+              totalSeconds={totalSeconds}
+              currentSeconds={currentSeconds}
+              onSeek={handleSeek}
+              loopRegion={loopRegion}
+              onLoopMarkerChange={handleLoopMarkerChange}
+              disabled={!hasTrack}
+            />
+          </div>
           <div
             className={styles.timeDisplay}
             aria-live="off"

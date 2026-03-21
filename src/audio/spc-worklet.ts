@@ -19,6 +19,8 @@ import type {
   PlaybackSegment,
   WorkletErrorCode,
 } from './worker-protocol';
+import type { DspCheckpoint } from './checkpoint-utils';
+import { findNearestCheckpoint, validateCheckpoint } from './checkpoint-utils';
 
 // PROTOCOL_VERSION is a const — duplicated here because runtime imports
 // from the main bundle are forbidden in AudioWorklet context.
@@ -93,9 +95,52 @@ class SpcProcessor extends AudioWorkletProcessor {
   private echoTelemetryCycle = 0;
   private static readonly ECHO_TELEMETRY_DIVISOR = 4;
 
+  // -- Pre-allocated telemetry voice state objects (avoid GC pressure) ------
+  private readonly telemetryVoices: {
+    -readonly [K in keyof VoiceState]: VoiceState[K];
+  }[] = Array.from({ length: VOICE_COUNT }, (_, i) => ({
+    index: i,
+    envelopePhase: 'silent' as VoiceState['envelopePhase'],
+    envelopeLevel: 0,
+    pitch: 0,
+    sampleSource: 0,
+    keyOn: false,
+    active: false,
+  }));
+  private readonly telemetryVuLeft: [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ] = [0, 0, 0, 0, 0, 0, 0, 0];
+  private readonly telemetryVuRight: [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ] = [0, 0, 0, 0, 0, 0, 0, 0];
+
   // -- Init queuing -----------------------------------------------------------
   private initPromise: Promise<void> | null = null;
   private pendingMessages: MainToWorklet[] = [];
+
+  // -- Checkpoint store (§1.1–1.3 of audio-engine-plan) ---------------------
+  private checkpointStore = {
+    checkpoints: [] as DspCheckpoint[],
+    intervalSamples: 5 * DSP_SAMPLE_RATE, // 160,000 samples (5s)
+    maxCheckpoints: 120,
+    nextCapturePosition: 5 * DSP_SAMPLE_RATE,
+    maxCheckpointBytes: 8 * 1024 * 1024,
+    checkpointBytes: 0,
+  };
 
   // -- Voice mask tracking --------------------------------------------------
   private voiceMask = 0xff;
@@ -262,6 +307,13 @@ class SpcProcessor extends AudioWorkletProcessor {
 
       // Track position in DSP sample domain (32kHz) for seek/duration.
       this.renderedSamples += intAdvance;
+
+      // Capture a checkpoint if we've passed the next capture position.
+      if (this.renderedSamples >= this.checkpointStore.nextCapturePosition) {
+        this.captureCheckpoint(this.renderedSamples);
+        this.checkpointStore.nextCapturePosition +=
+          this.checkpointStore.intervalSamples;
+      }
 
       // Apply fade gain ramp if we've passed durationSamples.
       this.applyFade(left, right, intAdvance);
@@ -432,6 +484,20 @@ class SpcProcessor extends AudioWorkletProcessor {
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           this.wasm.dsp_voice_note_off(msg.voice);
         }
+        break;
+      case 'set-checkpoint-config':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.handleSetCheckpointConfig(msg);
+        break;
+      case 'import-checkpoints':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.handleImportCheckpoints(msg);
         break;
     }
   }
@@ -613,6 +679,12 @@ class SpcProcessor extends AudioWorkletProcessor {
       this.prevDspLeft = 0;
       this.prevDspRight = 0;
 
+      // Clear checkpoints — they belong to the previous track.
+      this.checkpointStore.checkpoints.length = 0;
+      this.checkpointStore.checkpointBytes = 0;
+      this.checkpointStore.nextCapturePosition =
+        this.checkpointStore.intervalSamples;
+
       this.postMessage({ type: 'playback-state', state: 'stopped' });
     } catch (err) {
       this.postError(
@@ -637,20 +709,42 @@ class SpcProcessor extends AudioWorkletProcessor {
     );
 
     if (targetPosition <= 0) {
-      // Seek to beginning: reset the DSP.
+      // Seek to beginning: reset the DSP but preserve checkpoints
+      // (they remain valid for the same track).
       this.renderedSamples = 0;
       this.resampleFrac = 0;
       this.prevDspLeft = 0;
       this.prevDspRight = 0;
       this.wasm.dsp_reset();
+      this.checkpointStore.nextCapturePosition =
+        this.checkpointStore.intervalSamples;
       return;
     }
 
     try {
       if (targetPosition < this.renderedSamples) {
-        // Backward seek: reset and re-render to the target position.
-        this.wasm.dsp_reset();
-        this.renderedSamples = 0;
+        // Backward seek — find nearest prior checkpoint.
+        const snapshotSize = this.wasm.dsp_snapshot_size();
+        const checkpoint = findNearestCheckpoint(
+          this.checkpointStore.checkpoints,
+          targetPosition,
+        );
+
+        if (
+          checkpoint &&
+          validateCheckpoint(checkpoint.stateData, snapshotSize)
+        ) {
+          // Restore from checkpoint. On failure, fall back to reset.
+          if (this.restoreCheckpoint(checkpoint.stateData)) {
+            this.renderedSamples = checkpoint.positionSamples;
+          } else {
+            this.renderedSamples = 0;
+          }
+        } else {
+          // No valid checkpoint — fall back to reset + skip.
+          this.wasm.dsp_reset();
+          this.renderedSamples = 0;
+        }
       }
 
       const samplesToSkip = targetPosition - this.renderedSamples;
@@ -702,11 +796,11 @@ class SpcProcessor extends AudioWorkletProcessor {
           }
           remaining -= chunk;
         }
-      } else {
-        // Short seek — render normally in quantum-sized chunks.
+      } else if (samplesToSkip > 0) {
+        // Short seek — render normally in larger chunks for efficiency.
         let remaining = samplesToSkip;
         while (remaining > 0) {
-          const chunk = Math.min(remaining, QUANTUM_FRAMES);
+          const chunk = Math.min(remaining, MAX_DSP_FRAMES_PER_QUANTUM);
           const result = this.wasm.dsp_render(this.outputPtr, chunk);
           if (result < 0) {
             this.postError(
@@ -777,6 +871,155 @@ class SpcProcessor extends AudioWorkletProcessor {
     if (this.wasm && mode === 1) {
       // Reset sinc resampler state when switching to sinc mode.
       this.wasm.dsp_resample_sinc_reset();
+    }
+  }
+
+  // =========================================================================
+  // Checkpoint capture and restore (§1.2–1.10 of audio-engine-plan)
+  // =========================================================================
+
+  /**
+   * Capture a DSP state snapshot at the current playback position.
+   * Called during process() when renderedSamples crosses the next capture position.
+   */
+  private captureCheckpoint(position: number): void {
+    if (!this.wasm) return;
+    if (
+      this.checkpointStore.checkpoints.length >=
+      this.checkpointStore.maxCheckpoints
+    ) {
+      return;
+    }
+
+    const size = this.wasm.dsp_snapshot_size();
+    if (
+      this.checkpointStore.checkpointBytes + size >
+      this.checkpointStore.maxCheckpointBytes
+    ) {
+      return;
+    }
+
+    const ptr = this.wasm.wasm_alloc(size);
+    if (ptr === 0) return;
+
+    const written = this.wasm.dsp_snapshot(ptr);
+    if (written === 0) {
+      this.wasm.wasm_dealloc(ptr, size);
+      return;
+    }
+
+    const stateData = new ArrayBuffer(written);
+    new Uint8Array(stateData).set(
+      new Uint8Array(this.wasm.memory.buffer, ptr, written),
+    );
+    this.wasm.wasm_dealloc(ptr, size);
+
+    this.checkpointStore.checkpoints.push({
+      positionSamples: position,
+      stateData,
+    });
+    this.checkpointStore.checkpointBytes += stateData.byteLength;
+  }
+
+  /**
+   * Restore DSP state from a validated checkpoint's stateData buffer.
+   * On failure, resets the DSP to a known good state and returns false.
+   */
+  private restoreCheckpoint(stateData: ArrayBuffer): boolean {
+    if (!this.wasm) return false;
+
+    const data = new Uint8Array(stateData);
+    const ptr = this.wasm.wasm_alloc(data.byteLength);
+    if (ptr === 0) return false;
+
+    const wasmMemory = new Uint8Array(this.wasm.memory.buffer);
+    wasmMemory.set(data, ptr);
+
+    const result = this.wasm.dsp_restore(ptr, data.byteLength);
+    this.wasm.wasm_dealloc(ptr, data.byteLength);
+
+    if (result !== 0) {
+      this.postError(
+        'AUDIO_WASM_TRAP',
+        `dsp_restore from checkpoint failed with code ${result}`,
+        { restoreResult: result },
+      );
+      // Put DSP in a known good state so the seek handler can
+      // fall back to the reset-and-render-forward path.
+      this.wasm.dsp_reset();
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Handle set-checkpoint-config: update interval/max and clear existing checkpoints.
+   */
+  private handleSetCheckpointConfig(
+    msg: MainToWorklet.SetCheckpointConfig,
+  ): void {
+    this.checkpointStore.intervalSamples = msg.intervalSamples;
+    this.checkpointStore.maxCheckpoints = msg.maxCheckpoints;
+    this.checkpointStore.checkpoints.length = 0;
+    this.checkpointStore.checkpointBytes = 0;
+    this.checkpointStore.nextCapturePosition =
+      this.renderedSamples + msg.intervalSamples;
+  }
+
+  /**
+   * Handle import-checkpoints: merge pre-computed checkpoints into the store.
+   * Each checkpoint is validated before insertion.
+   */
+  private handleImportCheckpoints(msg: MainToWorklet.ImportCheckpoints): void {
+    if (!this.wasm) return;
+    if (!Array.isArray(msg.checkpoints)) return;
+
+    const snapshotSize = this.wasm.dsp_snapshot_size();
+
+    for (const cp of msg.checkpoints) {
+      if (
+        this.checkpointStore.checkpoints.length >=
+        this.checkpointStore.maxCheckpoints
+      ) {
+        break;
+      }
+      if (
+        typeof cp.positionSamples !== 'number' ||
+        !(cp.stateData instanceof ArrayBuffer)
+      ) {
+        continue;
+      }
+      if (!validateCheckpoint(cp.stateData, snapshotSize)) continue;
+      if (
+        this.checkpointStore.checkpointBytes + cp.stateData.byteLength >
+        this.checkpointStore.maxCheckpointBytes
+      ) {
+        break;
+      }
+
+      this.checkpointStore.checkpoints.push({
+        positionSamples: cp.positionSamples,
+        stateData: cp.stateData,
+      });
+      this.checkpointStore.checkpointBytes += cp.stateData.byteLength;
+    }
+
+    // Re-sort by position to maintain binary search invariant.
+    this.checkpointStore.checkpoints.sort(
+      (a, b) => a.positionSamples - b.positionSamples,
+    );
+
+    // Update nextCapturePosition to avoid re-capturing already-covered positions.
+    const last =
+      this.checkpointStore.checkpoints[
+        this.checkpointStore.checkpoints.length - 1
+      ];
+    if (last) {
+      const nextFromLast =
+        last.positionSamples + this.checkpointStore.intervalSamples;
+      if (nextFromLast > this.checkpointStore.nextCapturePosition) {
+        this.checkpointStore.nextCapturePosition = nextFromLast;
+      }
     }
   }
 
@@ -946,11 +1189,9 @@ class SpcProcessor extends AudioWorkletProcessor {
   private emitTelemetry(left: Float32Array, right: Float32Array): void {
     this.generation++;
 
-    const vuLeft = this.computePerVoiceVu('left');
-    const vuRight = this.computePerVoiceVu('right');
+    this.readVoiceStatesAndVu();
     const masterVuLeft = this.computeRms(left);
     const masterVuRight = this.computeRms(right);
-    const voices = this.readVoiceStates();
     const segment = this.computePlaybackSegment();
 
     // Read echo buffer data at a lower rate than VU meters.
@@ -999,11 +1240,15 @@ class SpcProcessor extends AudioWorkletProcessor {
     const msg: WorkletToMain.Telemetry = {
       type: 'telemetry',
       positionSamples: this.renderedSamples,
-      vuLeft,
-      vuRight,
+      vuLeft: [
+        ...this.telemetryVuLeft,
+      ] as unknown as WorkletToMain.Telemetry['vuLeft'],
+      vuRight: [
+        ...this.telemetryVuRight,
+      ] as unknown as WorkletToMain.Telemetry['vuRight'],
       masterVuLeft,
       masterVuRight,
-      voices,
+      voices: this.telemetryVoices.map((v) => ({ ...v })),
       generation: this.generation,
       segment,
       echoBuffer,
@@ -1018,61 +1263,28 @@ class SpcProcessor extends AudioWorkletProcessor {
   }
 
   /**
-   * Compute per-voice VU levels.
+   * Compute per-voice VU levels and voice state in a single pass.
    *
-   * Currently returns a rough estimate by reading voice state from WASM.
-   * The envelope level (0–2047) is normalized to [0, 1] as a proxy for
-   * VU. A more accurate implementation would read per-voice PCM output
-   * from the DSP — this requires additional WASM exports in a future update.
+   * Calls dsp_get_voice_state once per voice (8 total WASM calls),
+   * extracting both envelope-based VU levels and full voice state data.
+   * Results are written to pre-allocated telemetryVuLeft, telemetryVuRight,
+   * and telemetryVoices arrays to avoid GC pressure on the audio thread.
    */
-  private computePerVoiceVu(
-    _channel: 'left' | 'right',
-  ): readonly [number, number, number, number, number, number, number, number] {
+  private readVoiceStatesAndVu(): void {
     if (!this.wasm) {
-      return [0, 0, 0, 0, 0, 0, 0, 0];
+      for (let i = 0; i < VOICE_COUNT; i++) {
+        this.telemetryVuLeft[i] = 0;
+        this.telemetryVuRight[i] = 0;
+        const v = this.telemetryVoices[i];
+        v.envelopePhase = 'silent';
+        v.envelopeLevel = 0;
+        v.pitch = 0;
+        v.sampleSource = 0;
+        v.keyOn = false;
+        v.active = false;
+      }
+      return;
     }
-
-    const levels: number[] = [];
-    // Use the pre-allocated voice state buffer (6 × u32).
-    // dsp_get_voice_state writes: [envelopePhase, envelopeLevel, pitch, sampleSource, keyOn, active]
-    for (let i = 0; i < VOICE_COUNT; i++) {
-      this.wasm.dsp_get_voice_state(i, this.voiceStatePtr);
-      const stateView = new Uint32Array(
-        this.wasm.memory.buffer,
-        this.voiceStatePtr,
-        6,
-      );
-      const envelopeLevel = stateView[1];
-      // Normalize 11-bit envelope (0–2047) to [0, 1].
-      levels.push(envelopeLevel / 2047);
-    }
-
-    return levels as unknown as readonly [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
-  }
-
-  /** Compute RMS level from a buffer, scaled to [0, 1]. */
-  private computeRms(buffer: Float32Array): number {
-    let sum = 0;
-    for (const sample of buffer) {
-      sum += sample * sample;
-    }
-    return Math.sqrt(sum / buffer.length);
-  }
-
-  /** Read per-voice state from WASM for telemetry. */
-  private readVoiceStates(): readonly VoiceState[] {
-    if (!this.wasm) return [];
-
-    const voices: VoiceState[] = [];
 
     const envelopePhases: VoiceState['envelopePhase'][] = [
       'attack',
@@ -1090,18 +1302,29 @@ class SpcProcessor extends AudioWorkletProcessor {
         6,
       );
 
-      voices.push({
-        index: i,
-        envelopePhase: envelopePhases[stateView[0]] ?? 'silent',
-        envelopeLevel: stateView[1],
-        pitch: stateView[2],
-        sampleSource: stateView[3],
-        keyOn: stateView[4] !== 0,
-        active: stateView[5] !== 0,
-      });
-    }
+      // VU level from envelope (normalized 11-bit → [0, 1]).
+      const vuLevel = stateView[1] / 2047;
+      this.telemetryVuLeft[i] = vuLevel;
+      this.telemetryVuRight[i] = vuLevel;
 
-    return voices;
+      // Voice state — mutate pre-allocated objects in place.
+      const v = this.telemetryVoices[i];
+      v.envelopePhase = envelopePhases[stateView[0]] ?? 'silent';
+      v.envelopeLevel = stateView[1];
+      v.pitch = stateView[2];
+      v.sampleSource = stateView[3];
+      v.keyOn = stateView[4] !== 0;
+      v.active = stateView[5] !== 0;
+    }
+  }
+
+  /** Compute RMS level from a buffer, scaled to [0, 1]. */
+  private computeRms(buffer: Float32Array): number {
+    let sum = 0;
+    for (const sample of buffer) {
+      sum += sample * sample;
+    }
+    return Math.sqrt(sum / buffer.length);
   }
 
   // =========================================================================

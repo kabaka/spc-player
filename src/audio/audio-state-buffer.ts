@@ -25,6 +25,19 @@ export interface AudioStateBuffer {
   voices: VoiceStateSnapshot[];
   echoBuffer: Int16Array | null;
   firCoefficients: Uint8Array;
+  // Added by audio-engine plan (Phase D) — interface extension only, data flow wired in Phase D
+  dspRegisters: Uint8Array;
+  cpuRegisters: {
+    a: number;
+    x: number;
+    y: number;
+    sp: number;
+    pc: number;
+    psw: number;
+  };
+  ramCopy: Uint8Array;
+  processLoadPercent: number;
+  totalUnderruns: number;
   /** Monotonically increasing counter for change detection by rAF consumers. */
   generation: number;
 }
@@ -51,6 +64,11 @@ function createDefaultBuffer(): AudioStateBuffer {
     voices: Array.from({ length: 8 }, (_, i) => createDefaultVoice(i)),
     echoBuffer: null,
     firCoefficients: new Uint8Array(8),
+    dspRegisters: new Uint8Array(128),
+    cpuRegisters: { a: 0, x: 0, y: 0, sp: 0, pc: 0, psw: 0 },
+    ramCopy: new Uint8Array(65536),
+    processLoadPercent: 0,
+    totalUnderruns: 0,
     generation: 0,
   };
 }
@@ -79,6 +97,17 @@ export function resetAudioStateBuffer(): void {
 
   audioStateBuffer.echoBuffer = null;
   audioStateBuffer.firCoefficients.fill(0);
+
+  audioStateBuffer.dspRegisters.fill(0);
+  audioStateBuffer.cpuRegisters.a = 0;
+  audioStateBuffer.cpuRegisters.x = 0;
+  audioStateBuffer.cpuRegisters.y = 0;
+  audioStateBuffer.cpuRegisters.sp = 0;
+  audioStateBuffer.cpuRegisters.pc = 0;
+  audioStateBuffer.cpuRegisters.psw = 0;
+  audioStateBuffer.ramCopy.fill(0);
+  audioStateBuffer.processLoadPercent = 0;
+  audioStateBuffer.totalUnderruns = 0;
 
   audioStateBuffer.generation = 0;
 }

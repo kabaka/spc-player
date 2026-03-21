@@ -13,6 +13,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set) => ({
   defaultLoopCount: 2,
   defaultPlayDuration: 180,
   defaultFadeDuration: 10,
+  checkpointPreset: 'standard',
 
   setTheme: (theme) => {
     set({ theme }, false, 'settings/setTheme');
@@ -64,5 +65,9 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set) => ({
       false,
       'settings/setDefaultFadeDuration',
     );
+  },
+
+  setCheckpointPreset: (preset) => {
+    set({ checkpointPreset: preset }, false, 'settings/setCheckpointPreset');
   },
 });

@@ -15,6 +15,8 @@ import type { MainToWorklet, WorkletToMain } from './worker-protocol';
 import { PROTOCOL_VERSION } from './worker-protocol';
 import { reportError } from '@/errors/report';
 import { audioPipelineError, spcParseError } from '@/errors/factories';
+import type { CheckpointWorkerMessage } from '@/workers/checkpoint-worker';
+import type { CheckpointPreset } from '@/store/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -24,6 +26,16 @@ const TARGET_SAMPLE_RATE = 48_000;
 const DEFAULT_RESAMPLER_MODE = 0; // linear
 const DEFAULT_INTERPOLATION_MODE = 0; // gaussian
 const SNAPSHOT_TIMEOUT_MS = 5_000;
+
+const DSP_SAMPLE_RATE = 32_000;
+
+const CHECKPOINT_PRESETS: Record<
+  CheckpointPreset,
+  { intervalSamples: number; maxCheckpoints: number }
+> = {
+  standard: { intervalSamples: 5 * DSP_SAMPLE_RATE, maxCheckpoints: 120 },
+  fast: { intervalSamples: 2 * DSP_SAMPLE_RATE, maxCheckpoints: 300 },
+};
 
 // ---------------------------------------------------------------------------
 // AudioEngine
@@ -40,6 +52,9 @@ class AudioEngine {
   private visibilityHandler: (() => void) | null = null;
   private userIntentPlaying = false;
   private suspendedByVisibility = false;
+  private checkpointWorker: Worker | null = null;
+  private checkpointIntervalSamples = 5 * DSP_SAMPLE_RATE;
+  private checkpointMaxCheckpoints = 120;
 
   /** Initialize: compile WASM, create AudioContext, load worklet, create audio graph. */
   async init(): Promise<void> {
@@ -158,6 +173,12 @@ class AudioEngine {
     }
 
     resetAudioStateBuffer();
+
+    // Spawn background worker to pre-compute seek checkpoints.
+    // Uses stored spcData (the clone made above) so the transferred copy isn't needed.
+    if (this.spcData && this.wasmBytes) {
+      this.spawnCheckpointWorker(this.spcData);
+    }
   }
 
   /** Begin or resume playback. Resumes suspended AudioContext for autoplay policy. */
@@ -246,6 +267,25 @@ class AudioEngine {
       type: 'set-resampler-mode',
       mode: mode === 'sinc' ? 1 : 0,
     });
+  }
+
+  /** Update checkpoint capture configuration. Clears existing checkpoints. */
+  setCheckpointConfig(intervalSamples: number, maxCheckpoints: number): void {
+    this.checkpointIntervalSamples = intervalSamples;
+    this.checkpointMaxCheckpoints = maxCheckpoints;
+    this.postCommand({
+      type: 'set-checkpoint-config',
+      intervalSamples,
+      maxCheckpoints,
+    });
+  }
+
+  /** Resolve checkpoint preset name to interval/max config. */
+  resolveCheckpointPreset(preset: CheckpointPreset): {
+    intervalSamples: number;
+    maxCheckpoints: number;
+  } {
+    return CHECKPOINT_PRESETS[preset];
   }
 
   /**
@@ -581,8 +621,62 @@ class AudioEngine {
     }
   }
 
+  /**
+   * Spawn a background Web Worker to pre-compute DSP checkpoints for seeking.
+   *
+   * The worker instantiates its own WASM instance, renders forward at max
+   * CPU speed, captures snapshots at regular intervals, then transfers them
+   * back. The main thread forwards checkpoints to the AudioWorklet via
+   * the existing import-checkpoints handler.
+   */
+  private spawnCheckpointWorker(spcData: ArrayBuffer): void {
+    // Terminate any in-flight computation from a previous track.
+    this.checkpointWorker?.terminate();
+    this.checkpointWorker = null;
+
+    const worker = new Worker(
+      new URL('../workers/checkpoint-worker.ts', import.meta.url),
+      { type: 'module' },
+    );
+
+    worker.onmessage = (e: MessageEvent<CheckpointWorkerMessage>) => {
+      if (e.data.type === 'checkpoints' && this.workletNode) {
+        // Forward pre-computed checkpoints to the AudioWorklet.
+        // Transfer stateData ArrayBuffers (zero-copy).
+        this.workletNode.port.postMessage(
+          { type: 'import-checkpoints', checkpoints: e.data.checkpoints },
+          e.data.checkpoints.map(
+            (cp: { stateData: ArrayBuffer }) => cp.stateData,
+          ),
+        );
+      }
+      // Worker self-terminates after sending results.
+      this.checkpointWorker = null;
+    };
+
+    worker.onerror = () => {
+      this.checkpointWorker = null;
+    };
+
+    // Clone both buffers — originals are needed by the engine and worklet.
+    worker.postMessage({
+      type: 'compute',
+      // wasmBytes is guaranteed non-null by the guard in loadSpc / spawnCheckpointWorker callers.
+      wasmBytes: (this.wasmBytes as ArrayBuffer).slice(0),
+      spcData: spcData.slice(0),
+      intervalSamples: this.checkpointIntervalSamples,
+      maxCheckpoints: this.checkpointMaxCheckpoints,
+    });
+
+    this.checkpointWorker = worker;
+  }
+
   /** Disconnect nodes, close context, remove listeners. */
   private async teardownGraph(): Promise<void> {
+    // Terminate checkpoint worker if still running.
+    this.checkpointWorker?.terminate();
+    this.checkpointWorker = null;
+
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;

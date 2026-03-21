@@ -117,6 +117,8 @@ export interface MetadataSlice {
   clearMetadata: () => void;
 }
 
+export type CheckpointPreset = 'standard' | 'fast';
+
 export interface SettingsSlice {
   theme: 'light' | 'dark' | 'system';
   audioSampleRate: 32000 | 44100 | 48000 | 96000;
@@ -126,6 +128,7 @@ export interface SettingsSlice {
   defaultLoopCount: number;
   defaultPlayDuration: number;
   defaultFadeDuration: number;
+  checkpointPreset: CheckpointPreset;
   setTheme: (theme: SettingsSlice['theme']) => void;
   setAudioSampleRate: (rate: SettingsSlice['audioSampleRate']) => void;
   setResamplingQuality: (quality: SettingsSlice['resamplingQuality']) => void;
@@ -134,6 +137,7 @@ export interface SettingsSlice {
   setDefaultLoopCount: (count: number) => void;
   setDefaultPlayDuration: (seconds: number) => void;
   setDefaultFadeDuration: (seconds: number) => void;
+  setCheckpointPreset: (preset: CheckpointPreset) => void;
 }
 
 export interface InstrumentSlice {

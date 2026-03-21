@@ -21,8 +21,7 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    // TODO(phase-c): Route to /tools once the Tools hub page is created
-    to: '/instrument',
+    to: '/tools',
     label: 'Tools',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -1,6 +1,7 @@
 import { Separator } from '@/components/Separator/Separator';
 import { ThemeSettings } from './ThemeSettings';
 import { AudioQualitySettings } from './AudioQualitySettings';
+import { SeekPerformanceSettings } from './SeekPerformanceSettings';
 import { PlaybackSettings } from './PlaybackSettings';
 import { KeyboardShortcutSettings } from './KeyboardShortcutSettings';
 import { ExportDefaultSettings } from './ExportDefaultSettings';
@@ -24,6 +25,13 @@ export function SettingsView() {
       <section className={styles.section}>
         <h2 className={styles.heading}>Audio Quality</h2>
         <AudioQualitySettings />
+      </section>
+
+      <Separator />
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>Seek Performance</h2>
+        <SeekPerformanceSettings />
       </section>
 
       <Separator />

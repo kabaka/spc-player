@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import type { SpcMetadata } from '@/core/spc-types';
@@ -17,6 +17,13 @@ vi.mock('@/audio/engine', () => ({
     pause: vi.fn(),
     seek: vi.fn(),
     setVolume: vi.fn(),
+  },
+}));
+
+vi.mock('@/audio/audio-state-buffer', () => ({
+  audioStateBuffer: {
+    generation: 0,
+    positionSamples: 0,
   },
 }));
 
@@ -211,9 +218,9 @@ describe('TransportBar', () => {
 
     render(<TransportBar />);
 
-    const seekSlider = screen.getByRole('slider', { name: 'Seek' });
+    const seekSlider = screen.getByRole('slider', { name: 'Seek position' });
 
-    // Radix Slider responds to keyboard events for stepping
+    // SeekBar's hidden input responds to keyboard events for stepping
     fireEvent.keyDown(seekSlider, { key: 'ArrowRight' });
 
     // Step is 5 seconds → 5 * DSP_SAMPLE_RATE samples
@@ -298,16 +305,13 @@ describe('TransportBar', () => {
     expect(screen.getByRole('button', { name: 'Next track' })).toBeDisabled();
   });
 
-  it('disables seek slider when no track is loaded', () => {
+  it('renders seek slider with max=0 when no track is loaded', () => {
     setStoreEmpty();
 
     render(<TransportBar />);
 
-    const seekSlider = screen.getByRole('slider', { name: 'Seek' });
-    // Radix Slider sets data-disabled on the root, and the thumb receives
-    // disabled behavior. Verify the thumb's parent root has the attribute.
-    const sliderRoot = seekSlider.closest('[data-disabled]');
-    expect(sliderRoot).toBeInTheDocument();
+    const seekSlider = screen.getByRole('slider', { name: 'Seek position' });
+    expect(seekSlider).toHaveAttribute('aria-valuemax', '0');
   });
 
   it('enables transport buttons when a track is loaded', () => {
@@ -409,7 +413,8 @@ describe('TransportBar', () => {
 
     render(<TransportBar />);
 
-    const zeroes = screen.getAllByText('0:00');
+    const timeGroup = screen.getByRole('group', { name: 'Playback position' });
+    const zeroes = within(timeGroup).getAllByText('0:00');
     expect(zeroes).toHaveLength(2);
   });
 

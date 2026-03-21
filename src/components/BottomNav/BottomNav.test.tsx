@@ -61,8 +61,8 @@ describe('BottomNav', () => {
     expect(playerLink?.className).toContain('active');
   });
 
-  it('highlights Tools as active on /instrument route', () => {
-    mockPathname = '/instrument';
+  it('highlights Tools as active on /tools route', () => {
+    mockPathname = '/tools';
     render(<BottomNav />);
 
     const toolsLink = screen.getByText('Tools').closest('a');

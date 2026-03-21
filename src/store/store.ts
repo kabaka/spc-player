@@ -47,6 +47,7 @@ export const useAppStore = create<AppStore>()(
             defaultLoopCount: state.defaultLoopCount,
             defaultPlayDuration: state.defaultPlayDuration,
             defaultFadeDuration: state.defaultFadeDuration,
+            checkpointPreset: state.checkpointPreset,
             // Playlist — full
             tracks: state.tracks,
             activeIndex: state.activeIndex,
