@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('PWA and Service Worker', () => {
+  test.use({ serviceWorkers: 'allow' });
+
   test('service worker registers successfully', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#root')).not.toBeEmpty();

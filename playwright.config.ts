@@ -16,6 +16,7 @@ export default defineConfig({
     baseURL: 'http://localhost:4173/spc-player/',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    serviceWorkers: 'block',
   },
   projects: [
     {
