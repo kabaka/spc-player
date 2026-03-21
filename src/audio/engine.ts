@@ -17,6 +17,10 @@ import { reportError } from '@/errors/report';
 import { audioPipelineError, spcParseError } from '@/errors/factories';
 import type { CheckpointWorkerMessage } from '@/workers/checkpoint-worker';
 import type { CheckpointPreset } from '@/store/types';
+import type { SoundTouchNode as SoundTouchNodeType } from '@soundtouchjs/audio-worklet';
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+type SoundTouchModule = typeof import('@soundtouchjs/audio-worklet');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -28,6 +32,9 @@ const DEFAULT_INTERPOLATION_MODE = 0; // gaussian
 const SNAPSHOT_TIMEOUT_MS = 5_000;
 
 const DSP_SAMPLE_RATE = 32_000;
+
+/** Maximum time (ms) to allow the checkpoint worker before terminating it. */
+const CHECKPOINT_WORKER_TIMEOUT_MS = 60_000;
 
 const CHECKPOINT_PRESETS: Record<
   CheckpointPreset,
@@ -53,8 +60,18 @@ class AudioEngine {
   private userIntentPlaying = false;
   private suspendedByVisibility = false;
   private checkpointWorker: Worker | null = null;
+  private checkpointWorkerTimeout: ReturnType<typeof setTimeout> | null = null;
+  private checkpointProgress = 0;
   private checkpointIntervalSamples = 5 * DSP_SAMPLE_RATE;
   private checkpointMaxCheckpoints = 120;
+
+  // SoundTouch state (LGPL-2.1 — loaded via dynamic import, separate chunk)
+  private soundTouchNode: SoundTouchNodeType | null = null;
+  private soundTouchModule: SoundTouchModule | null = null;
+  private soundTouchRegistered = false;
+  private soundTouchPrefetched = false;
+  private currentTempo = 1.0;
+  private currentPitch = 1.0;
 
   /** Initialize: compile WASM, create AudioContext, load worklet, create audio graph. */
   async init(): Promise<void> {
@@ -219,6 +236,11 @@ class AudioEngine {
   /** Seek to a sample position (at 32 kHz DSP rate). */
   seek(samplePosition: number): void {
     this.postCommand({ type: 'seek', samplePosition });
+
+    // Clear SoundTouch internal buffers after seek to avoid stale audio
+    if (this.soundTouchNode && this.isSoundTouchActive()) {
+      this.reconnectSoundTouch();
+    }
   }
 
   /** Set voice mask (bit N = voice N enabled, 0xFF = all enabled). */
@@ -226,9 +248,94 @@ class AudioEngine {
     this.postCommand({ type: 'set-voice-mask', mask });
   }
 
-  /** Set playback speed multiplier. 1.0 = normal. */
+  /** Set playback speed multiplier (coupled pitch+speed). 1.0 = normal. */
   setSpeed(factor: number): void {
     this.postCommand({ type: 'set-speed', factor });
+  }
+
+  /**
+   * Set tempo (speed without pitch change) via SoundTouchJS.
+   * At 1.0× the SoundTouch node is bypassed for zero overhead.
+   */
+  async setTempo(factor: number): Promise<void> {
+    const clamped = Math.max(0.25, Math.min(4.0, factor));
+
+    try {
+      if (
+        Math.abs(clamped - 1.0) < 0.001 &&
+        Math.abs(this.currentPitch - 1.0) < 0.001
+      ) {
+        this.bypassSoundTouch();
+        this.currentTempo = 1.0;
+        return;
+      }
+
+      await this.engageSoundTouch();
+      if (this.soundTouchNode) {
+        this.soundTouchNode.tempo.setValueAtTime(
+          clamped,
+          this.audioContext?.currentTime ?? 0,
+        );
+        this.currentTempo = clamped;
+      }
+    } catch (err) {
+      console.warn('SoundTouch engage failed, falling back', err);
+      this.currentTempo = 1.0;
+      this.currentPitch = 1.0;
+      this.postCommand({ type: 'set-speed', factor: 1.0 });
+    }
+  }
+
+  /**
+   * Set pitch (pitch without speed change) via SoundTouchJS.
+   * At 1.0× the SoundTouch node is bypassed for zero overhead.
+   */
+  async setPitch(factor: number): Promise<void> {
+    const clamped = Math.max(0.25, Math.min(4.0, factor));
+
+    try {
+      if (
+        Math.abs(clamped - 1.0) < 0.001 &&
+        Math.abs(this.currentTempo - 1.0) < 0.001
+      ) {
+        this.bypassSoundTouch();
+        this.currentPitch = 1.0;
+        return;
+      }
+
+      await this.engageSoundTouch();
+      if (this.soundTouchNode) {
+        this.soundTouchNode.pitch.setValueAtTime(
+          clamped,
+          this.audioContext?.currentTime ?? 0,
+        );
+        this.currentPitch = clamped;
+      }
+    } catch (err) {
+      console.warn('SoundTouch engage failed, falling back', err);
+      this.currentTempo = 1.0;
+      this.currentPitch = 1.0;
+      this.postCommand({ type: 'set-speed', factor: 1.0 });
+    }
+  }
+
+  /** Returns the current tempo factor. */
+  getTempo(): number {
+    return this.currentTempo;
+  }
+
+  /** Returns the current pitch factor. */
+  getPitch(): number {
+    return this.currentPitch;
+  }
+
+  /** Whether SoundTouch is currently active in the audio graph. */
+  isSoundTouchActive(): boolean {
+    return (
+      this.soundTouchNode !== null &&
+      (Math.abs(this.currentTempo - 1.0) >= 0.001 ||
+        Math.abs(this.currentPitch - 1.0) >= 0.001)
+    );
   }
 
   /** Set volume (0–1). Uses GainNode for click-free control. */
@@ -460,7 +567,20 @@ class AudioEngine {
         this.restoreSnapshot(snapshotData, newSampleRate);
       }
 
-      // 8. Resume playback if it was playing
+      // 8. Rebuild SoundTouch in the audio graph if it was active
+      const hadSoundTouch =
+        Math.abs(this.currentTempo - 1.0) >= 0.001 ||
+        Math.abs(this.currentPitch - 1.0) >= 0.001;
+      if (hadSoundTouch && this.soundTouchModule) {
+        await this.engageSoundTouch();
+        if (this.soundTouchNode) {
+          const now = this.audioContext.currentTime;
+          this.soundTouchNode.tempo.setValueAtTime(this.currentTempo, now);
+          this.soundTouchNode.pitch.setValueAtTime(this.currentPitch, now);
+        }
+      }
+
+      // 9. Resume playback if it was playing
       if (wasPlaying) {
         this.play();
       }
@@ -515,6 +635,9 @@ class AudioEngine {
       case 'telemetry':
         this.handleTelemetry(msg);
         break;
+      case 'audio-stats':
+        this.handleAudioStats(msg);
+        break;
       case 'snapshot':
         // Handled by external snapshot request flow
         break;
@@ -537,6 +660,9 @@ class AudioEngine {
       return;
     }
     this.hasWorkletReceivedInit = true;
+
+    // D18: Prefetch SoundTouch module during idle time after first playback
+    this.prefetchSoundTouch();
   }
 
   /** Write telemetry data directly to the ref-based audioStateBuffer. */
@@ -571,7 +697,34 @@ class AudioEngine {
       audioStateBuffer.firCoefficients.set(new Uint8Array(msg.firCoefficients));
     }
 
+    // D9/D11: Update DSP registers (128 bytes) when present.
+    if (msg.dspRegisters) {
+      audioStateBuffer.dspRegisters.set(new Uint8Array(msg.dspRegisters));
+    }
+
+    // D9/D11: Update CPU registers when present.
+    if (msg.cpuRegisters) {
+      const cpu = new Uint8Array(msg.cpuRegisters);
+      audioStateBuffer.cpuRegisters.a = cpu[0];
+      audioStateBuffer.cpuRegisters.x = cpu[1];
+      audioStateBuffer.cpuRegisters.y = cpu[2];
+      audioStateBuffer.cpuRegisters.sp = cpu[3];
+      audioStateBuffer.cpuRegisters.pc = cpu[4] | (cpu[5] << 8);
+      audioStateBuffer.cpuRegisters.psw = cpu[6];
+    }
+
+    // D10/D11: Update SPC RAM snapshot (64 KB) when present (~10 Hz).
+    if (msg.ramSnapshot) {
+      audioStateBuffer.ramCopy.set(new Uint8Array(msg.ramSnapshot));
+    }
+
     audioStateBuffer.generation = msg.generation;
+  }
+
+  /** D16: Handle audio processing stats from the worklet (~1 Hz). */
+  private handleAudioStats(msg: WorkletToMain.AudioStats): void {
+    audioStateBuffer.processLoadPercent = msg.processLoadPercent;
+    audioStateBuffer.totalUnderruns = msg.totalUnderruns;
   }
 
   /** Map worklet error codes to error factories and report. */
@@ -631,8 +784,7 @@ class AudioEngine {
    */
   private spawnCheckpointWorker(spcData: ArrayBuffer): void {
     // Terminate any in-flight computation from a previous track.
-    this.checkpointWorker?.terminate();
-    this.checkpointWorker = null;
+    this.cancelCheckpointPrecompute();
 
     const worker = new Worker(
       new URL('../workers/checkpoint-worker.ts', import.meta.url),
@@ -649,13 +801,17 @@ class AudioEngine {
             (cp: { stateData: ArrayBuffer }) => cp.stateData,
           ),
         );
+        // Worker self-terminates after sending results.
+        this.clearCheckpointWorker();
+      } else if (e.data.type === 'progress') {
+        this.checkpointProgress = e.data.fraction;
+      } else if (e.data.type === 'error') {
+        this.clearCheckpointWorker();
       }
-      // Worker self-terminates after sending results.
-      this.checkpointWorker = null;
     };
 
     worker.onerror = () => {
-      this.checkpointWorker = null;
+      this.clearCheckpointWorker();
     };
 
     // Clone both buffers — originals are needed by the engine and worklet.
@@ -669,18 +825,53 @@ class AudioEngine {
     });
 
     this.checkpointWorker = worker;
+    this.checkpointProgress = 0;
+
+    // Safety timeout — terminate worker if it takes too long.
+    this.checkpointWorkerTimeout = setTimeout(() => {
+      if (this.checkpointWorker) {
+        this.checkpointWorker.terminate();
+        this.clearCheckpointWorker();
+      }
+    }, CHECKPOINT_WORKER_TIMEOUT_MS);
+  }
+
+  /** Cancel in-flight checkpoint pre-computation. */
+  cancelCheckpointPrecompute(): void {
+    if (this.checkpointWorkerTimeout !== null) {
+      clearTimeout(this.checkpointWorkerTimeout);
+      this.checkpointWorkerTimeout = null;
+    }
+    this.checkpointWorker?.terminate();
+    this.checkpointWorker = null;
+    this.checkpointProgress = 0;
+  }
+
+  /** Clean up worker reference and timeout without terminating. */
+  private clearCheckpointWorker(): void {
+    if (this.checkpointWorkerTimeout !== null) {
+      clearTimeout(this.checkpointWorkerTimeout);
+      this.checkpointWorkerTimeout = null;
+    }
+    this.checkpointWorker = null;
   }
 
   /** Disconnect nodes, close context, remove listeners. */
   private async teardownGraph(): Promise<void> {
     // Terminate checkpoint worker if still running.
-    this.checkpointWorker?.terminate();
-    this.checkpointWorker = null;
+    this.cancelCheckpointPrecompute();
 
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
     }
+
+    // Disconnect SoundTouch node
+    if (this.soundTouchNode) {
+      this.soundTouchNode.disconnect();
+      this.soundTouchNode = null;
+    }
+    this.soundTouchRegistered = false;
 
     if (this.workletNode) {
       this.workletNode.port.onmessage = null;
@@ -704,6 +895,196 @@ class AudioEngine {
     this.userIntentPlaying = false;
     this.suspendedByVisibility = false;
     this.hasWorkletReceivedInit = false;
+  }
+
+  // -----------------------------------------------------------------------
+  // SoundTouch Internal Methods
+  // -----------------------------------------------------------------------
+
+  /**
+   * Lazily load and initialize SoundTouchJS (LGPL-2.1 — separate chunk via
+   * dynamic import). Creates the SoundTouchNode and inserts it into the graph.
+   */
+  private async ensureSoundTouchLoaded(): Promise<void> {
+    if (!this.audioContext) return;
+
+    // 1. Dynamic import (LGPL compliance — separate Vite chunk)
+    if (!this.soundTouchModule) {
+      this.soundTouchModule = await import('@soundtouchjs/audio-worklet');
+    }
+
+    // 2. Register processor once per AudioContext
+    if (!this.soundTouchRegistered) {
+      const processorUrl = new URL(
+        '@soundtouchjs/audio-worklet/processor',
+        import.meta.url,
+      ).href;
+      await this.soundTouchModule.SoundTouchNode.register(
+        this.audioContext,
+        processorUrl,
+      );
+      this.soundTouchRegistered = true;
+    }
+
+    // 3. Create node if absent
+    if (!this.soundTouchNode) {
+      this.soundTouchNode = new this.soundTouchModule.SoundTouchNode(
+        this.audioContext,
+      );
+    }
+  }
+
+  /**
+   * Insert SoundTouchNode into the audio graph:
+   *   WorkletNode → SoundTouchNode → GainNode → destination
+   * Worklet always runs at 1.0× — SoundTouch handles time-stretching.
+   */
+  private async engageSoundTouch(): Promise<void> {
+    if (!this.workletNode || !this.gainNode) return;
+
+    try {
+      await this.ensureSoundTouchLoaded();
+    } catch (error) {
+      // Graceful degradation — SoundTouch unavailable
+      const detail = error instanceof Error ? error.message : String(error);
+      reportError(
+        audioPipelineError('AUDIO_WORKLET_LOAD_FAILED', {
+          detail: `SoundTouch load failed: ${detail}`,
+        }),
+        { silent: true },
+      );
+      return;
+    }
+
+    if (!this.soundTouchNode) return;
+
+    // Re-route: WorkletNode → SoundTouchNode → GainNode
+    this.workletNode.disconnect();
+    this.soundTouchNode.disconnect();
+    this.workletNode.connect(this.soundTouchNode);
+    this.soundTouchNode.connect(this.gainNode);
+
+    // Worklet MUST run at 1.0× — SoundTouch does the time-stretching
+    this.postCommand({ type: 'set-speed', factor: 1.0 });
+  }
+
+  /**
+   * Remove SoundTouchNode from the audio graph.
+   * Direct path: WorkletNode → GainNode → destination.
+   */
+  private bypassSoundTouch(): void {
+    if (!this.workletNode || !this.gainNode) return;
+
+    this.currentTempo = 1.0;
+    this.currentPitch = 1.0;
+
+    if (this.soundTouchNode) {
+      this.workletNode.disconnect();
+      this.soundTouchNode.disconnect();
+    }
+
+    this.workletNode.connect(this.gainNode);
+    this.postCommand({ type: 'set-speed', factor: 1.0 });
+  }
+
+  /**
+   * Reconnect SoundTouchNode after seek.
+   *
+   * Note: Web Audio disconnect/connect does NOT reset the AudioWorkletProcessor's
+   * internal state. The SoundTouchNode has no public flush/reset API, so the
+   * WSOLA algorithm retains its overlap buffers across the reconnect. This may
+   * produce a brief crossfade artifact (~10-20 ms) immediately after seeking
+   * with active pitch/tempo shift. In practice this is inaudible because the
+   * WSOLA overlap window is very short relative to the seek discontinuity.
+   */
+  private reconnectSoundTouch(): void {
+    if (!this.workletNode || !this.gainNode || !this.soundTouchNode) return;
+
+    this.workletNode.disconnect();
+    this.soundTouchNode.disconnect();
+    this.workletNode.connect(this.soundTouchNode);
+    this.soundTouchNode.connect(this.gainNode);
+  }
+
+  /**
+   * Rebuild the full audio graph, reinserting SoundTouch if it was active.
+   * Called by audio recovery and recreateAudioContext.
+   */
+  rebuildAudioGraph(): void {
+    if (!this.workletNode || !this.gainNode || !this.audioContext) return;
+
+    // Disconnect everything for clean reconnect
+    this.workletNode.disconnect();
+    this.soundTouchNode?.disconnect();
+
+    if (this.isSoundTouchActive() && this.soundTouchNode) {
+      // Restore SoundTouch in the chain
+      this.workletNode.connect(this.soundTouchNode);
+      this.soundTouchNode.connect(this.gainNode);
+
+      // Restore tempo/pitch values
+      const now = this.audioContext.currentTime;
+      this.soundTouchNode.tempo.setValueAtTime(this.currentTempo, now);
+      this.soundTouchNode.pitch.setValueAtTime(this.currentPitch, now);
+    } else {
+      // Direct path (SoundTouch not active or not loaded)
+      this.workletNode.connect(this.gainNode);
+    }
+
+    this.gainNode.connect(this.audioContext.destination);
+  }
+
+  /**
+   * Prefetch SoundTouchJS module during idle time (D18).
+   * Called after first successful playback to eliminate latency spike
+   * when the user first changes tempo/pitch.
+   */
+  prefetchSoundTouch(): void {
+    if (this.soundTouchPrefetched || this.soundTouchModule) return;
+    this.soundTouchPrefetched = true;
+
+    const doLoad = () => {
+      import('@soundtouchjs/audio-worklet')
+        .then((mod) => {
+          this.soundTouchModule = mod;
+        })
+        .catch(() => {
+          // Prefetch failure is non-fatal — module loads on demand
+          this.soundTouchPrefetched = false;
+        });
+    };
+
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(doLoad, { timeout: 5000 });
+    } else {
+      // Fallback for Safari (no requestIdleCallback)
+      setTimeout(doLoad, 2000);
+    }
+  }
+
+  /** Audio chain info for the feedback display (D14). */
+  getAudioChainInfo(): {
+    sampleRate: number;
+    baseLatencyMs: number;
+    outputLatencyMs: number;
+    state: AudioContextState | 'uninitialized';
+  } {
+    if (!this.audioContext) {
+      return {
+        sampleRate: TARGET_SAMPLE_RATE,
+        baseLatencyMs: 0,
+        outputLatencyMs: 0,
+        state: 'uninitialized',
+      };
+    }
+    return {
+      sampleRate: this.audioContext.sampleRate,
+      baseLatencyMs: this.audioContext.baseLatency * 1000,
+      outputLatencyMs:
+        ((this.audioContext as AudioContext & { outputLatency?: number })
+          .outputLatency ?? 0) * 1000,
+      state: this.audioContext.state,
+    };
   }
 }
 

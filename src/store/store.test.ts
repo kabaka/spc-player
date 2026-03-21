@@ -16,6 +16,8 @@ describe('Composed AppStore', () => {
       expect(s.playbackStatus).toBe('stopped');
       expect(s.volume).toBe(0.8);
       expect(s.speed).toBe(1);
+      expect(s.tempo).toBe(1);
+      expect(s.pitch).toBe(1);
       expect(s.position).toBe(0);
       expect(s.loopCount).toBe(2);
       expect(s.activeTrackId).toBeNull();

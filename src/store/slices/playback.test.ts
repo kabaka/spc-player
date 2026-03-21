@@ -101,6 +101,30 @@ describe('PlaybackSlice', () => {
     });
   });
 
+  describe('setTempo', () => {
+    it('updates tempo', () => {
+      store.getState().setTempo(1.5);
+      expect(store.getState().tempo).toBe(1.5);
+    });
+
+    it('allows fractional tempo', () => {
+      store.getState().setTempo(0.75);
+      expect(store.getState().tempo).toBe(0.75);
+    });
+  });
+
+  describe('setPitch', () => {
+    it('updates pitch', () => {
+      store.getState().setPitch(1.2);
+      expect(store.getState().pitch).toBe(1.2);
+    });
+
+    it('allows fractional pitch', () => {
+      store.getState().setPitch(0.5);
+      expect(store.getState().pitch).toBe(0.5);
+    });
+  });
+
   describe('setPosition', () => {
     it('updates position', () => {
       store.getState().setPosition(42.5);

@@ -42,6 +42,11 @@ export interface DspExports {
   dsp_resample_sinc_reset(): void;
   dsp_get_resample_output_ptr(): number;
 
+  // Batch register telemetry (Phase D)
+  dsp_get_registers(outPtr: number): number;
+  dsp_get_cpu_registers(outPtr: number): number;
+  dsp_get_ram_ptr(): number;
+
   // Snapshot / Restore
   dsp_snapshot_size(): number;
   dsp_snapshot(outPtr: number): number;

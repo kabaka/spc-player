@@ -41,6 +41,7 @@
   "devDependencies": {
     "@eslint/js": "^9",
     "@playwright/test": "^1",
+    "@soundtouchjs/audio-worklet": "^1.0.8",
     "@tanstack/router-plugin": "^1",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^16",

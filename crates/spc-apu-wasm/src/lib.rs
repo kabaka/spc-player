@@ -695,6 +695,81 @@ pub extern "C" fn dsp_get_resample_output_ptr() -> *mut f32 {
 }
 
 // ---------------------------------------------------------------------------
+// Batch register telemetry (Phase D)
+// ---------------------------------------------------------------------------
+
+/// Copy all 128 DSP registers to the buffer at `out_ptr`.
+/// Returns 0 on success, -1 if APU not initialised or `out_ptr` is null.
+#[no_mangle]
+pub extern "C" fn dsp_get_registers(out_ptr: *mut u8) -> i32 {
+    if out_ptr.is_null() {
+        return -1;
+    }
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return -1,
+        };
+        let out = std::slice::from_raw_parts_mut(out_ptr, 128);
+        for i in 0u8..128 {
+            apu.write_u8(0xF2_u32, i);
+            out[i as usize] = apu.read_u8(0xF3_u32);
+        }
+        0
+    }
+}
+
+/// Copy SPC700 CPU registers to the buffer at `out_ptr` (8 bytes).
+/// Layout: PC (u16 LE) + A + X + Y + SP + PSW + pad.
+/// Returns 0 on success, -1 if APU not initialised or `out_ptr` is null.
+#[no_mangle]
+pub extern "C" fn dsp_get_cpu_registers(out_ptr: *mut u8) -> i32 {
+    if out_ptr.is_null() {
+        return -1;
+    }
+    unsafe {
+        let apu = match get_apu() {
+            Some(a) => a,
+            None => return -1,
+        };
+        let smp = match apu.smp.as_ref() {
+            Some(s) => s,
+            None => return -1,
+        };
+        let out = std::slice::from_raw_parts_mut(out_ptr, 8);
+        let pc_bytes = smp.reg_pc.to_le_bytes();
+        out[0] = pc_bytes[0];
+        out[1] = pc_bytes[1];
+        out[2] = smp.reg_a;
+        out[3] = smp.reg_x;
+        out[4] = smp.reg_y;
+        out[5] = smp.reg_sp;
+        out[6] = smp.get_psw();
+        out[7] = 0; // padding
+        0
+    }
+}
+
+/// Return a pointer to the SPC700 64 KB RAM within WASM linear memory.
+/// Returns 0 (null) if the APU is not initialised.
+///
+/// # Safety
+///
+/// The returned pointer is valid only until the next WASM memory
+/// growth. Callers must create typed array views and copy data immediately
+/// after calling this function, before any other WASM calls that might
+/// allocate memory.
+#[no_mangle]
+pub extern "C" fn dsp_get_ram_ptr() -> *const u8 {
+    unsafe {
+        match get_apu() {
+            Some(apu) => apu.ram.as_ptr(),
+            None => std::ptr::null(),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Snapshot / Restore
 // ---------------------------------------------------------------------------
 

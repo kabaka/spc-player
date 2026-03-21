@@ -95,6 +95,23 @@ class SpcProcessor extends AudioWorkletProcessor {
   private echoTelemetryCycle = 0;
   private static readonly ECHO_TELEMETRY_DIVISOR = 4;
 
+  // -- DSP/CPU register telemetry buffers (D9, pre-allocated in WASM) ------
+  private dspRegistersPtr = 0;
+  private cpuRegistersPtr = 0;
+
+  // -- RAM telemetry rate (send every Nth telemetry cycle, ~10 Hz) (D10) ---
+  private ramTelemetryCycle = 0;
+  private static readonly RAM_TELEMETRY_DIVISOR = 6;
+
+  // -- Worklet processing load measurement (D15) ---------------------------
+  private processLoadEma = 0;
+  private peakLoadPercent = 0;
+  private totalUnderruns = 0;
+
+  // -- Audio stats emission (~1 Hz) (D16) ----------------------------------
+  private quantaSinceLastStats = 0;
+  private static readonly STATS_QUANTA_INTERVAL = 375; // ~1 Hz at 48 kHz (375 × 128/48000 ≈ 1s)
+
   // -- Pre-allocated telemetry voice state objects (avoid GC pressure) ------
   private readonly telemetryVoices: {
     -readonly [K in keyof VoiceState]: VoiceState[K];
@@ -196,6 +213,9 @@ class SpcProcessor extends AudioWorkletProcessor {
     }
 
     try {
+      // D15: Measure processing time for load calculation.
+      const processStart = performance.now();
+
       // Calculate DSP-to-output ratio: how many DSP samples per output sample.
       // At 1× speed: 32000/48000 ≈ 0.6667 (upsampling from lower to higher rate).
       // At 2× speed: 0.6667 * 2 ≈ 1.333 (more DSP samples consumed per output).
@@ -337,6 +357,25 @@ class SpcProcessor extends AudioWorkletProcessor {
       ) {
         this.quantaSinceLastTelemetry = 0;
         this.emitTelemetry(left, right);
+      }
+
+      // D15: Update process load measurement (EMA, alpha ≈ 0.1).
+      const processElapsed = performance.now() - processStart;
+      const quantumMs = (QUANTUM_FRAMES / this.outputSampleRate) * 1000;
+      const loadPercent = (processElapsed / quantumMs) * 100;
+      this.processLoadEma = this.processLoadEma * 0.9 + loadPercent * 0.1;
+      if (this.processLoadEma > this.peakLoadPercent) {
+        this.peakLoadPercent = this.processLoadEma;
+      }
+      if (processElapsed > quantumMs) {
+        this.totalUnderruns++;
+      }
+
+      // D16: Emit audio stats at ~1 Hz.
+      this.quantaSinceLastStats++;
+      if (this.quantaSinceLastStats >= SpcProcessor.STATS_QUANTA_INTERVAL) {
+        this.quantaSinceLastStats = 0;
+        this.emitAudioStats();
       }
     } catch (err) {
       this.postError(
@@ -568,6 +607,8 @@ class SpcProcessor extends AudioWorkletProcessor {
       this.outputPtr = exports.dsp_get_output_ptr();
       this.voiceStatePtr = exports.wasm_alloc(24);
       this.firCoefficientsPtr = exports.wasm_alloc(8);
+      this.dspRegistersPtr = exports.wasm_alloc(128);
+      this.cpuRegistersPtr = exports.wasm_alloc(8);
       this.wasm = exports;
 
       // Configure playback timing.
@@ -662,6 +703,16 @@ class SpcProcessor extends AudioWorkletProcessor {
       }
       this.firCoefficientsPtr = this.wasm.wasm_alloc(8);
 
+      // Re-allocate DSP/CPU register buffers after reset (D9).
+      if (this.dspRegistersPtr !== 0 && this.wasm) {
+        this.wasm.wasm_dealloc(this.dspRegistersPtr, 128);
+      }
+      this.dspRegistersPtr = this.wasm.wasm_alloc(128);
+      if (this.cpuRegistersPtr !== 0 && this.wasm) {
+        this.wasm.wasm_dealloc(this.cpuRegistersPtr, 8);
+      }
+      this.cpuRegistersPtr = this.wasm.wasm_alloc(8);
+
       // Update output buffer pointer (may change after reset).
       this.outputPtr = this.wasm.dsp_get_output_ptr();
 
@@ -678,6 +729,12 @@ class SpcProcessor extends AudioWorkletProcessor {
       this.resampleFrac = 0;
       this.prevDspLeft = 0;
       this.prevDspRight = 0;
+
+      // Reset load/underrun counters for new track (D15).
+      this.processLoadEma = 0;
+      this.peakLoadPercent = 0;
+      this.totalUnderruns = 0;
+      this.quantaSinceLastStats = 0;
 
       // Clear checkpoints — they belong to the previous track.
       this.checkpointStore.checkpoints.length = 0;
@@ -744,6 +801,37 @@ class SpcProcessor extends AudioWorkletProcessor {
           // No valid checkpoint — fall back to reset + skip.
           this.wasm.dsp_reset();
           this.renderedSamples = 0;
+        }
+      } else {
+        // Forward seek — check if a checkpoint closer to the target exists.
+        // Only use it if skipping saves > 1 second of DSP rendering.
+        const FORWARD_CHECKPOINT_THRESHOLD = DSP_SAMPLE_RATE; // 32000 samples = 1s
+        const samplesWithoutCheckpoint = targetPosition - this.renderedSamples;
+
+        if (samplesWithoutCheckpoint > FORWARD_CHECKPOINT_THRESHOLD) {
+          const snapshotSize = this.wasm.dsp_snapshot_size();
+          const checkpoint = findNearestCheckpoint(
+            this.checkpointStore.checkpoints,
+            targetPosition,
+          );
+
+          if (
+            checkpoint &&
+            checkpoint.positionSamples > this.renderedSamples &&
+            validateCheckpoint(checkpoint.stateData, snapshotSize)
+          ) {
+            const samplesWithCheckpoint =
+              targetPosition - checkpoint.positionSamples;
+            const samplesSaved =
+              samplesWithoutCheckpoint - samplesWithCheckpoint;
+
+            if (samplesSaved > FORWARD_CHECKPOINT_THRESHOLD) {
+              if (this.restoreCheckpoint(checkpoint.stateData)) {
+                this.renderedSamples = checkpoint.positionSamples;
+              }
+              // On restore failure, fall through to render from current position.
+            }
+          }
         }
       }
 
@@ -1237,6 +1325,51 @@ class SpcProcessor extends AudioWorkletProcessor {
       }
     }
 
+    // D9: Read DSP registers (128 bytes) and CPU registers (8 bytes) every telemetry cycle.
+    let dspRegisters: ArrayBuffer | undefined;
+    let cpuRegisters: ArrayBuffer | undefined;
+
+    if (this.wasm && this.dspRegistersPtr !== 0) {
+      this.wasm.dsp_get_registers(this.dspRegistersPtr);
+      const dspView = new Uint8Array(
+        this.wasm.memory.buffer,
+        this.dspRegistersPtr,
+        128,
+      );
+      dspRegisters = new ArrayBuffer(128);
+      new Uint8Array(dspRegisters).set(dspView);
+    }
+
+    if (this.wasm && this.cpuRegistersPtr !== 0) {
+      this.wasm.dsp_get_cpu_registers(this.cpuRegistersPtr);
+      const cpuView = new Uint8Array(
+        this.wasm.memory.buffer,
+        this.cpuRegistersPtr,
+        8,
+      );
+      cpuRegisters = new ArrayBuffer(8);
+      new Uint8Array(cpuRegisters).set(cpuView);
+    }
+
+    // D10: Read SPC RAM at ~10 Hz (every 6th telemetry cycle).
+    let ramSnapshot: ArrayBuffer | undefined;
+
+    this.ramTelemetryCycle++;
+    if (
+      this.wasm &&
+      this.ramTelemetryCycle >= SpcProcessor.RAM_TELEMETRY_DIVISOR
+    ) {
+      this.ramTelemetryCycle = 0;
+      const ramPtr = this.wasm.dsp_get_ram_ptr();
+      if (ramPtr !== 0) {
+        ramSnapshot = new ArrayBuffer(65536);
+        new Uint8Array(ramSnapshot).set(
+          new Uint8Array(this.wasm.memory.buffer, ramPtr, 65536),
+        );
+        transferList.push(ramSnapshot);
+      }
+    }
+
     const msg: WorkletToMain.Telemetry = {
       type: 'telemetry',
       positionSamples: this.renderedSamples,
@@ -1253,6 +1386,9 @@ class SpcProcessor extends AudioWorkletProcessor {
       segment,
       echoBuffer,
       firCoefficients,
+      dspRegisters,
+      cpuRegisters,
+      ramSnapshot,
     };
 
     if (transferList.length > 0) {
@@ -1260,6 +1396,18 @@ class SpcProcessor extends AudioWorkletProcessor {
     } else {
       this.postMessage(msg);
     }
+  }
+
+  /** D16: Emit audio processing stats at ~1 Hz. */
+  private emitAudioStats(): void {
+    const msg: WorkletToMain.AudioStats = {
+      type: 'audio-stats',
+      processLoadPercent: this.processLoadEma,
+      totalUnderruns: this.totalUnderruns,
+      peakLoadPercent: this.peakLoadPercent,
+      sampleRate: this.outputSampleRate,
+    };
+    this.postMessage(msg);
   }
 
   /**

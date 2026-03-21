@@ -45,6 +45,10 @@ export async function recoverAudioPipeline(): Promise<boolean> {
 
   // 1. Try to capture snapshot before teardown
   let snapshot: ArrayBuffer | null = null;
+  const hadSoundTouch = audioEngine.isSoundTouchActive();
+  const prevTempo = audioEngine.getTempo();
+  const prevPitch = audioEngine.getPitch();
+
   try {
     snapshot = await audioEngine.requestSnapshot();
   } catch {
@@ -59,6 +63,17 @@ export async function recoverAudioPipeline(): Promise<boolean> {
     // 3. Restore snapshot if available
     if (snapshot && snapshot.byteLength > 0) {
       audioEngine.restoreSnapshot(snapshot);
+    }
+
+    // 4. Restore SoundTouch state if it was active (graceful degradation
+    //    if SoundTouch fails to load — direct WorkletNode→GainNode path)
+    if (hadSoundTouch) {
+      try {
+        await audioEngine.setTempo(prevTempo);
+        await audioEngine.setPitch(prevPitch);
+      } catch {
+        // SoundTouch unavailable after recovery — fall back to direct chain
+      }
     }
 
     recoveryAttempts = 0;

@@ -72,6 +72,8 @@ export interface PlaybackSlice {
   activeTrackId: string | null;
   position: number;
   speed: number;
+  tempo: number;
+  pitch: number;
   volume: number;
   loopCount: number | 'infinite';
   trackDuration: TrackDuration | null;
@@ -80,6 +82,8 @@ export interface PlaybackSlice {
   setActiveTrackId: (id: string | null) => void;
   setPosition: (position: number) => void;
   setSpeed: (speed: number) => void;
+  setTempo: (tempo: number) => void;
+  setPitch: (pitch: number) => void;
   setVolume: (volume: number) => void;
   setLoopCount: (count: number | 'infinite') => void;
   setTrackDuration: (duration: TrackDuration | null) => void;

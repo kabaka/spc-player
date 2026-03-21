@@ -134,3 +134,122 @@ describe('validateCheckpoint', () => {
     expect(validateCheckpoint(state, EXPECTED_SIZE + 1)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Forward seek checkpoint optimization (C10)
+// ---------------------------------------------------------------------------
+
+describe('forward seek checkpoint selection', () => {
+  const DSP_SAMPLE_RATE = 32_000;
+  const FORWARD_CHECKPOINT_THRESHOLD = DSP_SAMPLE_RATE; // 1 second
+
+  /**
+   * Simulate the forward seek optimization logic from spc-worklet.ts handleSeek.
+   * Returns the checkpoint that would be used, or null if rendering from current position.
+   */
+  function selectForwardSeekCheckpoint(
+    checkpoints: readonly DspCheckpoint[],
+    currentPosition: number,
+    targetPosition: number,
+    snapshotSize: number,
+  ): DspCheckpoint | null {
+    const samplesWithoutCheckpoint = targetPosition - currentPosition;
+    if (samplesWithoutCheckpoint <= FORWARD_CHECKPOINT_THRESHOLD) return null;
+
+    const checkpoint = findNearestCheckpoint(checkpoints, targetPosition);
+    if (!checkpoint) return null;
+    if (checkpoint.positionSamples <= currentPosition) return null;
+    if (!validateCheckpoint(checkpoint.stateData, snapshotSize)) return null;
+
+    const samplesWithCheckpoint = targetPosition - checkpoint.positionSamples;
+    const samplesSaved = samplesWithoutCheckpoint - samplesWithCheckpoint;
+    if (samplesSaved <= FORWARD_CHECKPOINT_THRESHOLD) return null;
+
+    return checkpoint;
+  }
+
+  const SNAP_SIZE = 65_688;
+
+  // Checkpoints at 0s, 5s, 10s, 15s (in DSP samples)
+  const checkpoints = [
+    makeCheckpoint(0 * DSP_SAMPLE_RATE, makeValidState(SNAP_SIZE)),
+    makeCheckpoint(5 * DSP_SAMPLE_RATE, makeValidState(SNAP_SIZE)),
+    makeCheckpoint(10 * DSP_SAMPLE_RATE, makeValidState(SNAP_SIZE)),
+    makeCheckpoint(15 * DSP_SAMPLE_RATE, makeValidState(SNAP_SIZE)),
+  ];
+
+  it('uses 10s checkpoint when seeking from 2s to 14s', () => {
+    const current = 2 * DSP_SAMPLE_RATE;
+    const target = 14 * DSP_SAMPLE_RATE;
+    const result = selectForwardSeekCheckpoint(
+      checkpoints,
+      current,
+      target,
+      SNAP_SIZE,
+    );
+    // 10s checkpoint is the nearest before 14s and ahead of 2s
+    expect(result).toBe(checkpoints[2]);
+    expect(result?.positionSamples).toBe(10 * DSP_SAMPLE_RATE);
+  });
+
+  it('does not use a checkpoint for small forward jumps (< 1s)', () => {
+    const current = 9 * DSP_SAMPLE_RATE;
+    const target = 9.5 * DSP_SAMPLE_RATE;
+    const result = selectForwardSeekCheckpoint(
+      checkpoints,
+      current,
+      target,
+      SNAP_SIZE,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('does not use a checkpoint when savings < threshold', () => {
+    // Current at 9s, target at 10.5s — the 10s checkpoint only saves 0.5s
+    const current = 9 * DSP_SAMPLE_RATE;
+    const target = 10.5 * DSP_SAMPLE_RATE;
+    const result = selectForwardSeekCheckpoint(
+      checkpoints,
+      current,
+      target,
+      SNAP_SIZE,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('uses 15s checkpoint when seeking from 2s to 60s', () => {
+    const current = 2 * DSP_SAMPLE_RATE;
+    const target = 60 * DSP_SAMPLE_RATE;
+    const result = selectForwardSeekCheckpoint(
+      checkpoints,
+      current,
+      target,
+      SNAP_SIZE,
+    );
+    // 15s is the nearest checkpoint before 60s
+    expect(result).toBe(checkpoints[3]);
+  });
+
+  it('returns null when no checkpoints exist', () => {
+    const result = selectForwardSeekCheckpoint(
+      [],
+      2 * DSP_SAMPLE_RATE,
+      14 * DSP_SAMPLE_RATE,
+      SNAP_SIZE,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when all checkpoints are behind current position', () => {
+    const current = 20 * DSP_SAMPLE_RATE;
+    const target = 30 * DSP_SAMPLE_RATE;
+    const result = selectForwardSeekCheckpoint(
+      checkpoints,
+      current,
+      target,
+      SNAP_SIZE,
+    );
+    // 15s checkpoint is behind current (20s), so no benefit
+    expect(result).toBeNull();
+  });
+});

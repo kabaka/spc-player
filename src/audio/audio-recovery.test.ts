@@ -14,6 +14,11 @@ vi.mock('./engine', () => ({
     init: vi.fn(),
     restoreSnapshot: vi.fn(),
     play: vi.fn(),
+    isSoundTouchActive: vi.fn().mockReturnValue(false),
+    getTempo: vi.fn().mockReturnValue(1.0),
+    getPitch: vi.fn().mockReturnValue(1.0),
+    setTempo: vi.fn().mockResolvedValue(undefined),
+    setPitch: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -104,6 +109,44 @@ describe('recoverAudioPipeline', () => {
     expect(showToast).toHaveBeenCalledWith(
       'error',
       expect.stringContaining('reload the page'),
+    );
+  });
+
+  it('restores SoundTouch tempo/pitch after recovery', async () => {
+    const snapshot = new ArrayBuffer(100);
+    vi.mocked(audioEngine.requestSnapshot).mockResolvedValue(snapshot);
+    vi.mocked(audioEngine.destroy).mockResolvedValue();
+    vi.mocked(audioEngine.init).mockResolvedValue();
+    vi.mocked(audioEngine.isSoundTouchActive).mockReturnValue(true);
+    vi.mocked(audioEngine.getTempo).mockReturnValue(1.5);
+    vi.mocked(audioEngine.getPitch).mockReturnValue(0.8);
+
+    const result = await recoverAudioPipeline();
+
+    expect(result).toBe(true);
+    expect(audioEngine.setTempo).toHaveBeenCalledWith(1.5);
+    expect(audioEngine.setPitch).toHaveBeenCalledWith(0.8);
+  });
+
+  it('recovers gracefully when SoundTouch fails to reload', async () => {
+    const snapshot = new ArrayBuffer(100);
+    vi.mocked(audioEngine.requestSnapshot).mockResolvedValue(snapshot);
+    vi.mocked(audioEngine.destroy).mockResolvedValue();
+    vi.mocked(audioEngine.init).mockResolvedValue();
+    vi.mocked(audioEngine.isSoundTouchActive).mockReturnValue(true);
+    vi.mocked(audioEngine.getTempo).mockReturnValue(2.0);
+    vi.mocked(audioEngine.getPitch).mockReturnValue(1.0);
+    vi.mocked(audioEngine.setTempo).mockRejectedValue(
+      new Error('SoundTouch unavailable'),
+    );
+
+    const result = await recoverAudioPipeline();
+
+    // Should still succeed — SoundTouch failure is gracefully handled
+    expect(result).toBe(true);
+    expect(showToast).toHaveBeenCalledWith(
+      'success',
+      'Audio playback recovered.',
     );
   });
 });

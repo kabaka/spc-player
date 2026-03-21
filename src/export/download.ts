@@ -16,6 +16,7 @@ export const MIME_TYPES: Readonly<Record<ExportFormat, string>> = {
   flac: 'audio/flac',
   ogg: 'audio/ogg',
   mp3: 'audio/mpeg',
+  opus: 'audio/webm',
 };
 
 /** File extensions for each export format. */
@@ -24,6 +25,7 @@ const FORMAT_EXTENSIONS: Readonly<Record<ExportFormat, string>> = {
   flac: 'flac',
   ogg: 'ogg',
   mp3: 'mp3',
+  opus: 'webm',
 };
 
 // ---------------------------------------------------------------------------

@@ -70,6 +70,7 @@ const FORMAT_MIME: Record<string, string> = {
   flac: 'audio/flac',
   'ogg-vorbis': 'audio/ogg',
   mp3: 'audio/mpeg',
+  opus: 'audio/webm',
 };
 
 // ---------------------------------------------------------------------------
@@ -318,7 +319,7 @@ async function handleStartExport(
       return;
     }
 
-    const encodedData = encoder.finalize();
+    const encodedData = await encoder.finalize();
     postProgress(jobId, 'encoding', 1.0, weights);
 
     // --- Metadata phase (already embedded by encoder.init) ---
@@ -587,7 +588,7 @@ function applyFadeGain(
 // ---------------------------------------------------------------------------
 
 async function getEncoder(
-  format: 'wav' | 'flac' | 'ogg-vorbis' | 'mp3',
+  format: 'wav' | 'flac' | 'ogg-vorbis' | 'mp3' | 'opus',
 ): Promise<Encoder> {
   switch (format) {
     case 'wav': {
@@ -610,6 +611,11 @@ async function getEncoder(
         await import('../export/encoders/mp3-encoder');
       return createMp3Encoder();
     }
+    case 'opus': {
+      const { createOpusEncoder } =
+        await import('../export/encoders/opus-encoder');
+      return createOpusEncoder();
+    }
   }
 }
 
@@ -626,6 +632,7 @@ const FORMAT_EXTENSION: Record<string, string> = {
   flac: '.flac',
   'ogg-vorbis': '.ogg',
   mp3: '.mp3',
+  opus: '.webm',
 };
 
 /** Sanitize a metadata string for safe use in filenames. */

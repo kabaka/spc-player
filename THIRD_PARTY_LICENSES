@@ -43,13 +43,17 @@ package name, license type, and a brief description.
 - **Description:** Promise-based wrapper for IndexedDB
 
 ### libflacjs
+- **License:** MIT
+- **Copyright:** DFKI GmbH (based on FLAC encoder by Josh Coalson, Xiph.Org Foundation)
+- **Description:** FLAC audio encoder/decoder compiled to JavaScript
+
+### @soundtouchjs/audio-worklet
 - **License:** LGPL-2.1
-- **Copyright:** nickinade
-- **Description:** FLAC audio encoder/decoder compiled to JavaScript.
-  Used as a runtime-loaded JavaScript library. The LGPL permits use in
-  non-GPL projects when the library is dynamically linked, which is the
-  case here — libflacjs is loaded as-is at runtime without modification
-  or static linking.
+- **Copyright:** Steve 'Cutter' Blades
+- **Description:** Pitch-independent tempo/speed adjustment via AudioWorklet.
+  LGPL-2.1 requires that users can replace the library with a modified
+  version. This is satisfied by dynamic `import()` loading in a separate
+  Vite chunk — the library is never statically linked into the main bundle.
 
 ### wasm-media-encoders
 - **License:** MIT

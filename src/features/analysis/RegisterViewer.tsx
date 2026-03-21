@@ -103,17 +103,9 @@ export interface RegisterViewerProps {
 
 // ── Data source ───────────────────────────────────────────────────────
 
-/** Placeholder DSP register data. Updated from telemetry in production. */
-let dspRegisterData: Uint8Array<ArrayBufferLike> = new Uint8Array(
-  REGISTER_COUNT,
-);
-
-export function setDspRegisterData(data: Uint8Array): void {
-  dspRegisterData = data;
-}
-
+/** Read DSP register value from live telemetry via audioStateBuffer. */
 function readRegister(index: number): number {
-  return dspRegisterData[index] ?? 0;
+  return audioStateBuffer.dspRegisters[index] ?? 0;
 }
 
 // ── Component ─────────────────────────────────────────────────────────

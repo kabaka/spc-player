@@ -39,6 +39,13 @@ export interface CheckpointWorkerResult {
   }[];
 }
 
+/** Worker → Main: progress update. */
+export interface CheckpointWorkerProgress {
+  readonly type: 'progress';
+  readonly fraction: number;
+  readonly checkpointCount: number;
+}
+
 /** Worker → Main: fatal error. */
 export interface CheckpointWorkerError {
   readonly type: 'error';
@@ -47,6 +54,7 @@ export interface CheckpointWorkerError {
 
 export type CheckpointWorkerMessage =
   | CheckpointWorkerResult
+  | CheckpointWorkerProgress
   | CheckpointWorkerError;
 
 // ---------------------------------------------------------------------------
@@ -103,6 +111,9 @@ self.onmessage = async (event: MessageEvent<CheckpointWorkerInit>) => {
     const maxSamples =
       msg.intervalSamples * msg.maxCheckpoints + msg.intervalSamples;
 
+    // Progress reporting: send at most ~1 Hz. Track time to throttle.
+    let lastProgressTime = Date.now();
+
     while (
       samplesRendered < maxSamples &&
       checkpoints.length < msg.maxCheckpoints
@@ -135,6 +146,18 @@ self.onmessage = async (event: MessageEvent<CheckpointWorkerInit>) => {
         }
         wasm.wasm_dealloc(snapPtr, snapshotSize);
         nextCapture += msg.intervalSamples;
+
+        // Send progress at ~1 Hz or every checkpoint, whichever is less frequent.
+        const now = Date.now();
+        if (now - lastProgressTime >= 1000) {
+          lastProgressTime = now;
+          const progress: CheckpointWorkerProgress = {
+            type: 'progress',
+            fraction: maxSamples > 0 ? samplesRendered / maxSamples : 0,
+            checkpointCount: checkpoints.length,
+          };
+          (self as unknown as Worker).postMessage(progress);
+        }
       }
     }
 

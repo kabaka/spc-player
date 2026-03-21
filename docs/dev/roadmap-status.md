@@ -7,13 +7,13 @@ Last updated: 2026-03-21
 | Phase     | Goal                       | Status      | Notes                                                |
 | --------- | -------------------------- | ----------- | ---------------------------------------------------- |
 | Prelude 1 | AudioStateBuffer interface | Complete    | Extended with DSP/CPU registers, RAM, load metrics   |
-| Prelude 2 | Batched WASM exports       | Not started | Before Phase D                                       |
+| Prelude 2 | Batched WASM exports       | Complete    | 3 new Rust exports + TypeScript types + validation   |
 | Prelude 3 | Bundle budget update       | Complete    | ADR-0018 bundle budget increase                      |
-| Prelude 4 | LGPL compliance            | Not started | Before Phase D                                       |
+| Prelude 4 | LGPL compliance            | Complete    | Audit complete, THIRD_PARTY_LICENSES updated         |
 | A         | Stabilization              | Complete    | Bug fixes, error handling, docs                      |
 | B         | Layout Foundation          | Complete    | Layout foundation, transport bar, sidebar, drag-drop |
 | C         | Seek & Performance         | Complete    | Custom seek bar, checkpoints, pre-compute worker     |
-| D         | Audio Engine & Export      | Not started | SoundTouch, codecs, telemetry                        |
+| D         | Audio Engine & Export      | Complete    | SoundTouch, codecs, telemetry, audio chain feedback  |
 | E         | Visualizations             | Not started | Piano roll, spectrum, cover art                      |
 | F         | Polish & Advanced          | Not started | Docs, onboarding, remaining                          |
 
@@ -116,11 +116,69 @@ Extended `AudioStateBuffer` with `dspRegisters` (Uint8Array(128)), `cpuRegisters
 
 ### Deferrals
 
-| Item                                 | Target Phase | Task # | Reason                                                                         |
-| ------------------------------------ | ------------ | ------ | ------------------------------------------------------------------------------ |
-| Forward seek checkpoint optimization | C (backlog)  | C10    | Forward seeks render from current position; checkpoints could skip ahead.      |
-| Checkpoint worker progress reporting | C (backlog)  | C11    | Worker is fire-and-forget; progress/cancellation requires architecture change. |
-| Windows High Contrast Mode           | F            | F3i    | Canvas ignores `forced-colors` media query. Needs fallback for all canvases.   |
-| Code-splitting for viz/help dialog   | E            | E1     | `React.lazy()` for `VisualizationStage` and `HelpDialog`. Deferred from B.     |
+| Item                               | Target Phase | Task # | Reason                                                                       |
+| ---------------------------------- | ------------ | ------ | ---------------------------------------------------------------------------- |
+| Windows High Contrast Mode         | F            | F3i    | Canvas ignores `forced-colors` media query. Needs fallback for all canvases. |
+| Code-splitting for viz/help dialog | E            | E1     | `React.lazy()` for `VisualizationStage` and `HelpDialog`. Deferred from B.   |
 
-C10 and C11 can be picked up any time as standalone optimizations. F3i should wait until Phase E canvases exist so all canvases are addressed together.
+C10 and C11 were completed in Phase D. F3i should wait until Phase E canvases exist so all canvases are addressed together.
+
+## Prelude 2 Tasks
+
+| #   | Task                        | Status   | Notes                                                           |
+| --- | --------------------------- | -------- | --------------------------------------------------------------- |
+| P2  | Batched WASM export methods | Complete | `dsp_get_registers`, `dsp_get_cpu_registers`, `dsp_get_ram_ptr` |
+
+Added 3 new Rust WASM exports for DSP register batch read (128 bytes), CPU register batch read (8 bytes), and direct RAM pointer access (64KB). Updated `DspExports` TypeScript interface and `validate-wasm-exports.mjs`.
+
+## Prelude 4 Tasks
+
+| #   | Task       | Status   | Notes                                           |
+| --- | ---------- | -------- | ----------------------------------------------- |
+| P4  | LGPL audit | Complete | libflacjs corrected to MIT, SoundTouch LGPL-2.1 |
+
+Corrected libflacjs license from LGPL-2.1 to MIT in THIRD_PARTY_LICENSES. Added @soundtouchjs/audio-worklet LGPL-2.1 attribution with dynamic import compliance notes.
+
+## Phase D Tasks
+
+| #   | Task                               | Status   | Notes                                                           |
+| --- | ---------------------------------- | -------- | --------------------------------------------------------------- |
+| D1  | SoundTouchJS validation page       | Complete | Standalone HTML test page with benchmarking and metrics         |
+| D2  | SoundTouch engine integration      | Complete | Dynamic import, bypass at 1.0×, setTempo/setPitch methods       |
+| D3  | ADR-0019 pitch-independent speed   | Complete | MADR 4.0.0, documents LGPL strategy and validation results      |
+| D4  | Audio recovery for SoundTouch      | Complete | State preservation + graceful degradation                       |
+| D5  | MP3 export integration             | Complete | Verified end-to-end, ID3v2.4 metadata, wasm-media-encoders      |
+| D6  | FLAC export integration            | Complete | Verified end-to-end, Vorbis comments, libflac.js                |
+| D7  | FLAC CSP validation                | Complete | No eval/Function usage found — CSP-safe                         |
+| D8  | Opus export via WebCodecs          | Complete | AudioEncoder API + WebM/EBML muxer, feature detection           |
+| D9  | DSP register telemetry             | Complete | 128-byte batch read at ~60Hz, attached to Telemetry message     |
+| D10 | SPC RAM telemetry                  | Complete | 64KB copy at ~10Hz, ArrayBuffer transfer                        |
+| D11 | Wire telemetry to AudioStateBuffer | Complete | dspRegisters, cpuRegisters, ramCopy, load metrics               |
+| D12 | MemoryViewer live updates          | Complete | Reads from audioStateBuffer.ramCopy via rAF loop                |
+| D13 | RegisterViewer live updates        | Complete | Reads from audioStateBuffer.dspRegisters, grouped by voice      |
+| D14 | AudioChainPanel component          | Complete | Latency, load bar, underruns, color-coded warnings              |
+| D15 | Worklet process load measurement   | Complete | performance.now() timing, EMA smoothing, underrun detection     |
+| D16 | Audio stats message                | Complete | ~1Hz emission with processLoad, underruns, peakLoad             |
+| D17 | Export progress phases             | Complete | 4-phase model verified: rendering/encoding/metadata/packaging   |
+| D18 | SoundTouch idle prefetch           | Complete | requestIdleCallback with 5s timeout, Safari setTimeout fallback |
+
+## Phase C Deferred Tasks (Resolved in Phase D)
+
+| #   | Task                                 | Status   | Notes                                                            |
+| --- | ------------------------------------ | -------- | ---------------------------------------------------------------- |
+| C10 | Forward seek checkpoint optimization | Complete | Uses nearest checkpoint for forward jumps > 1s savings           |
+| C11 | Checkpoint worker progress           | Complete | ~1Hz progress reporting, 60s timeout, cancelCheckpointPrecompute |
+
+## Phase D — Deviations and Deferrals
+
+### Deviations
+
+- **OGG Vorbis export**: Documented in roadmap as a possible D-phase task but was already resolved as deferred to post-Phase F per prior decisions. Opus (WebM container) implemented instead as D8.
+- **reconnectSoundTouch() WSOLA buffers**: `disconnect()`/`connect()` does not reset AudioWorkletProcessor internal state. SoundTouchNode has no public flush/reset API. ~10-20ms crossfade artifact after seek is accepted as inaudible. Documented in ADR-0019.
+- **Opus finalize() return type**: `Encoder.finalize()` return type changed from `Uint8Array` to `Uint8Array | Promise<Uint8Array>` to support WebCodecs async flush. All existing encoders return synchronously and are compatible.
+- **isOpusEncoderAvailable()**: Made async to use `AudioEncoder.isConfigSupported()` for robust codec probing, beyond simple `typeof` check.
+- **WebM SamplingFrequency**: Hardcoded to 48000 regardless of input sample rate, per Opus spec (Opus always internally resamples to 48kHz).
+
+### Deferrals
+
+None. All Phase D tasks completed.

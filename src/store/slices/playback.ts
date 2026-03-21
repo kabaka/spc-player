@@ -5,6 +5,8 @@ export const createPlaybackSlice: SliceCreator<PlaybackSlice> = (set) => ({
   activeTrackId: null,
   position: 0,
   speed: 1,
+  tempo: 1,
+  pitch: 1,
   volume: 0.8,
   loopCount: 2,
   trackDuration: null,
@@ -24,6 +26,14 @@ export const createPlaybackSlice: SliceCreator<PlaybackSlice> = (set) => ({
 
   setSpeed: (speed) => {
     set({ speed }, false, 'playback/setSpeed');
+  },
+
+  setTempo: (tempo) => {
+    set({ tempo }, false, 'playback/setTempo');
+  },
+
+  setPitch: (pitch) => {
+    set({ pitch }, false, 'playback/setPitch');
   },
 
   setVolume: (volume) => {

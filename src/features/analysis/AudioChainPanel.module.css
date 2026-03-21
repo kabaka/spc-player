@@ -1,0 +1,98 @@
+/* AudioChainPanel.module.css — Audio chain diagnostics display */
+
+.container {
+  background: var(--spc-color-surface);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  padding: var(--spc-space-4);
+}
+
+.title {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin: 0 0 var(--spc-space-3) 0;
+}
+
+.section {
+  margin-bottom: var(--spc-space-3);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionLabel {
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spc-space-2);
+}
+
+.dataList {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spc-space-1) var(--spc-space-3);
+  margin: 0;
+  padding: 0;
+}
+
+.label {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
+}
+
+.value {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.loadBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+}
+
+.loadBarTrack {
+  flex: 1;
+  height: 6px;
+  background: var(--spc-color-bg-subtle);
+  border-radius: var(--spc-radius-full);
+  overflow: hidden;
+}
+
+.loadBarFill {
+  height: 100%;
+  border-radius: var(--spc-radius-full);
+  transition: width var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.loadHealthy {
+  background: var(--spc-color-success);
+}
+
+.loadModerate {
+  background: var(--spc-color-warning);
+}
+
+.loadCritical {
+  background: var(--spc-color-error);
+}
+
+.loadPercent {
+  font-size: var(--spc-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.note {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+  margin-top: var(--spc-space-2);
+  font-style: italic;
+}

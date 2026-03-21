@@ -44,17 +44,9 @@ function formatAddress(row: number): string {
 
 // ── Memory data source ───────────────────────────────────────────────
 
-/** Placeholder 64 KB buffer. In a real implementation this would
- *  be populated from the loaded SPC file or live telemetry. */
-let memoryData: Uint8Array<ArrayBufferLike> = new Uint8Array(65536);
-
-/** Update the memory data from external source. */
-export function setMemoryData(data: Uint8Array): void {
-  memoryData = data;
-}
-
+/** Read byte from live SPC RAM telemetry via audioStateBuffer. */
 function readByte(offset: number): number {
-  return memoryData[offset] ?? 0;
+  return audioStateBuffer.ramCopy[offset] ?? 0;
 }
 
 // ── Component ─────────────────────────────────────────────────────────

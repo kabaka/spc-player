@@ -15,7 +15,7 @@
  * Note: The wire protocol (worker-protocol.ts) uses `'ogg-vorbis'` for the OGG
  * Vorbis format. The export worker's `getEncoder()` maps `'ogg-vorbis'` → `'ogg'`.
  */
-export type ExportFormat = 'wav' | 'flac' | 'ogg' | 'mp3';
+export type ExportFormat = 'wav' | 'flac' | 'ogg' | 'mp3' | 'opus';
 
 /** Export mode determines how audio is extracted. */
 export type ExportMode = 'fullMix' | 'perTrack' | 'perInstrument' | 'batch';
@@ -54,8 +54,8 @@ export interface Encoder {
   init(config: EncoderConfig): void | Promise<void>;
   /** Feed a chunk of interleaved int16 PCM samples. */
   encode(samples: Int16Array): void;
-  /** Finalize encoding and return the complete encoded file. */
-  finalize(): Uint8Array;
+  /** Finalize encoding and return the complete encoded file. May be async for WebCodecs-based codecs. */
+  finalize(): Uint8Array | Promise<Uint8Array>;
   /** Release all resources. */
   dispose(): void;
 }

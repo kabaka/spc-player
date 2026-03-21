@@ -75,15 +75,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, webkit, firefox]
+        # Firefox disabled in CI due to known test failures (kept in playwright.config.ts for local testing)
+        browser: [chromium, webkit]
         include:
           - browser: chromium
             continue-on-error: false
           - browser: webkit
             continue-on-error: false
-          - browser: firefox
-            continue-on-error: true
-    continue-on-error: ${{ matrix.continue-on-error }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

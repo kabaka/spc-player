@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundTouchJS Validation — SPC Player</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --border: #0f3460;
+      --text: #e0e0e0;
+      --accent: #e94560;
+      --pass: #4caf50;
+      --fail: #f44336;
+      --warn: #ff9800;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      line-height: 1.5;
+    }
+    h1 { color: var(--accent); margin-bottom: 0.5rem; font-size: 1.4rem; }
+    h2 { color: var(--accent); margin: 1rem 0 0.5rem; font-size: 1.1rem; }
+    .description { color: #aaa; margin-bottom: 1.5rem; font-size: 0.85rem; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.5rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.stop { background: #555; }
+    label { font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
+    input[type=range] { width: 120px; accent-color: var(--accent); }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .metric {
+      background: var(--bg);
+      border-radius: 4px;
+      padding: 0.5rem 0.75rem;
+    }
+    .metric-label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+    .metric-value { font-size: 1.2rem; font-weight: bold; }
+    .pass { color: var(--pass); }
+    .fail { color: var(--fail); }
+    .warn { color: var(--warn); }
+    .log {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 0.75rem;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .log-entry { margin-bottom: 2px; }
+    .tempo-presets { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .tempo-presets button {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.8rem;
+      background: var(--border);
+    }
+    .tempo-presets button.active { background: var(--accent); }
+    .results-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    .results-table th, .results-table td {
+      padding: 0.4rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .results-table th { color: #888; font-weight: normal; text-transform: uppercase; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>SoundTouchJS Validation Test</h1>
+  <p class="description">
+    Standalone validation of @soundtouchjs/audio-worklet v1.0.8 for SPC Player.<br>
+    Pass criteria: process() &lt; 1.5ms at all tempos (0.5×–2.0×), no audible glitches in 30s.
+  </p>
+
+  <div class="panel">
+    <h2>Controls</h2>
+    <div class="controls">
+      <button id="startBtn" onclick="startTest()">▶ Start Test</button>
+      <button id="stopBtn" class="stop" onclick="stopTest()" disabled>■ Stop</button>
+      <label>
+        Tempo: <input type="range" id="tempoSlider" min="0.25" max="4.0" step="0.05" value="1.0">
+        <span id="tempoValue">1.00×</span>
+      </label>
+      <label>
+        Pitch: <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.05" value="1.0">
+        <span id="pitchValue">1.00×</span>
+      </label>
+    </div>
+    <div class="tempo-presets">
+      <button onclick="setTempo(0.5)" id="tp05">0.5×</button>
+      <button onclick="setTempo(0.75)" id="tp075">0.75×</button>
+      <button onclick="setTempo(1.0)" id="tp10" class="active">1.0×</button>
+      <button onclick="setTempo(1.5)" id="tp15">1.5×</button>
+      <button onclick="setTempo(2.0)" id="tp20">2.0×</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Real-Time Metrics</h2>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-label">Process Time (avg)</div>
+        <div class="metric-value" id="processTimeAvg">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Process Time (max)</div>
+        <div class="metric-value" id="processTimeMax">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Current Tempo</div>
+        <div class="metric-value" id="currentTempo">1.00×</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Current Pitch</div>
+        <div class="metric-value" id="currentPitch">1.00×</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Elapsed</div>
+        <div class="metric-value" id="elapsed">0.0s</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Status</div>
+        <div class="metric-value" id="status">Idle</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Glitch Count</div>
+        <div class="metric-value" id="glitchCount">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Pass/Fail</div>
+        <div class="metric-value" id="passFail">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Benchmark Results</h2>
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Tempo</th>
+          <th>Avg (ms)</th>
+          <th>Max (ms)</th>
+          <th>Samples</th>
+          <th>Glitches</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+    <button onclick="runFullBenchmark()" id="benchmarkBtn" style="margin-top:0.75rem">Run Full Benchmark (0.5×, 1.0×, 1.5×, 2.0×)</button>
+  </div>
+
+  <div class="panel">
+    <h2>Log</h2>
+    <div class="log" id="logPanel"></div>
+  </div>
+
+  <script type="module">
+    // ---------------------------------------------------------------------------
+    // State
+    // ---------------------------------------------------------------------------
+
+    let audioCtx = null;
+    let oscillatorNode = null;
+    let soundTouchNode = null;
+    let gainNode = null;
+    let analyserNode = null;
+    let timingWorkletNode = null;
+    let isRunning = false;
+    let startTime = 0;
+    let metricsInterval = null;
+    let processTimes = [];
+    let glitchCount = 0;
+    let benchmarkRunning = false;
+
+    const PROCESS_TIME_BUDGET_MS = 1.5;
+    const GLITCH_THRESHOLD_MS = 2.667; // 128 frames @ 48 kHz
+
+    // ---------------------------------------------------------------------------
+    // Logging
+    // ---------------------------------------------------------------------------
+
+    function log(msg, type = 'info') {
+      const panel = document.getElementById('logPanel');
+      const colors = { info: '#e0e0e0', pass: '#4caf50', fail: '#f44336', warn: '#ff9800' };
+      const ts = ((performance.now() - (startTime || performance.now())) / 1000).toFixed(2);
+      panel.innerHTML += `<div class="log-entry" style="color:${colors[type]}">[${ts}s] ${msg}</div>`;
+      panel.scrollTop = panel.scrollHeight;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Timing Worklet — measures process() execution time inside the audio thread
+    // ---------------------------------------------------------------------------
+
+    const TIMING_PROCESSOR_CODE = `
+      class TimingProcessor extends AudioWorkletProcessor {
+        constructor() {
+          super();
+          this._times = new Float64Array(128);
+          this._idx = 0;
+          this._reportInterval = 0;
+        }
+
+        process(inputs, outputs, parameters) {
+          const t0 = performance.now();
+
+          // Pass-through: copy input to output
+          const input = inputs[0];
+          const output = outputs[0];
+          if (input && output) {
+            for (let ch = 0; ch < output.length; ch++) {
+              if (input[ch]) {
+                output[ch].set(input[ch]);
+              }
+            }
+          }
+
+          const elapsed = performance.now() - t0;
+          this._times[this._idx] = elapsed;
+          this._idx = (this._idx + 1) % this._times.length;
+
+          // Report every ~375 quanta (~1s at 48kHz)
+          this._reportInterval++;
+          if (this._reportInterval >= 375) {
+            this._reportInterval = 0;
+            let sum = 0, max = 0, count = 0;
+            for (let i = 0; i < this._times.length; i++) {
+              const t = this._times[i];
+              if (t > 0) { sum += t; max = Math.max(max, t); count++; }
+            }
+            this.port.postMessage({
+              avg: count > 0 ? sum / count : 0,
+              max,
+              count
+            });
+          }
+
+          return true;
+        }
+      }
+      registerProcessor('timing-processor', TimingProcessor);
+    `;
+
+    // ---------------------------------------------------------------------------
+    // SoundTouch Loading
+    // ---------------------------------------------------------------------------
+
+    async function loadSoundTouch(ctx) {
+      // Dynamic import of the library
+      const { SoundTouchNode } = await import(
+        '/node_modules/@soundtouchjs/audio-worklet/dist/index.js'
+      );
+
+      // Register the processor with the AudioContext
+      const processorUrl = '/node_modules/@soundtouchjs/audio-worklet/dist/soundtouch-processor.js';
+      await SoundTouchNode.register(ctx, processorUrl);
+
+      log('SoundTouchNode processor registered', 'pass');
+      return SoundTouchNode;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Start/Stop
+    // ---------------------------------------------------------------------------
+
+    async function startTest() {
+      if (isRunning) return;
+
+      try {
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        document.getElementById('status').textContent = 'Initializing…';
+        processTimes = [];
+        glitchCount = 0;
+        document.getElementById('glitchCount').textContent = '0';
+
+        // 1. Create AudioContext at 48 kHz
+        audioCtx = new AudioContext({ sampleRate: 48000 });
+        log(`AudioContext created: ${audioCtx.sampleRate} Hz, state=${audioCtx.state}`);
+
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+          log('AudioContext resumed after user gesture');
+        }
+
+        // 2. Register timing worklet
+        const timingBlob = new Blob([TIMING_PROCESSOR_CODE], { type: 'application/javascript' });
+        const timingUrl = URL.createObjectURL(timingBlob);
+        await audioCtx.audioWorklet.addModule(timingUrl);
+        URL.revokeObjectURL(timingUrl);
+        log('Timing processor registered');
+
+        // 3. Load SoundTouchJS
+        const SoundTouchNodeClass = await loadSoundTouch(audioCtx);
+
+        // 4. Create oscillator (440 Hz sine wave as test source)
+        oscillatorNode = audioCtx.createOscillator();
+        oscillatorNode.type = 'sine';
+        oscillatorNode.frequency.setValueAtTime(440, audioCtx.currentTime);
+
+        // 5. Create SoundTouchNode
+        soundTouchNode = new SoundTouchNodeClass(audioCtx);
+        log(`SoundTouchNode created. Parameters: ${[...soundTouchNode.parameters.keys()].join(', ')}`);
+
+        // Log available AudioParams
+        for (const [name, param] of soundTouchNode.parameters) {
+          log(`  ${name}: value=${param.value}, range=[${param.minValue}, ${param.maxValue}]`);
+        }
+
+        // 6. Create timing worklet node (inserted after SoundTouch to measure pipeline cost)
+        timingWorkletNode = new AudioWorkletNode(audioCtx, 'timing-processor', {
+          numberOfInputs: 1,
+          numberOfOutputs: 1,
+          outputChannelCount: [2],
+        });
+
+        timingWorkletNode.port.onmessage = (event) => {
+          const { avg, max } = event.data;
+          processTimes.push({ avg, max, tempo: soundTouchNode.tempo.value });
+          if (max > GLITCH_THRESHOLD_MS) {
+            glitchCount++;
+            document.getElementById('glitchCount').textContent = String(glitchCount);
+          }
+        };
+
+        // 7. Create gain + analyser
+        gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        analyserNode = audioCtx.createAnalyser();
+
+        // 8. Connect graph: Oscillator → SoundTouchNode → TimingWorklet → Gain → Analyser → Destination
+        oscillatorNode.connect(soundTouchNode);
+        soundTouchNode.connect(timingWorkletNode);
+        timingWorkletNode.connect(gainNode);
+        gainNode.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+
+        // 9. Start
+        oscillatorNode.start();
+        startTime = performance.now();
+        isRunning = true;
+        document.getElementById('status').textContent = 'Running';
+        document.getElementById('status').className = 'metric-value pass';
+        log('Audio graph running: Oscillator → SoundTouch → TimingWorklet → Gain → Destination', 'pass');
+
+        // 10. Start metrics update loop
+        metricsInterval = setInterval(updateMetrics, 250);
+
+      } catch (err) {
+        log(`ERROR: ${err.message}`, 'fail');
+        document.getElementById('status').textContent = 'Error';
+        document.getElementById('status').className = 'metric-value fail';
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+        console.error(err);
+      }
+    }
+
+    function stopTest() {
+      if (!isRunning) return;
+
+      oscillatorNode?.stop();
+      oscillatorNode?.disconnect();
+      soundTouchNode?.disconnect();
+      timingWorkletNode?.disconnect();
+      gainNode?.disconnect();
+      analyserNode?.disconnect();
+
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close();
+      }
+
+      clearInterval(metricsInterval);
+      isRunning = false;
+      audioCtx = null;
+      oscillatorNode = null;
+      soundTouchNode = null;
+      timingWorkletNode = null;
+      gainNode = null;
+      analyserNode = null;
+
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+      document.getElementById('status').textContent = 'Stopped';
+      document.getElementById('status').className = 'metric-value';
+
+      evaluatePassFail();
+      log('Test stopped');
+    }
+
+    // ---------------------------------------------------------------------------
+    // Metrics & Evaluation
+    // ---------------------------------------------------------------------------
+
+    function updateMetrics() {
+      if (!isRunning) return;
+
+      const elapsed = (performance.now() - startTime) / 1000;
+      document.getElementById('elapsed').textContent = `${elapsed.toFixed(1)}s`;
+
+      if (processTimes.length === 0) return;
+
+      const recent = processTimes.slice(-20);
+      const avgAll = recent.reduce((s, t) => s + t.avg, 0) / recent.length;
+      const maxAll = Math.max(...recent.map(t => t.max));
+
+      const avgEl = document.getElementById('processTimeAvg');
+      avgEl.textContent = `${avgAll.toFixed(3)} ms`;
+      avgEl.className = `metric-value ${avgAll < PROCESS_TIME_BUDGET_MS ? 'pass' : 'fail'}`;
+
+      const maxEl = document.getElementById('processTimeMax');
+      maxEl.textContent = `${maxAll.toFixed(3)} ms`;
+      maxEl.className = `metric-value ${maxAll < PROCESS_TIME_BUDGET_MS ? 'pass' : maxAll < GLITCH_THRESHOLD_MS ? 'warn' : 'fail'}`;
+
+      document.getElementById('currentTempo').textContent = `${soundTouchNode?.tempo.value.toFixed(2) ?? '—'}×`;
+      document.getElementById('currentPitch').textContent = `${soundTouchNode?.pitch.value.toFixed(2) ?? '—'}×`;
+
+      evaluatePassFail();
+    }
+
+    function evaluatePassFail() {
+      if (processTimes.length === 0) {
+        document.getElementById('passFail').textContent = '—';
+        document.getElementById('passFail').className = 'metric-value';
+        return;
+      }
+
+      const maxTime = Math.max(...processTimes.map(t => t.max));
+      const passed = maxTime < PROCESS_TIME_BUDGET_MS && glitchCount === 0;
+      const el = document.getElementById('passFail');
+      el.textContent = passed ? 'PASS ✓' : 'FAIL ✗';
+      el.className = `metric-value ${passed ? 'pass' : 'fail'}`;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Tempo/Pitch Controls
+    // ---------------------------------------------------------------------------
+
+    function setTempo(value) {
+      if (!soundTouchNode) return;
+      soundTouchNode.tempo.setValueAtTime(value, audioCtx.currentTime);
+      document.getElementById('tempoSlider').value = value;
+      document.getElementById('tempoValue').textContent = `${value.toFixed(2)}×`;
+      log(`Tempo set to ${value.toFixed(2)}×`);
+
+      // Update preset button highlights
+      document.querySelectorAll('.tempo-presets button').forEach(btn => btn.classList.remove('active'));
+      const presetBtn = document.getElementById(`tp${String(value).replace('.', '')}`);
+      if (presetBtn) presetBtn.classList.add('active');
+    }
+
+    document.getElementById('tempoSlider').addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      if (soundTouchNode) {
+        soundTouchNode.tempo.setValueAtTime(value, audioCtx.currentTime);
+      }
+      document.getElementById('tempoValue').textContent = `${value.toFixed(2)}×`;
+      document.querySelectorAll('.tempo-presets button').forEach(btn => btn.classList.remove('active'));
+    });
+
+    document.getElementById('pitchSlider').addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      if (soundTouchNode) {
+        soundTouchNode.pitch.setValueAtTime(value, audioCtx.currentTime);
+      }
+      document.getElementById('pitchValue').textContent = `${value.toFixed(2)}×`;
+    });
+
+    // ---------------------------------------------------------------------------
+    // Full Benchmark
+    // ---------------------------------------------------------------------------
+
+    async function runFullBenchmark() {
+      if (benchmarkRunning) return;
+      benchmarkRunning = true;
+      document.getElementById('benchmarkBtn').disabled = true;
+      document.getElementById('resultsBody').innerHTML = '';
+
+      const tempos = [0.5, 1.0, 1.5, 2.0];
+      const DURATION_MS = 8000; // 8 seconds per tempo for automated benchmark
+
+      log('--- Starting Full Benchmark ---', 'info');
+
+      for (const tempo of tempos) {
+        log(`Benchmarking tempo ${tempo}×...`);
+
+        // Start fresh context for each tempo
+        if (isRunning) stopTest();
+
+        // Small delay between tests
+        await new Promise(r => setTimeout(r, 500));
+        await startTest();
+
+        if (!isRunning) {
+          log(`Failed to start test for tempo ${tempo}×`, 'fail');
+          addBenchmarkRow(tempo, 0, 0, 0, 0, false);
+          continue;
+        }
+
+        // Set tempo
+        setTempo(tempo);
+
+        // Wait for measurement period
+        await new Promise(r => setTimeout(r, DURATION_MS));
+
+        // Collect results for this tempo
+        const timesAtTempo = processTimes.filter(t =>
+          Math.abs(t.tempo - tempo) < 0.1
+        );
+        if (timesAtTempo.length > 0) {
+          const avg = timesAtTempo.reduce((s, t) => s + t.avg, 0) / timesAtTempo.length;
+          const max = Math.max(...timesAtTempo.map(t => t.max));
+          const pass = max < PROCESS_TIME_BUDGET_MS;
+          addBenchmarkRow(tempo, avg, max, timesAtTempo.length, glitchCount, pass);
+          log(`  Tempo ${tempo}×: avg=${avg.toFixed(3)}ms, max=${max.toFixed(3)}ms → ${pass ? 'PASS' : 'FAIL'}`,
+            pass ? 'pass' : 'fail');
+        } else {
+          addBenchmarkRow(tempo, 0, 0, 0, 0, false);
+          log(`  No timing data collected at tempo ${tempo}×`, 'warn');
+        }
+
+        stopTest();
+      }
+
+      log('--- Benchmark Complete ---', 'info');
+      benchmarkRunning = false;
+      document.getElementById('benchmarkBtn').disabled = false;
+    }
+
+    function addBenchmarkRow(tempo, avg, max, samples, glitches, pass) {
+      const tbody = document.getElementById('resultsBody');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${tempo.toFixed(1)}×</td>
+        <td>${avg.toFixed(3)}</td>
+        <td>${max.toFixed(3)}</td>
+        <td>${samples}</td>
+        <td>${glitches}</td>
+        <td class="${pass ? 'pass' : 'fail'}">${pass ? 'PASS' : 'FAIL'}</td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Expose to global scope for onclick handlers
+    // ---------------------------------------------------------------------------
+
+    window.startTest = startTest;
+    window.stopTest = stopTest;
+    window.setTempo = setTempo;
+    window.runFullBenchmark = runFullBenchmark;
+  </script>
+</body>
+</html>

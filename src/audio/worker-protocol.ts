@@ -243,6 +243,7 @@ export type WorkletToMain =
   | WorkletToMain.Ready
   | WorkletToMain.PlaybackState
   | WorkletToMain.Telemetry
+  | WorkletToMain.AudioStats
   | WorkletToMain.Snapshot
   | WorkletToMain.PlaybackEnded
   | WorkletToMain.Error;
@@ -318,6 +319,37 @@ export namespace WorkletToMain {
      * Present only when echo data is included in this telemetry message.
      */
     readonly firCoefficients?: ArrayBuffer;
+    /**
+     * S-DSP register bank (128 bytes). Present on every telemetry cycle.
+     * Copied from WASM memory via dsp_get_registers().
+     */
+    readonly dspRegisters?: ArrayBuffer;
+    /**
+     * SPC700 CPU register snapshot (8 bytes). Present on every telemetry cycle.
+     * Layout: [A, X, Y, SP, PC_lo, PC_hi, PSW, padding].
+     */
+    readonly cpuRegisters?: ArrayBuffer;
+    /**
+     * Full 64 KB SPC RAM snapshot. Present at ~10 Hz (every 6th telemetry cycle).
+     * ArrayBuffer is transferred (zero-copy) to the main thread.
+     */
+    readonly ramSnapshot?: ArrayBuffer;
+  }
+
+  /**
+   * Audio processing statistics emitted at ~1 Hz.
+   * Used for audio chain feedback display (performance panel).
+   */
+  export interface AudioStats {
+    readonly type: 'audio-stats';
+    /** Worklet process() load as percentage of render quantum duration (0–100, EMA smoothed). */
+    readonly processLoadPercent: number;
+    /** Cumulative count of render quanta where process() exceeded the quantum budget. */
+    readonly totalUnderruns: number;
+    /** Peak observed process load percentage since last reset. */
+    readonly peakLoadPercent: number;
+    /** AudioContext sample rate. */
+    readonly sampleRate: number;
   }
 
   /** Full emulation state snapshot, sent in response to 'request-snapshot'. */
@@ -429,7 +461,7 @@ export namespace MainToExportWorker {
     /** SPC file data. ArrayBuffer is transferred. */
     readonly spcData: ArrayBuffer;
     /** Target format. */
-    readonly format: 'wav' | 'flac' | 'ogg-vorbis' | 'mp3';
+    readonly format: 'wav' | 'flac' | 'ogg-vorbis' | 'mp3' | 'opus';
     /** Target sample rate for output. */
     readonly sampleRate: 32000 | 44100 | 48000 | 96000;
     /** Duration to render in DSP samples. null = render to detected end / fade-out. */
