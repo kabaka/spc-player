@@ -116,6 +116,11 @@ Extended `AudioStateBuffer` with `dspRegisters` (Uint8Array(128)), `cpuRegisters
 
 ### Deferrals
 
-- **Forward seek checkpoint optimization**: Forward seeks currently render from the current position. Could use checkpoints closer to the target for very large forward jumps. Deferred as optimization — current performance is adequate for typical use.
-- **Checkpoint worker progress reporting**: No progress feedback for long track computation. Deferred — the worker is fire-and-forget; adding progress would require a different architecture.
-- **Windows High Contrast Mode**: Canvas rendering doesn't respond to `forced-colors` media query. Deferred to Phase F (polish).
+| Item                                 | Target Phase | Task # | Reason                                                                         |
+| ------------------------------------ | ------------ | ------ | ------------------------------------------------------------------------------ |
+| Forward seek checkpoint optimization | C (backlog)  | C10    | Forward seeks render from current position; checkpoints could skip ahead.      |
+| Checkpoint worker progress reporting | C (backlog)  | C11    | Worker is fire-and-forget; progress/cancellation requires architecture change. |
+| Windows High Contrast Mode           | F            | F3i    | Canvas ignores `forced-colors` media query. Needs fallback for all canvases.   |
+| Code-splitting for viz/help dialog   | E            | E1     | `React.lazy()` for `VisualizationStage` and `HelpDialog`. Deferred from B.     |
+
+C10 and C11 can be picked up any time as standalone optimizations. F3i should wait until Phase E canvases exist so all canvases are addressed together.

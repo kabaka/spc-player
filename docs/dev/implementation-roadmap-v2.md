@@ -323,6 +323,24 @@ All source plans are permanently available under `docs/dev/plans/`. Read the rel
 
 **Parallelization:** C1 (SeekBar) and C4 (checkpoints) are fully independent streams that can be developed in parallel. C3 merges them. C6 depends on C4 being functionally complete.
 
+### Deferred from Phase C
+
+The following items were identified during Phase C implementation and peer review but deferred. They are tracked as tasks in their target phases.
+
+| Item                                 | Reason                                                                             | Target  | Task |
+| ------------------------------------ | ---------------------------------------------------------------------------------- | ------- | ---- |
+| Forward seek checkpoint optimization | Forward seeks render from current position; checkpoints could skip ahead           | Phase C | C10  |
+| Checkpoint worker progress reporting | Worker is fire-and-forget; progress/cancellation requires architecture change      | Phase C | C11  |
+| Windows High Contrast Mode           | Canvas ignores `forced-colors` media query; needs `forced-colors: active` fallback | Phase F | F3i  |
+| Code-splitting for viz/help dialog   | Originally deferred from Phase B; `React.lazy()` for VisualizationStage in Phase E | Phase E | E1   |
+
+#### Additional Phase C tasks (deferred)
+
+| #   | Task                                                                                                               | Source               | Files                                                                   | Complexity | Parallel? |
+| --- | ------------------------------------------------------------------------------------------------------------------ | -------------------- | ----------------------------------------------------------------------- | ---------- | --------- |
+| C10 | Forward seek checkpoint optimization — use nearest checkpoint for large forward jumps instead of rendering forward | peer review perf S-6 | Modify `src/audio/spc-worklet.ts` (seek handler)                        | S          | Yes       |
+| C11 | Checkpoint worker progress + cancellation — periodic progress messages, `AbortSignal` or timeout safeguard         | peer review research | Modify `src/workers/checkpoint-worker.ts`; modify `src/audio/engine.ts` | M          | Yes       |
+
 ### Testing Requirements
 
 - **Unit tests:** `findNearestCheckpoint` binary search (C4), `validateCheckpoint` magic/size check (C5), SeekBar `aria-valuetext` formatting (C1)
@@ -526,6 +544,7 @@ All source plans are permanently available under `docs/dev/plans/`. Read the rel
 | F3f | Metadata panel redesign — `<dl>` layout, always-visible on wide desktop                | UX §11                                   | Modify metadata panel component and layout CSS                       | M          | ✅        |
 | F3g | Empty state improvements — no-track-loaded messaging, file picker CTA                  | UX §15                                   | Modify player view, playlist view                                    | S          | ✅        |
 | F3h | WASM preload hint — `<link rel="preload">` for WASM binary (build-time hash injection) | performance I6                           | Modify `vite.config.ts`, `index.html`                                | S          | ✅        |
+| F3i | Windows High Contrast Mode — `forced-colors: active` fallback for canvases             | Phase C peer review a11y                 | Modify `SeekBar.tsx`, `VisualizationStage` renderers                 | M          | After E1  |
 
 ### Testing Requirements
 
