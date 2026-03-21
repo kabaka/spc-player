@@ -13,7 +13,9 @@ async function loadFixture(page: Page) {
   await page.goto('/');
   const fileInput = page.locator('input[type="file"][accept=".spc"]');
   await fileInput.setInputFiles(MINIMAL_SPC);
-  await expect(page.getByText('No track loaded')).not.toBeVisible();
+  await expect(
+    page.locator('#player-controls').getByText('No track loaded'),
+  ).not.toBeVisible();
 }
 
 test.describe('Export workflow', () => {
@@ -98,7 +100,9 @@ test.describe('Export workflow', () => {
     page,
   }) => {
     await page.goto('/');
-    await expect(page.getByText('No track loaded')).toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).toBeVisible();
 
     const exportBtn = page.getByRole('button', { name: 'Export' });
     await expect(exportBtn).toBeDisabled();
@@ -122,7 +126,9 @@ test.describe('Export workflow', () => {
 
   test('Ctrl+E does nothing when no track is loaded', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('No track loaded')).toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).toBeVisible();
 
     const isMac = process.platform === 'darwin';
     const modifier = isMac ? 'Meta' : 'Control';

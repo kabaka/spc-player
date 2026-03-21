@@ -24,14 +24,18 @@ test.describe('SPC file loading', () => {
     await page.goto('/');
 
     // Pre-condition: no track loaded
-    await expect(page.getByText('No track loaded')).toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).toBeVisible();
 
     // Load fixture via the hidden file input
     const fileInput = page.locator('input[type="file"][accept=".spc"]');
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     // "No track loaded" should disappear
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     // Metadata should be visible in the TransportBar's track info area
     // The minimal fixture has title "Test Song"
@@ -47,7 +51,9 @@ test.describe('SPC file loading', () => {
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     // Wait for "No track loaded" to disappear (signals load complete)
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     const playBtn = page.getByRole('button', { name: 'Play' });
     const previousBtn = page.getByRole('button', { name: 'Previous track' });
@@ -67,7 +73,9 @@ test.describe('SPC file loading', () => {
     await expect(seekBar).toBeDisabled();
 
     await fileInput.setInputFiles(MINIMAL_SPC);
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     await expect(seekBar).toBeEnabled();
   });
@@ -80,12 +88,17 @@ test.describe('SPC file loading', () => {
 
     // Use .first() because both the inline error and the toast notification
     // render with role="alert", causing a strict mode violation.
-    const errorMessage = page.getByRole('alert').first();
+    const errorMessage = page
+      .getByRole('alert')
+      .filter({ hasText: /.+/ })
+      .first();
     await expect(errorMessage).toBeVisible();
     await expect(errorMessage).not.toBeEmpty();
 
     // Track should NOT be loaded — "No track loaded" should remain
-    await expect(page.getByText('No track loaded')).toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).toBeVisible();
   });
 
   test('play button is clickable after loading a track', async ({ page }) => {
@@ -93,7 +106,9 @@ test.describe('SPC file loading', () => {
     const fileInput = page.locator('input[type="file"][accept=".spc"]');
     await fileInput.setInputFiles(MINIMAL_SPC);
 
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     const playBtn = page.getByRole('button', { name: 'Play' });
     await expect(playBtn).toBeEnabled();
@@ -108,7 +123,9 @@ test.describe('SPC file loading', () => {
     const fileInput = page.locator('input[type="file"][accept=".spc"]');
     await fileInput.setInputFiles(MINIMAL_SPC);
 
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     // Metadata should be visible — TransportBar shows track title
     const trackTitle = page.locator('#player-controls').getByText('Test Song');
@@ -130,7 +147,9 @@ test.describe('SPC file loading', () => {
     const fileInput = page.locator('input[type="file"][accept=".spc"]');
     await fileInput.setInputFiles(MINIMAL_SPC);
 
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     const playBtn = page.getByRole('button', { name: 'Play' });
     await expect(playBtn).toBeEnabled();
@@ -148,7 +167,9 @@ test.describe('SPC file loading', () => {
     await page.goto('/');
     const fileInput = page.locator('input[type="file"][accept=".spc"]');
     await fileInput.setInputFiles(MINIMAL_SPC);
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     const playBtn = page.getByRole('button', { name: 'Play' });
     await expect(playBtn).toBeEnabled();

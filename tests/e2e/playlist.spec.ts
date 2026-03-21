@@ -18,7 +18,9 @@ async function loadFixture(page: Page) {
   await page.goto('/');
   const fileInput = page.locator('input[type="file"][accept=".spc"]');
   await fileInput.setInputFiles(MINIMAL_SPC);
-  await expect(page.getByText('No track loaded')).not.toBeVisible();
+  await expect(
+    page.locator('#player-controls').getByText('No track loaded'),
+  ).not.toBeVisible();
 }
 
 test.describe('Playlist management', () => {
@@ -50,7 +52,9 @@ test.describe('Playlist management', () => {
     // Load two different fixtures — the app deduplicates by content hash,
     // so loading the same file twice would only produce one playlist entry.
     await fileInput.setInputFiles(MINIMAL_SPC);
-    await expect(page.getByText('No track loaded')).not.toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).not.toBeVisible();
 
     await fileInput.setInputFiles(BINARY_ID666_SPC);
 

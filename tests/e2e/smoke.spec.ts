@@ -57,7 +57,9 @@ test.describe('Smoke tests', () => {
   }) => {
     await page.goto('/');
 
-    await expect(page.getByText('No track loaded')).toBeVisible();
+    await expect(
+      page.locator('#player-controls').getByText('No track loaded'),
+    ).toBeVisible();
   });
 
   test('no console errors during initial load', async ({ page }) => {

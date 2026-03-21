@@ -13,7 +13,9 @@ async function loadFixture(page: Page) {
   await page.goto('/');
   const fileInput = page.locator('input[type="file"][accept=".spc"]');
   await fileInput.setInputFiles(MINIMAL_SPC);
-  await expect(page.getByText('No track loaded')).not.toBeVisible();
+  await expect(
+    page.locator('#player-controls').getByText('No track loaded'),
+  ).not.toBeVisible();
 }
 
 test.describe('Global keyboard shortcuts', () => {
