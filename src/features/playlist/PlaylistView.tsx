@@ -1,14 +1,10 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import type { ChangeEvent, DragEvent, KeyboardEvent, MouseEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import type { ChangeEvent, DragEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
-import * as ContextMenu from '@/components/ContextMenu/ContextMenu';
-import { contextMenuStyles } from '@/components/ContextMenu/ContextMenu';
+import { PlaylistTrackList } from '@/components/PlaylistTrackList/PlaylistTrackList';
 import { useShortcut } from '@/shortcuts/useShortcut';
-
-import type { PlaylistTrack } from '@/store/types';
-import { formatTime, formatSpokenTime } from '@/utils/format-time';
 
 import styles from './PlaylistView.module.css';
 
@@ -27,14 +23,11 @@ const REPEAT_CYCLE: Record<string, 'off' | 'all' | 'one'> = {
 // ── Component ─────────────────────────────────────────────────────────
 
 export function PlaylistView() {
-  const idPrefix = useId();
-  const listboxRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const announcerRef = useRef<HTMLDivElement>(null);
 
   // ── Store selectors ───────────────────────────────────────────────
   const tracks = useAppStore((s) => s.tracks);
-  const activeIndex = useAppStore((s) => s.activeIndex);
   const shuffleMode = useAppStore((s) => s.shuffleMode);
   const repeatMode = useAppStore((s) => s.repeatMode);
   const loadFile = useAppStore((s) => s.loadFile);
@@ -44,29 +37,10 @@ export function PlaylistView() {
   const setRepeatMode = useAppStore((s) => s.setRepeatMode);
   const playTrackAtIndex = useAppStore((s) => s.playTrackAtIndex);
 
-  // ── Refs ───────────────────────────────────────────────────────────
-  const tracksRef = useRef(tracks);
-  tracksRef.current = tracks;
-
   // ── Local state ───────────────────────────────────────────────────
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDragOver, setIsDragOver] = useState(false);
-  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
-  const lastShiftAnchor = useRef<number | null>(null);
-
-  // ── Derived ───────────────────────────────────────────────────────
-  const trackId = (index: number) => `${idPrefix}track-${index}`;
-  const focusedId = tracks.length > 0 ? trackId(focusedIndex) : undefined;
-
-  // Scroll focused track into view on arrow-key navigation
-  useEffect(() => {
-    if (focusedIndex >= 0 && tracks.length > 0) {
-      const el = document.getElementById(`${idPrefix}track-${focusedIndex}`);
-      el?.scrollIntoView({ block: 'nearest' });
-    }
-  }, [focusedIndex, idPrefix, tracks.length]);
 
   // ── Announcements ─────────────────────────────────────────────────
   const announce = useCallback((message: string) => {
@@ -220,154 +194,6 @@ export function PlaylistView() {
     [loadFile],
   );
 
-  // ── Drag-and-drop (reorder) ───────────────────────────────────────
-  const handleTrackDragStart = useCallback((e: DragEvent, index: number) => {
-    setDragFromIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('application/x-spc-reorder', String(index));
-  }, []);
-
-  const handleTrackDragOver = useCallback(
-    (e: DragEvent, index: number) => {
-      if (dragFromIndex === null) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setDropTargetIndex(index);
-    },
-    [dragFromIndex],
-  );
-
-  const handleTrackDrop = useCallback(
-    (e: DragEvent, toIndex: number) => {
-      e.preventDefault();
-      if (dragFromIndex === null || dragFromIndex === toIndex) {
-        setDragFromIndex(null);
-        setDropTargetIndex(null);
-        return;
-      }
-      const currentTracks = tracksRef.current;
-      const track = currentTracks[dragFromIndex];
-      reorderTracks(dragFromIndex, toIndex);
-      if (track) {
-        announce(
-          `Moved ${track.title} to position ${toIndex + 1} of ${currentTracks.length}`,
-        );
-      }
-      setDragFromIndex(null);
-      setDropTargetIndex(null);
-    },
-    [dragFromIndex, reorderTracks, announce],
-  );
-
-  const handleTrackDragEnd = useCallback(() => {
-    setDragFromIndex(null);
-    setDropTargetIndex(null);
-  }, []);
-
-  // ── Selection helpers ─────────────────────────────────────────────
-  const toggleSelection = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
-
-  const selectRange = useCallback(
-    (from: number, to: number) => {
-      const start = Math.min(from, to);
-      const end = Math.max(from, to);
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        for (let i = start; i <= end; i++) {
-          const t = tracks[i];
-          if (t) next.add(t.id);
-        }
-        return next;
-      });
-    },
-    [tracks],
-  );
-
-  // ── Track click ───────────────────────────────────────────────────
-  const handleTrackClick = useCallback(
-    (e: MouseEvent, index: number) => {
-      const track = tracks[index];
-      if (!track) return;
-
-      if (e.metaKey || e.ctrlKey) {
-        toggleSelection(track.id);
-        lastShiftAnchor.current = index;
-      } else if (e.shiftKey) {
-        const anchor = lastShiftAnchor.current ?? focusedIndex;
-        selectRange(anchor, index);
-      } else {
-        setSelectedIds(new Set([track.id]));
-        lastShiftAnchor.current = index;
-      }
-      setFocusedIndex(index);
-    },
-    [tracks, toggleSelection, selectRange, focusedIndex],
-  );
-
-  // ── Listbox keyboard navigation (standard ARIA listbox keys) ─────
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (tracks.length === 0) return;
-
-      switch (e.key) {
-        case 'ArrowDown': {
-          if (e.altKey) break; // Handled by playlist.moveDown shortcut
-          e.preventDefault();
-          const next = Math.min(focusedIndex + 1, tracks.length - 1);
-          setFocusedIndex(next);
-          if (e.shiftKey) {
-            const anchor = lastShiftAnchor.current ?? focusedIndex;
-            selectRange(anchor, next);
-          }
-          break;
-        }
-        case 'ArrowUp': {
-          if (e.altKey) break; // Handled by playlist.moveUp shortcut
-          e.preventDefault();
-          const prev = Math.max(focusedIndex - 1, 0);
-          setFocusedIndex(prev);
-          if (e.shiftKey) {
-            const anchor = lastShiftAnchor.current ?? focusedIndex;
-            selectRange(anchor, prev);
-          }
-          break;
-        }
-        case 'Home': {
-          e.preventDefault();
-          setFocusedIndex(0);
-          break;
-        }
-        case 'End': {
-          e.preventDefault();
-          setFocusedIndex(tracks.length - 1);
-          break;
-        }
-        case ' ': {
-          e.preventDefault();
-          const track = tracks[focusedIndex];
-          if (track) {
-            toggleSelection(track.id);
-            lastShiftAnchor.current = focusedIndex;
-          }
-          break;
-        }
-        default:
-          break;
-      }
-    },
-    [tracks, focusedIndex, selectRange, toggleSelection],
-  );
-
   // ── Shuffle / Repeat ──────────────────────────────────────────────
   const handleShuffleToggle = useCallback(() => {
     setShuffleMode(!useAppStore.getState().shuffleMode);
@@ -376,21 +202,6 @@ export function PlaylistView() {
   const handleRepeatCycle = useCallback(() => {
     setRepeatMode(REPEAT_CYCLE[repeatMode]);
   }, [repeatMode, setRepeatMode]);
-
-  // ── Track aria-label builder ──────────────────────────────────────
-  const buildTrackLabel = (track: PlaylistTrack, index: number): string => {
-    const parts = [
-      `Track ${index + 1}: ${track.title}`,
-      track.filename !== track.title ? track.filename : null,
-      formatSpokenTime(track.durationMs / 1000),
-    ].filter(Boolean);
-
-    let label = parts.join(', ');
-    if (index === activeIndex) {
-      label += '. Now playing.';
-    }
-    return label;
-  };
 
   // ── Render ────────────────────────────────────────────────────────
   return (
@@ -447,87 +258,14 @@ export function PlaylistView() {
           </Button>
         </div>
 
-        {/* Listbox */}
+        {/* Track list — shared component */}
         {tracks.length === 0 ? (
           <p role="status" className={styles.emptyState}>
             No tracks in playlist. Drop SPC files here or use the file picker to
             add tracks.
           </p>
         ) : (
-          <div
-            ref={listboxRef}
-            role="listbox"
-            aria-label="Playlist"
-            aria-multiselectable="true"
-            aria-activedescendant={focusedId}
-            tabIndex={0}
-            className={styles.listbox}
-            onKeyDown={handleKeyDown}
-          >
-            {tracks.map((track, index) => {
-              const isSelected = selectedIds.has(track.id);
-              const isFocused = index === focusedIndex;
-              const isPlaying = index === activeIndex;
-
-              const rowClass = [
-                styles.track,
-                isFocused && styles.focused,
-                isSelected && styles.selected,
-                isPlaying && styles.nowPlaying,
-              ]
-                .filter(Boolean)
-                .join(' ');
-
-              return (
-                <ContextMenu.Root key={track.id}>
-                  <ContextMenu.Trigger asChild>
-                    <div
-                      role="option"
-                      id={trackId(index)}
-                      aria-selected={isSelected}
-                      aria-current={isPlaying ? 'true' : undefined}
-                      aria-label={buildTrackLabel(track, index)}
-                      className={`${rowClass}${dropTargetIndex === index && dragFromIndex !== null ? ` ${styles.dropTarget}` : ''}`}
-                      onClick={(e) => handleTrackClick(e, index)}
-                      onDoubleClick={() => playTrackAtIndex(index)}
-                      draggable="true"
-                      onDragStart={(e) => handleTrackDragStart(e, index)}
-                      onDragOver={(e) => handleTrackDragOver(e, index)}
-                      onDrop={(e) => handleTrackDrop(e, index)}
-                      onDragEnd={handleTrackDragEnd}
-                    >
-                      <span aria-hidden="true" className={styles.dragHandle}>
-                        ⠿
-                      </span>
-                      <span className={styles.trackNumber}>{index + 1}</span>
-                      <span className={styles.trackTitle}>{track.title}</span>
-                      <span className={styles.trackDuration}>
-                        {formatTime(track.durationMs / 1000)}
-                      </span>
-                    </div>
-                  </ContextMenu.Trigger>
-                  <ContextMenu.Content>
-                    <ContextMenu.Item onSelect={() => playTrackAtIndex(index)}>
-                      Play
-                    </ContextMenu.Item>
-                    <ContextMenu.Item
-                      className={contextMenuStyles.destructive}
-                      onSelect={() => removeTrack(track.id)}
-                    >
-                      Remove
-                    </ContextMenu.Item>
-                    <ContextMenu.Separator />
-                    <ContextMenu.Item
-                      disabled
-                      title="Available in a future update"
-                    >
-                      Export…
-                    </ContextMenu.Item>
-                  </ContextMenu.Content>
-                </ContextMenu.Root>
-              );
-            })}
-          </div>
+          <PlaylistTrackList />
         )}
         <div
           ref={announcerRef}

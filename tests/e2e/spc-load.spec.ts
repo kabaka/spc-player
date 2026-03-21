@@ -33,12 +33,10 @@ test.describe('SPC file loading', () => {
     // "No track loaded" should disappear
     await expect(page.getByText('No track loaded')).not.toBeVisible();
 
-    // Metadata section should show a track title (or "Untitled" for minimal fixture)
-    const nowPlaying = page.getByLabel('Now playing');
-    await expect(nowPlaying).toBeVisible();
-    await expect(
-      nowPlaying.getByRole('heading').or(nowPlaying.getByText('Untitled')),
-    ).toBeVisible();
+    // Metadata should be visible in the TransportBar's track info area
+    // The minimal fixture has title "Test Song"
+    const trackTitle = page.locator('#player-controls').getByText('Test Song');
+    await expect(trackTitle).toBeVisible();
   });
 
   test('transport buttons become enabled after loading a track', async ({
@@ -52,12 +50,10 @@ test.describe('SPC file loading', () => {
     await expect(page.getByText('No track loaded')).not.toBeVisible();
 
     const playBtn = page.getByRole('button', { name: 'Play' });
-    const stopBtn = page.getByRole('button', { name: 'Stop' });
     const previousBtn = page.getByRole('button', { name: 'Previous track' });
     const nextBtn = page.getByRole('button', { name: 'Next track' });
 
     await expect(playBtn).toBeEnabled();
-    await expect(stopBtn).toBeEnabled();
     await expect(previousBtn).toBeEnabled();
     await expect(nextBtn).toBeEnabled();
   });
@@ -114,14 +110,9 @@ test.describe('SPC file loading', () => {
 
     await expect(page.getByText('No track loaded')).not.toBeVisible();
 
-    // Metadata region should be visible with content
-    const nowPlaying = page.getByLabel('Now playing');
-    await expect(nowPlaying).toBeVisible();
-
-    // Should display at least a title (or "Untitled" for minimal fixture)
-    await expect(
-      nowPlaying.getByRole('heading').or(nowPlaying.getByText('Untitled')),
-    ).toBeVisible();
+    // Metadata should be visible — TransportBar shows track title
+    const trackTitle = page.locator('#player-controls').getByText('Test Song');
+    await expect(trackTitle).toBeVisible();
   });
 
   test('no console errors during SPC load and playback', async ({ page }) => {

@@ -25,6 +25,12 @@
   outline-offset: 2px;
 }
 
+.hint {
+  margin: var(--spc-space-1) 0 0;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+}
+
 .visuallyHidden {
   position: absolute;
   width: 1px;

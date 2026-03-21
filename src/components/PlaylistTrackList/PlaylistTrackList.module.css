@@ -1,0 +1,100 @@
+/* PlaylistTrackList.module.css — shared track list used by sidebar + mobile playlist */
+
+.listbox {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.listbox:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: -2px;
+}
+
+@media (prefers-contrast: more) {
+  .listbox:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* ── Track rows ──────────────────────────────────────────────────── */
+
+.trackRow {
+  display: flex;
+  align-items: center;
+  height: var(--spc-playlist-row-height);
+  padding: 0 var(--spc-space-2);
+  gap: var(--spc-space-2);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  transition: background-color var(--spc-duration-fast)
+    var(--spc-easing-default);
+}
+
+.trackRow:last-child {
+  border-bottom: none;
+}
+
+.trackRow:hover {
+  background-color: var(--spc-color-hover);
+}
+
+.trackRowFocused {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: -2px;
+}
+
+.trackRowSelected {
+  background-color: var(--spc-color-accent-subtle);
+}
+
+.trackRowActive {
+  background-color: var(--spc-color-accent-subtle);
+}
+
+/* ── Track info columns ──────────────────────────────────────────── */
+
+.playIcon {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-accent-text);
+}
+
+.trackNumber {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--spc-color-text-muted);
+  font-size: var(--spc-font-size-xs);
+}
+
+.trackTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+}
+
+.trackDuration {
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text-secondary);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Standard (non-compact) row overrides ────────────────────────── */
+
+.standard .trackRow {
+  height: auto;
+  min-height: var(--spc-playlist-row-height);
+  padding: var(--spc-space-2) var(--spc-space-3);
+  gap: var(--spc-space-3);
+}

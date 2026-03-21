@@ -21,20 +21,12 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    to: '/playlist',
-    label: 'Playlist',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-      </svg>
-    ),
-  },
-  {
+    // TODO(phase-c): Route to /tools once the Tools hub page is created
     to: '/instrument',
-    label: 'Instrument',
+    label: 'Tools',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M19.59 3H22v2h-1.59l-5 5H22v2h-8.59l-3-3H4V7h6.41l5-5zM4 13h6.41l5 5H22v2h-7.59l-5-5H4v-2zm0 4h2v2H4v-2z" />
+        <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z" />
       </svg>
     ),
   },

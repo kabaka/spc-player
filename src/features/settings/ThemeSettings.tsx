@@ -1,4 +1,4 @@
-import { useCallback, useId } from 'react';
+import { useCallback, useId, useSyncExternalStore } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
@@ -14,10 +14,29 @@ const THEME_OPTIONS: readonly { value: ThemeOption; label: string }[] = [
   { value: 'system', label: '💻 System' },
 ];
 
+const darkMq =
+  typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : undefined;
+
+function subscribeToColorScheme(cb: () => void) {
+  darkMq?.addEventListener('change', cb);
+  return () => darkMq?.removeEventListener('change', cb);
+}
+
+function getSystemTheme(): 'dark' | 'light' {
+  return darkMq?.matches ? 'dark' : 'light';
+}
+
 export function ThemeSettings() {
   const groupId = useId();
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
+  const resolvedTheme = useSyncExternalStore(
+    subscribeToColorScheme,
+    getSystemTheme,
+    () => 'dark' as const,
+  );
 
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -47,6 +66,11 @@ export function ThemeSettings() {
           <span>{label}</span>
         </label>
       ))}
+      {theme === 'system' && (
+        <p className={styles.hint}>
+          Currently: {resolvedTheme === 'dark' ? 'Dark' : 'Light'}
+        </p>
+      )}
     </div>
   );
 }

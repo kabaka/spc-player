@@ -72,7 +72,7 @@
 
 /* ── Hide on tablet+ ─────────────────────────────────────────────── */
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .bottomNav {
     display: none;
   }

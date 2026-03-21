@@ -26,15 +26,13 @@ test.describe('Smoke tests', () => {
     await expect(page).toHaveTitle('SPC Player');
   });
 
-  test('drop zone is visible and accessible', async ({ page }) => {
+  test('sidebar Add Files button is visible and accessible', async ({
+    page,
+  }) => {
     await page.goto('/');
 
-    const dropZone = page.getByRole('button', {
-      name: 'Drop SPC file here or click to browse',
-    });
-
-    await expect(dropZone).toBeVisible();
-    await expect(dropZone).toHaveAttribute('tabindex', '0');
+    const addFilesBtn = page.getByRole('button', { name: /add files/i });
+    await expect(addFilesBtn).toBeVisible();
   });
 
   test('transport buttons exist but are disabled when no track is loaded', async ({
@@ -47,12 +45,10 @@ test.describe('Smoke tests', () => {
 
     const previousBtn = page.getByRole('button', { name: 'Previous track' });
     const playBtn = page.getByRole('button', { name: 'Play' });
-    const stopBtn = page.getByRole('button', { name: 'Stop' });
     const nextBtn = page.getByRole('button', { name: 'Next track' });
 
     await expect(previousBtn).toBeDisabled();
     await expect(playBtn).toBeDisabled();
-    await expect(stopBtn).toBeDisabled();
     await expect(nextBtn).toBeDisabled();
   });
 
@@ -88,10 +84,11 @@ test.describe('Smoke tests', () => {
 test.describe('Route navigation', () => {
   const routes = [
     { path: '/#/', name: 'Player' },
-    { path: '/#/playlist', name: 'Playlist' },
     { path: '/#/instrument', name: 'Instrument' },
     { path: '/#/analysis', name: 'Analysis' },
     { path: '/#/settings', name: 'Settings' },
+    // Playlist route still exists but has no nav link — sidebar is always visible on desktop
+    { path: '/#/playlist', name: 'Playlist' },
   ];
 
   for (const route of routes) {
@@ -131,33 +128,33 @@ test.describe('Navigation bar', () => {
     await expect(nav).toBeVisible();
 
     await expect(nav.getByRole('link', { name: 'Player' })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Playlist' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Instrument' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Analysis' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Settings' })).toBeVisible();
+    // No "Playlist" nav link — playlist is always visible in the sidebar on desktop
   });
 });
 
 test.describe('Theme toggle', () => {
-  test('theme toggle is present and functional', async ({ page }) => {
-    await page.goto('/');
+  test('theme setting is present and functional on Settings page', async ({
+    page,
+  }) => {
+    await page.goto('/#/settings');
 
-    const themeToggle = page.getByRole('button', { name: /theme/i });
-    await expect(themeToggle).toBeVisible();
-
-    // Get initial theme class (project uses .dark/.light classes per ADR-0004)
+    // Theme is now controlled via radio buttons on the Settings page
     const htmlLocator = page.locator('html');
-    const initialClasses = await htmlLocator.getAttribute('class');
-    const wasDark = initialClasses?.includes('dark') ?? false;
 
-    // Click to toggle
-    await themeToggle.click();
+    // Select the Light radio option
+    const lightRadio = page.getByRole('radio', { name: /Light/ });
+    await expect(lightRadio).toBeVisible();
+    await lightRadio.check();
 
-    // Theme class should change
-    if (wasDark) {
-      await expect(htmlLocator).toHaveClass(/light/);
-    } else {
-      await expect(htmlLocator).toHaveClass(/dark/);
-    }
+    await expect(htmlLocator).toHaveClass(/light/);
+
+    // Switch to Dark
+    const darkRadio = page.getByRole('radio', { name: /Dark/ });
+    await darkRadio.check();
+
+    await expect(htmlLocator).toHaveClass(/dark/);
   });
 });

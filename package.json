@@ -22,7 +22,7 @@
     "test:e2e:ui": "npx playwright test --ui",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage",
-    "validate": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run test:e2e",
+    "validate": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-bundle-sizes.mjs && npm run test:e2e",
     "prepare": "husky"
   },
   "dependencies": {

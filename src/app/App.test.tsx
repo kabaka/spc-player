@@ -7,7 +7,8 @@ describe('App', () => {
   it('renders without crashing and displays player view', async () => {
     render(<App />);
 
-    expect(await screen.findByText('No track loaded')).toBeInTheDocument();
+    const elements = await screen.findAllByText('No track loaded');
+    expect(elements.length).toBeGreaterThan(0);
   });
 
   it('renders navigation links', async () => {
@@ -21,9 +22,6 @@ describe('App', () => {
 
     expect(
       within(nav).getByRole('link', { name: /player/i }),
-    ).toBeInTheDocument();
-    expect(
-      within(nav).getByRole('link', { name: /playlist/i }),
     ).toBeInTheDocument();
     expect(
       within(nav).getByRole('link', { name: /instrument/i }),

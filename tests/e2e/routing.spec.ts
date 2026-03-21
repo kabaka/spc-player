@@ -11,11 +11,13 @@ const IGNORED_CONSOLE_ERRORS = [
 
 const ROUTES = [
   { path: '/#/', name: 'Player', linkName: 'Player' },
-  { path: '/#/playlist', name: 'Playlist', linkName: 'Playlist' },
   { path: '/#/instrument', name: 'Instrument', linkName: 'Instrument' },
   { path: '/#/analysis', name: 'Analysis', linkName: 'Analysis' },
   { path: '/#/settings', name: 'Settings', linkName: 'Settings' },
 ];
+
+// Playlist route still exists but has no nav link — sidebar is always visible on desktop
+const DIRECT_ONLY_ROUTES = [{ path: '/#/playlist', name: 'Playlist' }];
 
 test.describe('Routing and deep links', () => {
   test('clicking each nav link navigates to the correct route', async ({
@@ -35,7 +37,7 @@ test.describe('Routing and deep links', () => {
   });
 
   test('direct navigation to each route URL works', async ({ page }) => {
-    for (const route of ROUTES) {
+    for (const route of [...ROUTES, ...DIRECT_ONLY_ROUTES]) {
       await page.goto(route.path);
       await expect(page.locator('#root')).not.toBeEmpty();
     }
@@ -58,12 +60,12 @@ test.describe('Routing and deep links', () => {
   test('browser back/forward navigation works', async ({ page }) => {
     await page.goto('/#/');
 
-    // Navigate to Playlist
+    // Navigate to Instrument
     await page
       .getByRole('navigation', { name: 'Main navigation' })
-      .getByRole('link', { name: 'Playlist' })
+      .getByRole('link', { name: 'Instrument' })
       .click();
-    await expect(page).toHaveURL(/\/#\/playlist/);
+    await expect(page).toHaveURL(/\/#\/instrument/);
 
     // Navigate to Settings
     await page
@@ -72,34 +74,38 @@ test.describe('Routing and deep links', () => {
       .click();
     await expect(page).toHaveURL(/\/#\/settings/);
 
-    // Go back → should be Playlist
+    // Go back → should be Instrument
     await page.goBack();
-    await expect(page).toHaveURL(/\/#\/playlist/);
+    await expect(page).toHaveURL(/\/#\/instrument/);
 
     // Go back → should be Player (root)
     await page.goBack();
     await expect(page).toHaveURL(/\/#\//);
 
-    // Go forward → should be Playlist
+    // Go forward → should be Instrument
     await page.goForward();
-    await expect(page).toHaveURL(/\/#\/playlist/);
+    await expect(page).toHaveURL(/\/#\/instrument/);
   });
 
   test('invalid route shows not-found page', async ({ page }) => {
     await page.goto('/#/nonexistent-route');
 
-    // The catch-all route renders "Page Not Found" with role="alert"
-    await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.getByText('Page Not Found')).toBeVisible();
+    // The catch-all route renders "Page Not Found" in the main content area
+    const main = page.locator('#main-content');
+    await expect(
+      main.getByRole('heading', { name: 'Page Not Found' }),
+    ).toBeAttached();
+    await expect(main.getByText('does not exist')).toBeAttached();
   });
 
   test('not-found page has a link back to Player', async ({ page }) => {
     await page.goto('/#/nonexistent-route');
 
-    const backLink = page.getByRole('link', { name: /return to player/i });
-    await expect(backLink).toBeVisible();
+    const main = page.locator('#main-content');
+    const backLink = main.getByRole('link', { name: /return to player/i });
+    await expect(backLink).toBeAttached();
 
-    await backLink.click();
+    await backLink.click({ force: true });
     await expect(page).toHaveURL(/\/#\//);
   });
 

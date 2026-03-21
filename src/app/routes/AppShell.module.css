@@ -1,15 +1,76 @@
+/* ============================================================
+   SHELL — CSS Grid layout (Mobile-first)
+   Breakpoints: mobile <768 | tablet 768–1023 | desktop ≥1024 | wide ≥1440
+   ============================================================ */
+
 .shell {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto auto;
+  /* topbar | content | transport | bottomnav */
   min-height: 100dvh;
 }
 
 /* ============================================================
-   TOP NAVIGATION (hidden on mobile, visible on tablet+)
+   MOBILE TOP BAR (visible on mobile only)
    ============================================================ */
 
-.nav {
+.mobileTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spc-space-2) var(--spc-space-3);
+  padding-top: calc(var(--spc-space-2) + env(safe-area-inset-top, 0px));
+  background-color: var(--spc-color-surface);
+  border-bottom: 1px solid var(--spc-color-border);
+  min-height: 48px;
+  z-index: var(--spc-z-sticky);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  font-size: var(--spc-font-size-md);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: var(--spc-radius-md);
+  background: transparent;
+  color: var(--spc-color-text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    background-color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.menuButton:hover {
+  color: var(--spc-color-text);
+  background-color: var(--spc-color-hover);
+}
+
+.menuButton svg {
+  width: 24px;
+  height: 24px;
+  fill: currentcolor;
+}
+
+/* ============================================================
+   TOP NAV (hidden on mobile, horizontal on tablet+)
+   ============================================================ */
+
+.topNav {
   display: none;
+  align-items: center;
   gap: var(--spc-space-2);
   padding: var(--spc-space-2) var(--spc-space-4);
   padding-top: calc(var(--spc-space-2) + env(safe-area-inset-top, 0px));
@@ -18,7 +79,24 @@
   z-index: var(--spc-z-sticky);
 }
 
-.nav a {
+.topNavLogo {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  font-size: var(--spc-font-size-md);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin-right: auto;
+}
+
+.topNavLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-1);
+}
+
+.topNav a,
+.settingsLink {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,20 +107,54 @@
   color: var(--spc-color-text-secondary);
   text-decoration: none;
   min-height: 44px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
   transition:
     color var(--spc-duration-fast) var(--spc-easing-default),
     background-color var(--spc-duration-fast) var(--spc-easing-default);
 }
 
-.nav a:hover {
+.topNav a:hover,
+.settingsLink:hover {
   color: var(--spc-color-text);
   background-color: var(--spc-color-hover);
   text-decoration: none;
 }
 
-.nav a.active {
+.topNav a.active,
+.settingsLink.active {
   color: var(--spc-color-accent-text);
   background-color: var(--spc-color-accent-subtle);
+}
+
+.settingsLink {
+  padding: var(--spc-space-2);
+}
+
+.settingsLink svg {
+  width: 20px;
+  height: 20px;
+  fill: currentcolor;
+}
+
+/* ============================================================
+   LAYOUT BODY — sub-grid for sidebar + main content
+   ============================================================ */
+
+.layoutBody {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ============================================================
+   SIDEBAR (hidden on mobile, visible on tablet+)
+   ============================================================ */
+
+.sidebar {
+  display: none;
 }
 
 /* ============================================================
@@ -50,79 +162,85 @@
    ============================================================ */
 
 .main {
+  flex: 1;
   padding: var(--spc-space-3);
   padding-top: calc(var(--spc-space-3) + env(safe-area-inset-top, 0px));
   outline: none;
-  /* Reserve space for bottom nav + player bar on mobile */
+  overflow-y: auto;
+  /* Reserve space for transport bar + bottom nav on mobile */
   padding-bottom: calc(
-    var(--spc-space-4) + 56px + env(safe-area-inset-bottom, 0px)
+    var(--spc-space-4) + var(--spc-transport-bar-height-mobile) + 56px +
+      env(safe-area-inset-bottom, 0px)
   );
 }
 
 /* ============================================================
-   PLAYER BAR (placeholder)
+   TABLET (≥ 768px)
    ============================================================ */
 
-.playerBar {
-  background-color: var(--spc-color-surface);
-  border-top: 1px solid var(--spc-color-border);
-  padding: var(--spc-space-3) var(--spc-space-4);
-  min-height: 64px;
-  /* On mobile, sits above the bottom nav */
-  margin-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-}
+@media (min-width: 768px) {
+  .shell {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr auto;
+    /* topnav | content | transport — no bottom nav row */
+  }
 
-/* ============================================================
-   TABLET (≥ 640px)
-   ============================================================ */
+  .mobileTopBar {
+    display: none;
+  }
 
-@media (min-width: 640px) {
-  .nav {
+  .topNav {
     display: flex;
+    grid-column: 1 / -1;
+  }
+
+  .layoutBody {
+    flex-direction: row;
+    min-height: 0;
+  }
+
+  .sidebar {
+    display: block;
+    width: 240px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--spc-color-border);
+    overflow-y: auto;
   }
 
   .main {
     padding: var(--spc-space-4);
     padding-top: var(--spc-space-4);
-    padding-bottom: var(--spc-space-4);
-  }
-
-  .playerBar {
-    margin-bottom: 0;
+    /* Only account for transport bar on tablet+ (no bottom nav) */
+    padding-bottom: calc(var(--spc-space-4) + var(--spc-transport-bar-height));
   }
 }
 
 /* ============================================================
-   DESKTOP (≥ 1025px)
+   DESKTOP (≥ 1024px)
    ============================================================ */
 
-@media (min-width: 1025px) {
+@media (min-width: 1024px) {
   .shell {
-    grid-template-columns: 220px 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: auto 1fr auto;
   }
 
-  .nav {
-    display: flex;
-    flex-direction: column;
-    grid-row: 1 / -1;
-    gap: var(--spc-space-1);
-    padding: var(--spc-space-4);
-    border-bottom: none;
-    border-right: 1px solid var(--spc-color-border);
-    overflow-y: auto;
-  }
-
-  .nav a {
-    justify-content: flex-start;
-    padding: var(--spc-space-2) var(--spc-space-3);
+  .sidebar {
+    width: 280px;
   }
 
   .main {
     padding: var(--spc-space-6);
+    padding-bottom: calc(var(--spc-space-6) + var(--spc-transport-bar-height));
   }
+}
 
-  .playerBar {
-    grid-column: 2;
+/* ============================================================
+   WIDE DESKTOP (≥ 1440px)
+   ============================================================ */
+
+@media (min-width: 1440px) {
+  .shell {
+    grid-template-columns: 280px 1fr 320px;
   }
 }

@@ -13,12 +13,13 @@ import { join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const BUDGETS = {
-  // 210 KB gzipped (excluding codec and worker chunks).
-  // Raised from 200 KB: worker chunks (AudioWorklet, export worker) were
-  // previously counted against the main-thread budget despite running in
-  // separate threads. After excluding workers the effective main-thread JS
-  // is ~200 KB; 210 KB gives headroom for incremental feature growth.
-  totalJs: 210 * 1024,
+  // 250 KB gzipped (excluding codec and worker chunks).
+  // Raised from 210 KB to accommodate Phase B–F features (transport bar,
+  // playlist sidebar, visualizations, help dialog — ~15–22 KB net new).
+  // Code-splitting via React.lazy() for VisualizationStage and HelpDialog
+  // offsets ~8–10 KB from the critical path. Beyond 250 KB warrants
+  // architectural review. See ADR-0018.
+  totalJs: 250 * 1024,
   // React 19 + ReactDOM naturally produces ~59-61 KB gzipped.
   // 65 KB gives headroom without masking real regressions.
   reactVendor: 65 * 1024, // 65 KB gzipped
@@ -30,7 +31,7 @@ const CODEC_PATTERNS = [/flac/i, /lame/i, /vorbis/i, /mp3/i, /ogg/i, /wav/i, /co
 
 // Worker chunks run in separate threads (AudioWorklet, Web Worker) and
 // don't contribute to main-thread initial load performance.
-const WORKER_PATTERNS = [/worklet/i, /worker/i];
+const WORKER_PATTERNS = [/worklet/i, /worker/i, /soundtouch/i];
 
 function isCodecChunk(filename) {
   return CODEC_PATTERNS.some((p) => p.test(filename));

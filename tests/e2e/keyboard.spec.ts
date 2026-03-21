@@ -95,11 +95,8 @@ test.describe('Global keyboard shortcuts', () => {
     await nav.getByRole('link', { name: 'Settings' }).click();
 
     // Space should still toggle play/pause (global shortcut)
-    // The Play/Pause button is only on the Player view, so navigate back to verify
+    // TransportBar is visible on all routes, so Pause button is directly checkable
     await page.keyboard.press('Space');
-
-    // Go back to Player to verify playback started
-    await nav.getByRole('link', { name: 'Player' }).click();
     await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   });
 

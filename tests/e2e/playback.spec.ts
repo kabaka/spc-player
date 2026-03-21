@@ -53,7 +53,8 @@ test.describe('Playback controls', () => {
     await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
   });
 
-  test('clicking Stop resets playback state', async ({ page }) => {
+  // Stop button was removed from TransportBar in Phase B
+  test.skip('clicking Stop resets playback state', async ({ page }) => {
     await loadFixture(page);
 
     // Start playback
@@ -124,7 +125,10 @@ test.describe('Playback controls', () => {
     ).toBeVisible();
   });
 
-  test('speed slider is visible and has a default value', async ({ page }) => {
+  // Speed control was removed from PlayerView in Phase B (B9)
+  test.skip('speed slider is visible and has a default value', async ({
+    page,
+  }) => {
     await loadFixture(page);
 
     const speedSlider = page.getByRole('slider', { name: 'Playback speed' });
@@ -140,7 +144,6 @@ test.describe('Playback controls', () => {
     await page.goto('/');
 
     await expect(page.getByRole('button', { name: 'Play' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: 'Stop' })).toBeDisabled();
     await expect(
       page.getByRole('button', { name: 'Previous track' }),
     ).toBeDisabled();
@@ -169,9 +172,6 @@ test.describe('Playback controls', () => {
     // Pause
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
-
-    // Stop
-    await page.getByRole('button', { name: 'Stop' }).click();
 
     await page.waitForTimeout(500);
     expect(consoleErrors).toEqual([]);

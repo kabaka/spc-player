@@ -1,0 +1,191 @@
+/* PlaylistSidebar.module.css — sidebar playlist panel (tablet/desktop) */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--spc-color-surface);
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-3) var(--spc-space-3) var(--spc-space-2);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex: 1;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-1);
+  padding: var(--spc-space-1) var(--spc-space-2);
+  border: none;
+  border-radius: var(--spc-radius-sm);
+  background-color: transparent;
+  color: var(--spc-color-accent-text);
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  cursor: pointer;
+  transition:
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    background-color var(--spc-duration-fast) var(--spc-easing-default);
+  flex-shrink: 0;
+  min-height: 32px;
+}
+
+.addButton:hover {
+  background-color: var(--spc-color-hover);
+}
+
+.addButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────── */
+
+.divider {
+  height: 1px;
+  background-color: var(--spc-color-border);
+  margin: 0 var(--spc-space-3);
+  flex-shrink: 0;
+}
+
+/* ── Track list area ─────────────────────────────────────────────── */
+
+.trackListArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spc-space-6) var(--spc-space-4);
+  text-align: center;
+  color: var(--spc-color-text-muted);
+  font-size: var(--spc-font-size-sm);
+  gap: var(--spc-space-2);
+  flex: 1;
+}
+
+.emptyTitle {
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-secondary);
+}
+
+.emptyHint {
+  font-size: var(--spc-font-size-xs);
+  line-height: 1.5;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+  padding: var(--spc-space-2) var(--spc-space-3);
+  border-top: 1px solid var(--spc-color-border);
+  flex-shrink: 0;
+}
+
+.footerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spc-space-1) var(--spc-space-2);
+  border: none;
+  border-radius: var(--spc-radius-sm);
+  background-color: transparent;
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-xs);
+  cursor: pointer;
+  min-height: 32px;
+  transition:
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    background-color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.footerButton:hover {
+  background-color: var(--spc-color-hover);
+  color: var(--spc-color-text);
+}
+
+.footerButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.footerButtonActive {
+  color: var(--spc-color-accent-text);
+}
+
+.footerSpacer {
+  flex: 1;
+}
+
+/* ── Tablet collapse toggle ──────────────────────────────────────── */
+
+.collapseToggle {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .collapseToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: var(--spc-space-3);
+    right: calc(-1 * 32px - var(--spc-space-1));
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--spc-color-border);
+    border-left: none;
+    border-radius: 0 var(--spc-radius-sm) var(--spc-radius-sm) 0;
+    background-color: var(--spc-color-surface);
+    color: var(--spc-color-text-secondary);
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .collapseToggle:hover {
+    background-color: var(--spc-color-hover);
+    color: var(--spc-color-text);
+  }
+
+  .collapseToggle:focus-visible {
+    outline: 2px solid var(--spc-color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .collapseToggle svg {
+    width: 16px;
+    height: 16px;
+    fill: currentcolor;
+    transition: transform var(--spc-duration-fast) var(--spc-easing-default);
+  }
+
+  .collapseToggle[aria-expanded='false'] svg {
+    transform: rotate(180deg);
+  }
+}

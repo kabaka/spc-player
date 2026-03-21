@@ -1,0 +1,100 @@
+.container {
+  position: relative;
+  height: var(--spc-now-playing-height);
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .container {
+    height: var(--spc-now-playing-height-mobile);
+  }
+}
+
+.stateLayer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spc-space-1);
+  transition: opacity var(--spc-duration-normal) var(--spc-easing-default);
+}
+
+.stateLayer[data-state='hidden'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stateLayer[data-state='visible'] {
+  opacity: 1;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+
+.emptyText {
+  margin: 0;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-muted);
+}
+
+.emptySubtext {
+  margin: 0;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+}
+
+/* ── Track info state ────────────────────────────────────────── */
+
+.title {
+  margin: 0;
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Skeleton shimmer ────────────────────────────────────────── */
+
+.skeleton {
+  background: var(--spc-color-skeleton);
+  border-radius: var(--spc-radius-sm);
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonTitle {
+  width: 60%;
+  height: 16px;
+}
+
+.skeletonSubtitle {
+  width: 40%;
+  height: 12px;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+}

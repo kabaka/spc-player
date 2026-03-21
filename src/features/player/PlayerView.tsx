@@ -1,294 +1,36 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
-
 import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
-import { FileDropZone } from '@/components/FileDropZone/FileDropZone';
-import { Slider } from '@/components/Slider/Slider';
-import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
-import { audioEngine } from '@/audio/engine';
-import { audioStateBuffer } from '@/audio/audio-state-buffer';
+import { NowPlayingInfo } from '@/components/NowPlayingInfo/NowPlayingInfo';
 import { MetadataPanel } from '@/features/metadata/MetadataPanel';
 import { MixerPanel } from '@/features/mixer/MixerPanel';
 import { ExportDialog } from '@/features/export/ExportDialog';
 import { CollapsiblePanel } from '@/components/CollapsiblePanel/CollapsiblePanel';
-import { formatTime, formatSpokenTime } from '@/utils/format-time';
 import { WaveformDisplay } from './WaveformDisplay';
-import { LoopMarkers } from './LoopMarkers';
 
 import styles from './PlayerView.module.css';
-
-// ── Utility ───────────────────────────────────────────────────────────
-
-function formatSeekValueText(elapsedSec: number, durationSec: number): string {
-  return `${formatSpokenTime(elapsedSec)} of ${formatSpokenTime(durationSec)}`;
-}
-
-function formatSpeed(value: number): string {
-  return `${value}×`;
-}
 
 // ── Component ─────────────────────────────────────────────────────────
 
 export function PlayerView() {
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const preMuteVolumeRef = useRef(1);
-
-  // ── Unique IDs for aria references ────────────────────────────────
-  const seekLabelId = useId();
-  const announcementsId = useId();
-
   // ── Store selectors ───────────────────────────────────────────────
-  const playbackStatus = useAppStore((s) => s.playbackStatus);
-  const position = useAppStore((s) => s.position);
-  const volume = useAppStore((s) => s.volume);
-  const speed = useAppStore((s) => s.speed);
   const metadata = useAppStore((s) => s.metadata);
-  const trackDuration = useAppStore((s) => s.trackDuration);
-  const isLoadingTrack = useAppStore((s) => s.isLoadingTrack);
-  const loadingError = useAppStore((s) => s.loadingError);
-
-  const loopRegion = useAppStore((s) => s.loopRegion);
-
-  const loadFile = useAppStore((s) => s.loadFile);
-  const nextTrack = useAppStore((s) => s.nextTrack);
-  const previousTrack = useAppStore((s) => s.previousTrack);
-  const playTrackAtIndex = useAppStore((s) => s.playTrackAtIndex);
-  const activeIndex = useAppStore((s) => s.activeIndex);
-  const setPlaybackStatus = useAppStore((s) => s.setPlaybackStatus);
-  const setPosition = useAppStore((s) => s.setPosition);
-  const setVolume = useAppStore((s) => s.setVolume);
-  const setSpeed = useAppStore((s) => s.setSpeed);
-
-  // ── Roving tabindex state (toolbar pattern) ───────────────────────
-  const [rovingIndex, setRovingIndex] = useState(1);
 
   // ── Export dialog state (lifted to store for keyboard shortcut access) ──
   const isExportOpen = useAppStore((s) => s.isExportDialogOpen);
   const setIsExportOpen = useAppStore((s) => s.setIsExportDialogOpen);
 
   // ── Derived values ────────────────────────────────────────────────
-  const totalSeconds = trackDuration?.totalSeconds ?? 0;
-  const currentSeconds = Math.floor(samplesToSeconds(position));
-  const isPlaying = playbackStatus === 'playing';
-  const isMuted = volume === 0;
   const hasTrack = metadata !== null;
-
-  // ── Sync position from audioStateBuffer during playback ────────────
-  // Keep a ref to loopRegion for the rAF loop to avoid re-creating it.
-  const loopRegionRef = useRef(loopRegion);
-  loopRegionRef.current = loopRegion;
-
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    let rafId: number;
-    let lastPosition = -1;
-    const sync = () => {
-      const pos = audioStateBuffer.positionSamples;
-      if (pos !== lastPosition) {
-        lastPosition = pos;
-        setPosition(pos);
-
-        // ── A-B Loop enforcement ─────────────────────────────────────
-        const region = loopRegionRef.current;
-        if (region?.active) {
-          const currentSec = samplesToSeconds(pos);
-          if (currentSec >= region.endTime) {
-            const targetSamples = Math.round(
-              region.startTime * DSP_SAMPLE_RATE,
-            );
-            audioEngine.seek(targetSamples);
-            setPosition(targetSamples);
-          }
-        }
-      }
-      rafId = requestAnimationFrame(sync);
-    };
-    rafId = requestAnimationFrame(sync);
-
-    return () => cancelAnimationFrame(rafId);
-  }, [isPlaying, setPosition]);
-
-  // ── Playback state announcement ───────────────────────────────────
-  const [announcement, setAnnouncement] = useState('');
-
-  // ── Handlers ──────────────────────────────────────────────────────
-
-  const handleFiles = useCallback(
-    (files: File[]) => {
-      const file = files[0];
-      if (file) {
-        loadFile(file);
-      }
-    },
-    [loadFile],
-  );
-
-  const handlePlayPause = useCallback(() => {
-    if (isPlaying) {
-      audioEngine.pause();
-      setPlaybackStatus('paused');
-      setAnnouncement('Paused');
-    } else {
-      const started = audioEngine.play();
-      if (started) {
-        setPlaybackStatus('playing');
-        setAnnouncement(`Playing: ${metadata?.title ?? 'Unknown track'}`);
-      } else if (activeIndex >= 0 && !isLoadingTrack) {
-        // Engine not initialized (e.g. after reload) — load track and play
-        void playTrackAtIndex(activeIndex);
-      }
-    }
-  }, [
-    isPlaying,
-    isLoadingTrack,
-    setPlaybackStatus,
-    metadata,
-    activeIndex,
-    playTrackAtIndex,
-  ]);
-
-  const handleStop = useCallback(() => {
-    audioEngine.stop();
-    setPlaybackStatus('stopped');
-    setPosition(0);
-    setAnnouncement('Stopped');
-  }, [setPlaybackStatus, setPosition]);
-
-  const handlePrevious = useCallback(() => {
-    previousTrack();
-  }, [previousTrack]);
-
-  const handleNext = useCallback(() => {
-    nextTrack();
-  }, [nextTrack]);
-
-  const handleSeek = useCallback(
-    ([seconds]: number[]) => {
-      const samples = Math.round(seconds * DSP_SAMPLE_RATE);
-      audioEngine.seek(samples);
-      setPosition(samples);
-    },
-    [setPosition],
-  );
-
-  const handleVolumeChange = useCallback(
-    ([rawValue]: number[]) => {
-      const value = rawValue / 100;
-      audioEngine.setVolume(value);
-      setVolume(value);
-    },
-    [setVolume],
-  );
-
-  const handleSpeedChange = useCallback(
-    ([value]: number[]) => {
-      audioEngine.setSpeed(value);
-      setSpeed(value);
-    },
-    [setSpeed],
-  );
-
-  const handleMuteToggle = useCallback(() => {
-    if (isMuted) {
-      const restored = preMuteVolumeRef.current || 1;
-      audioEngine.setVolume(restored);
-      setVolume(restored);
-    } else {
-      preMuteVolumeRef.current = volume;
-      audioEngine.setVolume(0);
-      setVolume(0);
-    }
-  }, [isMuted, volume, setVolume]);
-
-  const handleSpeedReset = useCallback(() => {
-    if (speed !== 1) {
-      audioEngine.setSpeed(1);
-      setSpeed(1);
-    }
-  }, [speed, setSpeed]);
-
-  // ── Toolbar keyboard navigation (WAI-ARIA toolbar pattern) ────────
-  const handleToolbarKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLDivElement>) => {
-      const toolbar = toolbarRef.current;
-      if (!toolbar) return;
-
-      const buttons = Array.from(
-        toolbar.querySelectorAll<HTMLButtonElement>('button:not([disabled])'),
-      );
-      const currentIndex = buttons.indexOf(
-        document.activeElement as HTMLButtonElement,
-      );
-
-      if (currentIndex === -1) return;
-
-      let nextIndex: number | null = null;
-
-      switch (e.key) {
-        case 'ArrowRight':
-          nextIndex = (currentIndex + 1) % buttons.length;
-          break;
-        case 'ArrowLeft':
-          nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
-          break;
-        case 'Home':
-          nextIndex = 0;
-          break;
-        case 'End':
-          nextIndex = buttons.length - 1;
-          break;
-        default:
-          return;
-      }
-
-      e.preventDefault();
-      setRovingIndex(nextIndex);
-      buttons[nextIndex].focus();
-    },
-    [],
-  );
 
   // ── Render ────────────────────────────────────────────────────────
 
   return (
     <div className={styles.playerView}>
-      {/* File Drop Zone */}
-      <FileDropZone onFilesSelected={handleFiles} />
+      {/* Now Playing Info (empty / loading / track states) */}
+      <NowPlayingInfo />
 
-      {/* Loading / Error States */}
-      {isLoadingTrack && (
-        <div className={styles.loadingIndicator} aria-live="polite">
-          Loading track…
-        </div>
-      )}
-      {loadingError && (
-        <div className={styles.errorMessage} role="alert">
-          {loadingError}
-        </div>
-      )}
-
-      {/* Now Playing Display */}
-      <section className={styles.nowPlaying} aria-label="Now playing">
-        {hasTrack ? (
-          <>
-            <h2 className={styles.trackTitle}>
-              {metadata.title || metadata.gameTitle || 'Untitled'}
-            </h2>
-            <p className={styles.trackDetails}>
-              {metadata.gameTitle && (
-                <span className={styles.game}>{metadata.gameTitle}</span>
-              )}
-              {metadata.artist && (
-                <span className={styles.artist}>{metadata.artist}</span>
-              )}
-            </p>
-          </>
-        ) : (
-          <p className={styles.noTrack}>No track loaded</p>
-        )}
-      </section>
+      {/* Waveform Visualization */}
+      {hasTrack && <WaveformDisplay />}
 
       {/* Metadata Panel */}
       {hasTrack && (
@@ -296,149 +38,6 @@ export function PlayerView() {
           <MetadataPanel />
         </CollapsiblePanel>
       )}
-
-      {/* Transport Controls Toolbar */}
-      <div
-        ref={toolbarRef}
-        role="toolbar"
-        aria-label="Playback controls"
-        className={styles.toolbar}
-        onKeyDown={handleToolbarKeyDown}
-      >
-        <Button
-          variant="icon"
-          size="md"
-          aria-label="Previous track"
-          onClick={handlePrevious}
-          disabled={!hasTrack}
-          tabIndex={0 === rovingIndex ? 0 : -1}
-        >
-          ⏮
-        </Button>
-        <Button
-          variant="icon"
-          size="md"
-          aria-label={isPlaying ? 'Pause' : 'Play'}
-          onClick={handlePlayPause}
-          disabled={!hasTrack}
-          tabIndex={1 === rovingIndex ? 0 : -1}
-        >
-          {isPlaying ? '⏸' : '▶'}
-        </Button>
-        <Button
-          variant="icon"
-          size="md"
-          aria-label="Stop"
-          onClick={handleStop}
-          disabled={!hasTrack}
-          tabIndex={2 === rovingIndex ? 0 : -1}
-        >
-          ⏹
-        </Button>
-        <Button
-          variant="icon"
-          size="md"
-          aria-label="Next track"
-          onClick={handleNext}
-          disabled={!hasTrack}
-          tabIndex={3 === rovingIndex ? 0 : -1}
-        >
-          ⏭
-        </Button>
-      </div>
-
-      {/* Waveform Visualization */}
-      {hasTrack && <WaveformDisplay />}
-
-      {/* Seek Bar */}
-      <div className={styles.seekBarContainer}>
-        <label id={seekLabelId} className={styles.visuallyHidden}>
-          Seek
-        </label>
-        <div className={styles.seekBarRelative}>
-          <Slider
-            aria-labelledby={seekLabelId}
-            min={0}
-            max={Math.floor(totalSeconds)}
-            value={[Math.min(currentSeconds, Math.floor(totalSeconds))]}
-            step={5}
-            onValueChange={handleSeek}
-            disabled={!hasTrack}
-            aria-valuetext={formatSeekValueText(
-              currentSeconds,
-              Math.floor(totalSeconds),
-            )}
-          />
-          {loopRegion && <LoopMarkers maxTime={Math.floor(totalSeconds)} />}
-        </div>
-      </div>
-
-      {/* Time Display */}
-      <div
-        className={styles.timeDisplay}
-        aria-live="off"
-        aria-label="Playback position"
-      >
-        <span>{formatTime(currentSeconds)}</span>
-        <span aria-hidden="true">/</span>
-        <span>{formatTime(totalSeconds)}</span>
-      </div>
-
-      {/* Volume Control */}
-      <div className={styles.controlGroup}>
-        <Button
-          variant="icon"
-          size="sm"
-          aria-label={isMuted ? 'Unmute' : 'Mute'}
-          aria-pressed={isMuted}
-          onClick={handleMuteToggle}
-        >
-          {isMuted ? '🔇' : '🔊'}
-        </Button>
-        <Slider
-          min={0}
-          max={100}
-          value={[Math.round(volume * 100)]}
-          step={1}
-          onValueChange={handleVolumeChange}
-          aria-label="Volume"
-          aria-valuetext={`${Math.round(volume * 100)}%`}
-        />
-        <span className={styles.valueReadout} aria-hidden="true">
-          {Math.round(volume * 100)}%
-        </span>
-      </div>
-
-      {/* Speed Control */}
-      <div className={styles.controlGroup}>
-        <button
-          className={`${styles.speedLabel}${speed !== 1 ? ` ${styles.speedLabelActive}` : ''}`}
-          onClick={handleSpeedReset}
-          aria-label={speed !== 1 ? 'Reset speed to normal' : undefined}
-          disabled={speed === 1}
-          tabIndex={speed !== 1 ? 0 : -1}
-          type="button"
-        >
-          Speed
-        </button>
-        <div className={styles.sliderTrack}>
-          <Slider
-            min={0.25}
-            max={4}
-            value={[speed]}
-            step={0.25}
-            onValueChange={handleSpeedChange}
-            aria-label="Playback speed"
-            aria-valuetext={`${speed}x`}
-          />
-          <span className={styles.tickMark} aria-hidden="true">
-            <span className={styles.tickLabel}>1×</span>
-          </span>
-        </div>
-        <span className={styles.valueReadout} aria-hidden="true">
-          {formatSpeed(speed)}
-        </span>
-      </div>
 
       {/* Mixer Panel */}
       {hasTrack && (
@@ -456,16 +55,6 @@ export function PlayerView() {
         Export
       </Button>
       <ExportDialog open={isExportOpen} onOpenChange={setIsExportOpen} />
-
-      {/* Playback State Announcements (screen reader only) */}
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        className={styles.visuallyHidden}
-        id={announcementsId}
-      >
-        {announcement}
-      </div>
     </div>
   );
 }

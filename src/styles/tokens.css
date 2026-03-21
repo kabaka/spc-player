@@ -16,7 +16,7 @@
   /* --- Text --- */
   --spc-color-text: #ededf0;
   --spc-color-text-secondary: #9999b0;
-  --spc-color-text-muted: #606079;
+  --spc-color-text-muted: #8585a0;
   --spc-color-text-inverse: #0e0e16;
 
   /* --- Borders --- */
@@ -177,6 +177,26 @@
   --spc-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --spc-easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /* --- Layout Heights --- */
+  --spc-transport-bar-height: 64px;
+  --spc-transport-bar-height-mobile: 96px;
+  --spc-now-playing-height: 56px;
+  --spc-now-playing-height-mobile: 48px;
+  --spc-visualization-height: 300px;
+  --spc-visualization-height-tablet: 200px;
+  --spc-visualization-height-mobile: 120px;
+  --spc-playlist-row-height: 36px;
+
+  /* --- Seek bar --- */
+  --spc-seek-track-height-idle: 3px;
+  --spc-seek-track-height-hover: 5px;
+  --spc-seek-thumb-size: 12px;
+  --spc-seek-thumb-size-dragging: 16px;
+
+  /* --- Information Density --- */
+  --spc-space-panel-gap: var(--spc-space-2);
+  --spc-space-section-gap: var(--spc-space-4);
+
   /* --- Theme transition ---
      Intentionally always-on. Only background-color and color are
      transitioned — during normal interaction these values are stable so
@@ -205,7 +225,7 @@
   /* --- Text --- */
   --spc-color-text: #1a1a28;
   --spc-color-text-secondary: #5a5a70;
-  --spc-color-text-muted: #7e7e96;
+  --spc-color-text-muted: #6e6e88;
   --spc-color-text-inverse: #f5f5f8;
 
   /* --- Borders --- */

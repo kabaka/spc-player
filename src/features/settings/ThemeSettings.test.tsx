@@ -33,4 +33,20 @@ describe('ThemeSettings', () => {
 
     expect(useAppStore.getState().theme).toBe('light');
   });
+
+  it('shows resolved theme hint when system is selected', () => {
+    useAppStore.setState({ theme: 'system' });
+    render(<ThemeSettings />);
+
+    // jsdom matchMedia defaults to not matching prefers-color-scheme: dark,
+    // so the resolved theme is Light
+    expect(screen.getByText(/currently: light/i)).toBeInTheDocument();
+  });
+
+  it('hides resolved theme hint when system is not selected', () => {
+    useAppStore.setState({ theme: 'dark' });
+    render(<ThemeSettings />);
+
+    expect(screen.queryByText(/currently:/i)).not.toBeInTheDocument();
+  });
 });
