@@ -97,6 +97,9 @@ class SpcProcessor extends AudioWorkletProcessor {
   private initPromise: Promise<void> | null = null;
   private pendingMessages: MainToWorklet[] = [];
 
+  // -- Voice mask tracking --------------------------------------------------
+  private voiceMask = 0xff;
+
   // -- Mode placeholders (future WASM API) ----------------------------------
   private resamplerMode = 0;
   private interpolationMode = 0;
@@ -353,6 +356,7 @@ class SpcProcessor extends AudioWorkletProcessor {
           this.pendingMessages.push(msg);
           return;
         }
+        this.voiceMask = msg.mask;
         if (this.wasm) {
           this.wasm.dsp_set_voice_mask(msg.mask);
         }
@@ -649,23 +653,71 @@ class SpcProcessor extends AudioWorkletProcessor {
         this.renderedSamples = 0;
       }
 
-      // Forward seek: render silently (discard output) until reaching target.
       const samplesToSkip = targetPosition - this.renderedSamples;
-      const skipChunkSize = QUANTUM_FRAMES;
-      let remaining = samplesToSkip;
 
-      while (remaining > 0) {
-        const chunk = Math.min(remaining, skipChunkSize);
-        const result = this.wasm.dsp_render(this.outputPtr, chunk);
-        if (result < 0) {
-          this.postError(
-            'AUDIO_WASM_RENDER_ERROR',
-            `dsp_render failed during seek with code ${result}`,
-            { wasmErrorCode: result, seekTarget: targetPosition },
-          );
-          return;
+      // Muting strategy adapted from GME's Music_Emu::skip_():
+      // For long seeks (>30k samples ≈ 0.94s at 32kHz), mute all voices
+      // during the bulk of the skip to reduce DSP work (BRR decode, ADSR,
+      // Gaussian interpolation are bypassed). The last MUTE_THRESHOLD/2
+      // samples are rendered with voices restored so echo, ADSR envelopes,
+      // and other DSP state converge to correct values before audible output.
+      const MUTE_THRESHOLD = 30_000;
+
+      if (samplesToSkip > MUTE_THRESHOLD) {
+        const savedMask = this.voiceMask;
+        this.wasm.dsp_set_voice_mask(0x00);
+
+        // Skip in large chunks while muted (fewer WASM calls).
+        let remaining = samplesToSkip - Math.floor(MUTE_THRESHOLD / 2);
+        while (remaining > 0) {
+          const chunk = Math.min(remaining, MAX_DSP_FRAMES_PER_QUANTUM);
+          const result = this.wasm.dsp_render(this.outputPtr, chunk);
+          if (result < 0) {
+            this.wasm.dsp_set_voice_mask(savedMask);
+            this.postError(
+              'AUDIO_WASM_RENDER_ERROR',
+              `dsp_render failed during muted seek with code ${result}`,
+              { wasmErrorCode: result, seekTarget: targetPosition },
+            );
+            return;
+          }
+          remaining -= chunk;
         }
-        remaining -= chunk;
+
+        // Restore voice mask and render the tail unmuted so DSP state
+        // (echo buffer, ADSR envelopes) converges before audible output.
+        this.wasm.dsp_set_voice_mask(savedMask);
+
+        remaining = Math.floor(MUTE_THRESHOLD / 2);
+        while (remaining > 0) {
+          const chunk = Math.min(remaining, MAX_DSP_FRAMES_PER_QUANTUM);
+          const result = this.wasm.dsp_render(this.outputPtr, chunk);
+          if (result < 0) {
+            this.postError(
+              'AUDIO_WASM_RENDER_ERROR',
+              `dsp_render failed during seek convergence with code ${result}`,
+              { wasmErrorCode: result, seekTarget: targetPosition },
+            );
+            return;
+          }
+          remaining -= chunk;
+        }
+      } else {
+        // Short seek — render normally in quantum-sized chunks.
+        let remaining = samplesToSkip;
+        while (remaining > 0) {
+          const chunk = Math.min(remaining, QUANTUM_FRAMES);
+          const result = this.wasm.dsp_render(this.outputPtr, chunk);
+          if (result < 0) {
+            this.postError(
+              'AUDIO_WASM_RENDER_ERROR',
+              `dsp_render failed during seek with code ${result}`,
+              { wasmErrorCode: result, seekTarget: targetPosition },
+            );
+            return;
+          }
+          remaining -= chunk;
+        }
       }
 
       this.renderedSamples = targetPosition;

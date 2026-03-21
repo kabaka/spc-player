@@ -2,6 +2,13 @@
 
 declare const self: ServiceWorkerGlobalScope;
 declare const __APP_VERSION__: string;
+declare const __BASE_URL__: string;
+declare const __PRECACHE_URLS__: string[];
+
+const BASE_URL: string =
+  typeof __BASE_URL__ !== 'undefined' ? __BASE_URL__ : '/';
+const PRECACHE_URLS: string[] =
+  typeof __PRECACHE_URLS__ !== 'undefined' ? __PRECACHE_URLS__ : [];
 
 const CACHE_PREFIX = 'spc-player';
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${__APP_VERSION__}`;
@@ -13,13 +20,15 @@ const CURRENT_CACHES = [STATIC_CACHE, HTML_CACHE];
 
 self.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
-    caches
-      .open(HTML_CACHE)
-      .then((cache) => cache.addAll(['/spc-player/']))
-      .then(() => {
-        // Don't call skipWaiting here — wait for user to opt in to update.
-        // skipWaiting is triggered via postMessage from the main thread.
-      }),
+    Promise.all([
+      caches.open(HTML_CACHE).then((cache) => cache.addAll([BASE_URL])),
+      PRECACHE_URLS.length > 0
+        ? caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+        : Promise.resolve(),
+    ]).then(() => {
+      // Don't call skipWaiting here — wait for user to opt in to update.
+      // skipWaiting is triggered via postMessage from the main thread.
+    }),
   );
 });
 
@@ -60,7 +69,7 @@ const isImmutableAsset = (url: URL): boolean => {
   if (path.endsWith('.wasm')) {
     return true;
   }
-  // Icons and other static assets in /spc-player/icons/
+  // Icons and other static assets under the icons directory
   if (path.includes('/icons/')) {
     return true;
   }
@@ -147,7 +156,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   if (isNavigationRequest(event.request)) {
     event.respondWith(
       staleWhileRevalidate(
-        new Request('/spc-player/', {
+        new Request(BASE_URL, {
           headers: event.request.headers,
         }),
       ),

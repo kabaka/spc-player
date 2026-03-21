@@ -82,6 +82,7 @@ export const defaultKeymap: ReadonlyMap<ShortcutActionId, ShortcutBinding> =
     binding('general.toggleFullscreen', ['KeyF'], 'global'),
     binding('general.closeDialog', ['Escape'], 'global'),
     binding('general.toggleInstrumentMode', ['Backquote'], 'global'),
+    binding('instrument.toggleKeyboard', ['Backquote'], 'contextual'),
 
     // §2.7 Analysis / Inspector
     binding('analysis.memoryTab', ['Alt+KeyM'], 'contextual'),

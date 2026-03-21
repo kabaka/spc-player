@@ -3,6 +3,8 @@ import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 
 import { parseSpcFile } from '@/core/spc-parser';
 import { calculateTrackDuration } from '@/core/track-duration';
+import { reportError } from '@/errors/report';
+import { uiError } from '@/errors/factories';
 import { idbStorage } from '@/storage/idb-storage';
 import { loadSpcFromStorage } from '@/storage/spc-storage';
 
@@ -122,7 +124,11 @@ async function restoreTrackMetadata(trackId: string): Promise<void> {
       },
       false,
     );
-  } catch {
-    // Silently fail — user can manually select a track
+  } catch (error) {
+    reportError(
+      uiError('UI_UNEXPECTED_ERROR', {
+        detail: `Failed to restore track metadata: ${error instanceof Error ? error.message : String(error)}`,
+      }),
+    );
   }
 }

@@ -552,8 +552,15 @@ class AudioEngine {
       // should continue playback in the background.
       if (this.audioContext.state === 'running' && !this.userIntentPlaying) {
         this.suspendedByVisibility = true;
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        this.audioContext.suspend().catch(() => {});
+        this.audioContext.suspend().catch((e: unknown) => {
+          if (this.audioContext?.state !== 'closed') {
+            reportError(
+              audioPipelineError('AUDIO_CONTEXT_SUSPENDED', {
+                detail: `visibility suspend: ${e instanceof Error ? e.message : String(e)}`,
+              }),
+            );
+          }
+        });
       }
     } else {
       if (
@@ -561,8 +568,15 @@ class AudioEngine {
         this.audioContext.state === 'suspended'
       ) {
         this.suspendedByVisibility = false;
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        this.audioContext.resume().catch(() => {});
+        this.audioContext.resume().catch((e: unknown) => {
+          if (this.audioContext?.state !== 'closed') {
+            reportError(
+              audioPipelineError('AUDIO_CONTEXT_SUSPENDED', {
+                detail: `visibility resume: ${e instanceof Error ? e.message : String(e)}`,
+              }),
+            );
+          }
+        });
       }
     }
   }

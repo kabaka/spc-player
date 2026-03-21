@@ -1,3 +1,4 @@
+import { existsSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
@@ -12,32 +13,50 @@ import { build as viteBuild } from 'vite';
  *
  * During dev, the SW is not registered — HMR and SW don't mix well.
  */
-const buildServiceWorker = (): Plugin => ({
-  name: 'build-service-worker',
-  apply: 'build',
-  async closeBundle() {
-    await viteBuild({
-      configFile: false,
-      define: {
-        __APP_VERSION__: JSON.stringify(
-          process.env.npm_package_version ?? 'dev',
-        ),
-      },
-      build: {
-        emptyOutDir: false,
-        sourcemap: true,
-        rollupOptions: {
-          input: resolve(__dirname, 'src/sw.ts'),
-          output: {
-            entryFileNames: 'sw.js',
-            dir: resolve(__dirname, 'dist'),
-            format: 'iife',
+const buildServiceWorker = (): Plugin => {
+  let base = '/';
+  return {
+    name: 'build-service-worker',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base;
+    },
+    async closeBundle() {
+      // Scan for WASM files produced by the main build so they can be precached
+      const assetsDir = resolve(__dirname, 'dist/assets');
+      let precacheUrls: string[] = [];
+      if (existsSync(assetsDir)) {
+        const wasmFiles = readdirSync(assetsDir).filter((f) =>
+          f.endsWith('.wasm'),
+        );
+        precacheUrls = wasmFiles.map((f) => `${base}assets/${f}`);
+      }
+
+      await viteBuild({
+        configFile: false,
+        define: {
+          __APP_VERSION__: JSON.stringify(
+            process.env.npm_package_version ?? 'dev',
+          ),
+          __BASE_URL__: JSON.stringify(base),
+          __PRECACHE_URLS__: JSON.stringify(precacheUrls),
+        },
+        build: {
+          emptyOutDir: false,
+          sourcemap: true,
+          rollupOptions: {
+            input: resolve(__dirname, 'src/sw.ts'),
+            output: {
+              entryFileNames: 'sw.js',
+              dir: resolve(__dirname, 'dist'),
+              format: 'iife',
+            },
           },
         },
-      },
-    });
-  },
-});
+      });
+    },
+  };
+};
 
 export default defineConfig({
   base: '/spc-player/',

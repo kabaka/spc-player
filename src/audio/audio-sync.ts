@@ -5,6 +5,8 @@
 
 import { useAppStore } from '@/store/store';
 import { audioEngine } from '@/audio/engine';
+import { reportError } from '@/errors/report';
+import { audioPipelineError } from '@/errors/factories';
 
 import type { SettingsSlice } from '@/store/types';
 
@@ -41,7 +43,7 @@ export function subscribeAudioSync(): () => void {
         .recreateAudioContext(state.audioSampleRate)
         .catch((error: unknown) => {
           const detail = error instanceof Error ? error.message : String(error);
-          console.error(`[audio-sync] recreateAudioContext failed: ${detail}`);
+          reportError(audioPipelineError('AUDIO_CONTEXT_CLOSED', { detail }));
         });
     }
   });

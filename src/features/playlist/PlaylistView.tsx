@@ -8,31 +8,9 @@ import { contextMenuStyles } from '@/components/ContextMenu/ContextMenu';
 import { useShortcut } from '@/shortcuts/useShortcut';
 
 import type { PlaylistTrack } from '@/store/types';
+import { formatTime, formatSpokenTime } from '@/utils/format-time';
 
 import styles from './PlaylistView.module.css';
-
-// ── Utility ───────────────────────────────────────────────────────────
-
-function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
-
-function formatSpokenDuration(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const parts: string[] = [];
-  if (minutes > 0) {
-    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
-  }
-  if (seconds > 0 || minutes === 0) {
-    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
-  }
-  return parts.join(' ');
-}
 
 const REPEAT_LABELS: Record<string, string> = {
   off: 'Repeat: off',
@@ -404,7 +382,7 @@ export function PlaylistView() {
     const parts = [
       `Track ${index + 1}: ${track.title}`,
       track.filename !== track.title ? track.filename : null,
-      formatSpokenDuration(track.durationMs),
+      formatSpokenTime(track.durationMs / 1000),
     ].filter(Boolean);
 
     let label = parts.join(', ');
@@ -524,7 +502,7 @@ export function PlaylistView() {
                       <span className={styles.trackNumber}>{index + 1}</span>
                       <span className={styles.trackTitle}>{track.title}</span>
                       <span className={styles.trackDuration}>
-                        {formatTime(track.durationMs)}
+                        {formatTime(track.durationMs / 1000)}
                       </span>
                     </div>
                   </ContextMenu.Trigger>

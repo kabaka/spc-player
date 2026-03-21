@@ -12,31 +12,13 @@ import { MetadataPanel } from '@/features/metadata/MetadataPanel';
 import { MixerPanel } from '@/features/mixer/MixerPanel';
 import { ExportDialog } from '@/features/export/ExportDialog';
 import { CollapsiblePanel } from '@/components/CollapsiblePanel/CollapsiblePanel';
+import { formatTime, formatSpokenTime } from '@/utils/format-time';
 import { WaveformDisplay } from './WaveformDisplay';
 import { LoopMarkers } from './LoopMarkers';
 
 import styles from './PlayerView.module.css';
 
 // ── Utility ───────────────────────────────────────────────────────────
-
-function formatTime(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
-
-function formatSpokenTime(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  const parts: string[] = [];
-  if (minutes > 0) {
-    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
-  }
-  if (seconds > 0 || minutes === 0) {
-    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
-  }
-  return parts.join(' ');
-}
 
 function formatSeekValueText(elapsedSec: number, durationSec: number): string {
   return `${formatSpokenTime(elapsedSec)} of ${formatSpokenTime(durationSec)}`;
@@ -91,16 +73,6 @@ export function PlayerView() {
   const isPlaying = playbackStatus === 'playing';
   const isMuted = volume === 0;
   const hasTrack = metadata !== null;
-
-  // ── Wire playback-ended → nextTrack ────────────────────────────────
-  useEffect(() => {
-    audioEngine.setOnPlaybackEnded(() => {
-      useAppStore.getState().nextTrack();
-    });
-    return () => {
-      audioEngine.setOnPlaybackEnded(null);
-    };
-  }, []);
 
   // ── Sync position from audioStateBuffer during playback ────────────
   // Keep a ref to loopRegion for the rAF loop to avoid re-creating it.

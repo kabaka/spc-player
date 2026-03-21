@@ -2,16 +2,13 @@ import type { ReactNode } from 'react';
 
 import * as Dialog from '@/components/Dialog/Dialog';
 import { defaultKeymap } from '@/shortcuts/default-keymap';
+import { isMacPlatform } from '@/utils/platform';
 
 import type { ShortcutActionId } from '@/shortcuts/types';
 
 import styles from './ShortcutHelpDialog.module.css';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const nav = typeof navigator !== 'undefined' ? (navigator as any) : undefined;
-const IS_MAC =
-  nav?.userAgentData?.platform === 'macOS' ||
-  /Mac|iPhone|iPad/.test(nav?.platform ?? '');
+const IS_MAC = isMacPlatform();
 
 const KEY_DISPLAY: Record<string, [mac: string, other: string]> = {
   Ctrl: ['⌘', 'Ctrl'],

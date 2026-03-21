@@ -176,15 +176,15 @@ The default keymap follows conventions from established audio players (foobar200
 
 ### 2.5 Playlist Actions
 
-| Action                   | Default Binding   | Scope               | Notes                               |
-| ------------------------ | ----------------- | ------------------- | ----------------------------------- |
-| Add files                | `Ctrl+KeyO`       | contextual:playlist | Opens file picker.                  |
-| Remove selected track(s) | `Delete`          | contextual:playlist | With confirmation for batch.        |
-| Move track up            | `Alt+ArrowUp`     | contextual:playlist | Reorder within playlist.            |
-| Move track down          | `Alt+ArrowDown`   | contextual:playlist |                                     |
-| Select all               | `Ctrl+KeyA`       | contextual:playlist |                                     |
-| Deselect all             | `Ctrl+Shift+KeyA` | contextual:playlist | Mirrors `Ctrl+KeyA` for select all. |
-| Play selected track      | `Enter`           | contextual:playlist | Double-click equivalent.            |
+| Action                   | Default Binding        | Scope               | Notes                               |
+| ------------------------ | ---------------------- | ------------------- | ----------------------------------- |
+| Add files                | `Ctrl+KeyO`            | contextual:playlist | Opens file picker.                  |
+| Remove selected track(s) | `Delete` / `Backspace` | contextual:playlist | With confirmation for batch.        |
+| Move track up            | `Alt+ArrowUp`          | contextual:playlist | Reorder within playlist.            |
+| Move track down          | `Alt+ArrowDown`        | contextual:playlist |                                     |
+| Select all               | `Ctrl+KeyA`            | contextual:playlist |                                     |
+| Deselect all             | `Ctrl+Shift+KeyA`      | contextual:playlist | Mirrors `Ctrl+KeyA` for select all. |
+| Play selected track      | `Enter`                | contextual:playlist | Double-click equivalent.            |
 
 ### 2.6 Mixer / Voice Controls
 
@@ -235,6 +235,12 @@ The default keymap follows conventions from established audio players (foobar200
 | Toggle fullscreen      | `KeyF`            | global | Fullscreen API where supported.                                                                     |
 | Close dialog / cancel  | `Escape`          | global | Delegates to Radix when overlay is active.                                                          |
 | Toggle instrument mode | `Backquote`       | global | `` ` `` key — top-left corner, easy to reach.                                                       |
+
+### 2.10a Instrument View Actions
+
+| Action          | Default Binding | Scope                 | Notes                                                                |
+| --------------- | --------------- | --------------------- | -------------------------------------------------------------------- |
+| Toggle keyboard | `Backquote`     | contextual:instrument | Same key as global toggle; contextual scope wins in Instrument view. |
 
 ### 2.10 Reserved Keys (Never Remappable)
 

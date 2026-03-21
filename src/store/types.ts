@@ -148,9 +148,13 @@ export interface UISlice {
   isLoadingTrack: boolean;
   loadingError: string | null;
   isExportDialogOpen: boolean;
+  isInstrumentModeActive: boolean;
+  announcement: string;
   setIsLoadingTrack: (loading: boolean) => void;
   setLoadingError: (error: string | null) => void;
   setIsExportDialogOpen: (open: boolean) => void;
+  toggleInstrumentMode: () => void;
+  setPlaybackAnnouncement: (text: string) => void;
 }
 
 export interface ExportSlice {

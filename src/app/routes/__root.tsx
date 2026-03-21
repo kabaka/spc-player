@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
 import { BottomNav } from '@/components/BottomNav/BottomNav';
 import { ToastContainer } from '@/components/Toast/Toast';
 import { ViewErrorBoundary } from '@/components/ViewErrorBoundary';
+import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useTheme } from '@/hooks/useTheme';
 import { InstallPrompt, UpdatePrompt } from '@/pwa/InstallPrompt';
 import { useMediaSession } from '@/pwa/media-session';
@@ -18,6 +19,7 @@ import { OfflineIndicator } from '@/pwa/OfflineIndicator';
 import { GlobalShortcuts } from '@/shortcuts/GlobalShortcuts';
 import { shortcutManager } from '@/shortcuts/ShortcutManager';
 import { useShortcut } from '@/shortcuts/useShortcut';
+import { useAppStore } from '@/store/store';
 
 import styles from './AppShell.module.css';
 
@@ -29,9 +31,13 @@ function RootComponent() {
   const mainRef = useRef<HTMLElement>(null);
   const location = useRouterState({ select: (s) => s.location });
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const announcement = useAppStore((s) => s.announcement);
 
   // Apply theme from Zustand store
   useTheme();
+
+  // Auto-advance to next track when playback ends
+  useAutoAdvance();
 
   // Activate Media Session for OS-level playback controls
   useMediaSession();
@@ -134,6 +140,15 @@ function RootComponent() {
       <UpdatePrompt />
       <OfflineIndicator />
       <ToastContainer />
+
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="visually-hidden"
+      >
+        {announcement}
+      </div>
     </div>
   );
 }

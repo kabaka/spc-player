@@ -1,3 +1,5 @@
+import { isMacPlatform } from '@/utils/platform';
+
 import type {
   ShortcutActionId,
   ShortcutBinding,
@@ -5,6 +7,7 @@ import type {
   ShortcutRegistration,
 } from './types';
 import { defaultKeymap } from './default-keymap';
+import { useAppStore } from '@/store/store';
 
 const MODIFIER_CODES = new Set([
   'ShiftLeft',
@@ -64,14 +67,22 @@ const INTERACTIVE_ROLES = new Set([
   'link',
 ]);
 
-function detectMac(): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nav = navigator as any;
-  return (
-    nav.userAgentData?.platform === 'macOS' ||
-    /Mac|iPhone|iPad/.test(navigator.platform)
-  );
-}
+const INSTRUMENT_MODE_PASSTHROUGH = new Set([
+  'Space',
+  'Ctrl+Space',
+  'ArrowLeft',
+  'ArrowRight',
+  'Shift+ArrowLeft',
+  'Shift+ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Escape',
+  'Alt+Digit1',
+  'Alt+Digit2',
+  'Alt+Digit3',
+  'Alt+Digit4',
+  'Alt+Digit5',
+]);
 
 export class ShortcutManager {
   private readonly isMac: boolean;
@@ -89,7 +100,7 @@ export class ShortcutManager {
   private isAttached = false;
 
   constructor(keymap?: ReadonlyMap<ShortcutActionId, ShortcutBinding>) {
-    this.isMac = typeof navigator !== 'undefined' ? detectMac() : false;
+    this.isMac = isMacPlatform();
     this.keymap = keymap ?? defaultKeymap;
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
@@ -226,8 +237,16 @@ export class ShortcutManager {
       return;
     }
 
-    // 5. Instrument mode — skip for now, just return
-    // (Instrument mode integration will be added when that feature is built)
+    // 5. Instrument mode — suppress non-reserved global shortcuts
+    if (this.isInstrumentModeActive()) {
+      const instrumentCombo = this.normalizeCombo(event);
+      if (
+        !this.isReservedGlobal(instrumentCombo) &&
+        !INSTRUMENT_MODE_PASSTHROUGH.has(instrumentCombo)
+      ) {
+        return;
+      }
+    }
 
     // 6. Contextual scope
     const contextualResult = this.dispatchFromMap(
@@ -281,6 +300,10 @@ export class ShortcutManager {
 
   private isReservedGlobal(combo: string): boolean {
     return RESERVED_COMBOS.has(combo);
+  }
+
+  private isInstrumentModeActive(): boolean {
+    return useAppStore.getState().isInstrumentModeActive;
   }
 
   private dispatchFromMap(

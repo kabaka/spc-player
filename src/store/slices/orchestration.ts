@@ -11,6 +11,7 @@ import { saveSpcToStorage, loadSpcFromStorage } from '@/storage/spc-storage';
 import { recordRecentPlay } from '@/storage/recently-played';
 import { reportError } from '@/errors/report';
 import { audioPipelineError, storageError } from '@/errors/factories';
+import { resetRecoveryAttempts } from '@/audio/audio-recovery';
 
 const THREE_SECONDS_IN_SAMPLES = DSP_SAMPLE_RATE * 3;
 
@@ -151,6 +152,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
 
       // Load SPC into the audio engine.
       // ⚠ loadSpc transfers buffer ownership — all reads must precede this call.
+      resetRecoveryAttempts();
       await audioEngine.loadSpc(
         buffer,
         secondsToSamples(duration.playSeconds),
@@ -335,6 +337,7 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
       );
 
       // Load into audio engine and start playback
+      resetRecoveryAttempts();
       await audioEngine.loadSpc(
         spcData,
         secondsToSamples(duration.playSeconds),
@@ -363,9 +366,9 @@ export const createOrchestrationSlice: SliceCreator<OrchestrationSlice> = (
           'orchestration/playTrackAtIndex:play',
         );
         // Fire-and-forget — never block playback on history writes
-        void recordRecentPlay(trackId).catch(
-          /* suppress */ Function.prototype as () => void,
-        );
+        void recordRecentPlay(trackId).catch(() => {
+          /* fire-and-forget */
+        });
       }
     } catch (error) {
       const detail =

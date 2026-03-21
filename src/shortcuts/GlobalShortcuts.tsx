@@ -2,8 +2,9 @@ import { useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { audioEngine } from '@/audio/engine';
-import { DSP_SAMPLE_RATE } from '@/core/track-duration';
+import { DSP_SAMPLE_RATE, samplesToSeconds } from '@/core/track-duration';
 import { useAppStore } from '@/store/store';
+import { formatTime } from '@/utils/format-time';
 
 import { useShortcut } from './useShortcut';
 
@@ -31,6 +32,7 @@ export function GlobalShortcuts(): null {
   const setLoopEnd = useAppStore((s) => s.setLoopEnd);
   const toggleLoop = useAppStore((s) => s.toggleLoop);
   const clearLoop = useAppStore((s) => s.clearLoop);
+  const setPlaybackAnnouncement = useAppStore((s) => s.setPlaybackAnnouncement);
   const navigate = useNavigate();
   const preMuteVolumeRef = useRef(1);
 
@@ -190,20 +192,33 @@ export function GlobalShortcuts(): null {
 
   useShortcut('loop.setStart', () => {
     const pos = useAppStore.getState().position;
-    setLoopStart(pos);
+    const seconds = samplesToSeconds(pos);
+    setLoopStart(seconds);
+    setPlaybackAnnouncement(`Loop start set to ${formatTime(seconds)}`);
   });
 
   useShortcut('loop.setEnd', () => {
     const pos = useAppStore.getState().position;
-    setLoopEnd(pos);
+    const seconds = samplesToSeconds(pos);
+    setLoopEnd(seconds);
+    setPlaybackAnnouncement(`Loop end set to ${formatTime(seconds)}`);
   });
 
   useShortcut('loop.toggle', () => {
     toggleLoop();
+    const region = useAppStore.getState().loopRegion;
+    if (region?.active) {
+      setPlaybackAnnouncement(
+        `Loop activated from ${formatTime(region.startTime)} to ${formatTime(region.endTime)}`,
+      );
+    } else {
+      setPlaybackAnnouncement('Loop deactivated');
+    }
   });
 
   useShortcut('loop.clear', () => {
     clearLoop();
+    setPlaybackAnnouncement('Loop cleared');
   });
 
   // ── Navigation ──────────────────────────────────────────────────────
@@ -366,7 +381,7 @@ export function GlobalShortcuts(): null {
   );
 
   useShortcut('general.toggleInstrumentMode', () => {
-    // TODO(#issue): Wire to instrument mode toggle when implemented
+    useAppStore.getState().toggleInstrumentMode();
   });
 
   return null;

@@ -58,9 +58,10 @@ export const registerServiceWorker = async (): Promise<void> => {
   if (!('serviceWorker' in navigator)) return;
 
   try {
+    const base = import.meta.env.BASE_URL;
     const registration = await navigator.serviceWorker.register(
-      '/spc-player/sw.js',
-      { scope: '/spc-player/' },
+      `${base}sw.js`,
+      { scope: base },
     );
 
     // Check if an update is already waiting (e.g., from a previous page load)

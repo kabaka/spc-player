@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { ShortcutManager } from './ShortcutManager';
 
+vi.mock('@/store/store', () => {
+  let instrumentMode = false;
+  return {
+    useAppStore: {
+      getState: () => ({
+        isInstrumentModeActive: instrumentMode,
+      }),
+      _setInstrumentMode: (val: boolean) => {
+        instrumentMode = val;
+      },
+    },
+  };
+});
+
 function createKeyEvent(
   code: string,
   overrides: Partial<KeyboardEvent> = {},
@@ -417,6 +431,80 @@ describe('ShortcutManager', () => {
       document.dispatchEvent(comboEvent('ArrowRight', { repeat: true }));
 
       expect(handler).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('instrument mode', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockStore: any;
+
+    beforeEach(async () => {
+      mockStore = await import('@/store/store');
+    });
+
+    afterEach(() => {
+      mockStore.useAppStore._setInstrumentMode(false);
+    });
+
+    it('suppresses non-transport keys when instrument mode is active', () => {
+      const muteHandler = vi.fn();
+      const resetHandler = vi.fn();
+      const speedHandler = vi.fn();
+      manager.register('playback.mute', muteHandler, { scope: 'global' });
+      manager.register('mixer.unmuteAll', resetHandler, { scope: 'global' });
+      manager.register('playback.speedReset', speedHandler, {
+        scope: 'global',
+      });
+      manager.attach();
+
+      mockStore.useAppStore._setInstrumentMode(true);
+
+      document.dispatchEvent(comboEvent('KeyM'));
+      document.dispatchEvent(comboEvent('KeyR'));
+      document.dispatchEvent(comboEvent('KeyS'));
+
+      expect(muteHandler).not.toHaveBeenCalled();
+      expect(resetHandler).not.toHaveBeenCalled();
+      expect(speedHandler).not.toHaveBeenCalled();
+    });
+
+    it('allows transport keys when instrument mode is active', () => {
+      const playHandler = vi.fn();
+      const seekHandler = vi.fn();
+      manager.register('playback.playPause', playHandler, {
+        scope: 'global',
+      });
+      manager.register('playback.seekBackward', seekHandler, {
+        scope: 'global',
+        allowRepeat: true,
+      });
+      manager.attach();
+
+      mockStore.useAppStore._setInstrumentMode(true);
+
+      document.dispatchEvent(comboEvent('Space'));
+      document.dispatchEvent(comboEvent('ArrowLeft'));
+
+      expect(playHandler).toHaveBeenCalledOnce();
+      expect(seekHandler).toHaveBeenCalledOnce();
+    });
+
+    it('dispatches all keys normally when instrument mode is inactive', () => {
+      const muteHandler = vi.fn();
+      const playHandler = vi.fn();
+      manager.register('playback.mute', muteHandler, { scope: 'global' });
+      manager.register('playback.playPause', playHandler, {
+        scope: 'global',
+      });
+      manager.attach();
+
+      mockStore.useAppStore._setInstrumentMode(false);
+
+      document.dispatchEvent(comboEvent('KeyM'));
+      document.dispatchEvent(comboEvent('Space'));
+
+      expect(muteHandler).toHaveBeenCalledOnce();
+      expect(playHandler).toHaveBeenCalledOnce();
     });
   });
 
