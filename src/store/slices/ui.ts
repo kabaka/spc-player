@@ -1,4 +1,4 @@
-import type { UISlice, SliceCreator } from '../types';
+import type { SliceCreator, UISlice } from '../types';
 
 export const createUISlice: SliceCreator<UISlice> = (set) => ({
   isLoadingTrack: false,

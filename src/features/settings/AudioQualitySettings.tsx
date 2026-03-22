@@ -1,11 +1,11 @@
-import { useCallback, useId } from 'react';
 import type { ChangeEvent } from 'react';
+import { useCallback, useId } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { Label } from '@/components/Label/Label';
-import styles from './AudioQualitySettings.module.css';
-
+import { useAppStore } from '@/store/store';
 import type { SettingsSlice } from '@/store/types';
+
+import styles from './AudioQualitySettings.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────
 

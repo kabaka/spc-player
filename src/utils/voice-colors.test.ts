@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { VOICE_COLORS, getVoiceColor } from './voice-colors';
+import { getVoiceColor, VOICE_COLORS } from './voice-colors';
 
 describe('VOICE_COLORS', () => {
   it('has exactly 8 entries', () => {

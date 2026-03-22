@@ -4,8 +4,8 @@
  * @see docs/adr/0015-error-handling.md — StorageError codes
  */
 
-import { reportError } from '@/errors/report';
 import { storageError } from '@/errors/factories';
+import { reportError } from '@/errors/report';
 
 // ---------------------------------------------------------------------------
 // Detection

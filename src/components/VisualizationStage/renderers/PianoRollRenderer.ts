@@ -1,5 +1,8 @@
-import type { AudioVisualizationData, VisualizationRenderer } from '../types';
+import type { HighContrastColors } from '@/utils/high-contrast';
+import { getHighContrast } from '@/utils/high-contrast';
 import { VOICE_COLORS } from '@/utils/voice-colors';
+
+import type { AudioVisualizationData, VisualizationRenderer } from '../types';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -108,6 +111,7 @@ export class PianoRollRenderer implements VisualizationRenderer {
   private lastVisibleMinNote = DEFAULT_MIN_NOTE;
   private lastVisibleMaxNote = DEFAULT_MAX_NOTE;
   private needsFullRedraw = true;
+  private hcColors: HighContrastColors | null = null;
 
   init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
     this.canvas = canvas;
@@ -118,6 +122,7 @@ export class PianoRollRenderer implements VisualizationRenderer {
     const ctx = this.ctx;
     if (!ctx || this.width <= 0 || this.height <= 0) return;
 
+    this.hcColors = getHighContrast();
     const currentTime = data.positionSamples / SNES_SAMPLE_RATE;
     const timeWindow = this.isMobile
       ? MOBILE_TIME_WINDOW_S
@@ -374,7 +379,7 @@ export class PianoRollRenderer implements VisualizationRenderer {
     showLabels: boolean,
   ): void {
     ctx.clearRect(0, 0, this.width, this.height);
-    ctx.fillStyle = BG_COLOR;
+    ctx.fillStyle = this.hcColors?.background ?? BG_COLOR;
     ctx.fillRect(0, 0, this.width, this.height);
 
     this.drawGrid(
@@ -433,14 +438,15 @@ export class PianoRollRenderer implements VisualizationRenderer {
 
     // Clear the newly exposed strip (right edge)
     const stripX = this.width - scrollPixels;
+    const bgColor = this.hcColors?.background ?? BG_COLOR;
     ctx.clearRect(stripX, 0, scrollPixels, this.height);
-    ctx.fillStyle = BG_COLOR;
+    ctx.fillStyle = bgColor;
     ctx.fillRect(stripX, 0, scrollPixels, this.height);
 
     // Also clear the label margin so grid labels can be redrawn cleanly
     if (showLabels && left > 0) {
       ctx.clearRect(0, 0, left, this.height);
-      ctx.fillStyle = BG_COLOR;
+      ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, left, this.height);
     }
 
@@ -487,7 +493,8 @@ export class PianoRollRenderer implements VisualizationRenderer {
     semitoneH: number,
     showLabels: boolean,
   ): void {
-    ctx.strokeStyle = `rgba(255, 255, 255, ${GRID_ALPHA})`;
+    const hc = this.hcColors;
+    ctx.strokeStyle = hc ? hc.buttonText : `rgba(255, 255, 255, ${GRID_ALPHA})`;
     ctx.lineWidth = 1;
 
     // Horizontal lines at octave boundaries (C notes)
@@ -500,7 +507,7 @@ export class PianoRollRenderer implements VisualizationRenderer {
       ctx.stroke();
 
       if (showLabels && left > 0) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${LABEL_ALPHA})`;
+        ctx.fillStyle = hc ? hc.text : `rgba(255, 255, 255, ${LABEL_ALPHA})`;
         ctx.font = LABEL_FONT;
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
@@ -605,17 +612,27 @@ export class PianoRollRenderer implements VisualizationRenderer {
 
     ctx.globalAlpha = muted ? MUTED_ALPHA : isActive ? 1 : INACTIVE_NOTE_ALPHA;
 
+    const hc = this.hcColors;
+    const fillColor = hc ? (isActive ? hc.highlight : hc.text) : color;
+
     // Glow for active notes (desktop only) — semi-transparent expanded rect
-    if (isActive && !this.isMobile) {
+    if (isActive && !this.isMobile && !hc) {
       const glowAlpha = muted ? MUTED_ALPHA * 0.25 : 0.25;
       ctx.globalAlpha = glowAlpha;
-      ctx.fillStyle = color;
+      ctx.fillStyle = fillColor;
       ctx.fillRect(x1 - 1, y - 1, w + 2, h + 2);
       ctx.globalAlpha = muted ? MUTED_ALPHA : 1;
     }
 
-    ctx.fillStyle = color;
+    ctx.fillStyle = fillColor;
     ctx.fillRect(x1, y, w, h);
+
+    // In high contrast mode, add a border for clarity
+    if (hc && w >= 3 && h >= 3) {
+      ctx.strokeStyle = hc.buttonText;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x1, y, w, h);
+    }
 
     ctx.globalAlpha = 1;
   }

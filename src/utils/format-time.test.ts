@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { formatTime, formatSpokenTime } from './format-time';
+import { formatSpokenTime, formatTime } from './format-time';
 
 describe('formatTime', () => {
   it('formats zero seconds', () => {

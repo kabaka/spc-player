@@ -154,3 +154,22 @@
     opacity: 0.8;
   }
 }
+
+/* ── High contrast mode ─────────────────────────────────────── */
+@media (forced-colors: active) {
+  .stage {
+    border: 1px solid ButtonText;
+  }
+
+  .tabBar {
+    border-bottom: 1px solid ButtonText;
+  }
+
+  .tab[aria-selected='true']::after {
+    background: Highlight;
+  }
+
+  .canvas {
+    border: 1px solid CanvasText;
+  }
+}

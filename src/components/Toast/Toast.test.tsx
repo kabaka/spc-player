@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ToastContainer } from './Toast';
-import { toastStore, showToast, resetToastIdCounter } from './toast-store';
+import { resetToastIdCounter, showToast, toastStore } from './toast-store';
 
 describe('toast-store', () => {
   beforeEach(() => {

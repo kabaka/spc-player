@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { beforeAll, describe, expect, it } from 'vitest';
+
 import {
   parseSpcFile,
   sanitizeForDisplay,

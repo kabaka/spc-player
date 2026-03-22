@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { CoverArt, colorIndexFromTitle, hashTitle } from './CoverArt';
+import { colorIndexFromTitle, CoverArt, hashTitle } from './CoverArt';
 
 describe('CoverArt', () => {
   it('renders without crashing', () => {

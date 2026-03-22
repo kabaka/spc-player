@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
+
 import styles from './ThemeToggle.module.css';
 
 type ThemePreference = 'dark' | 'light' | 'system';

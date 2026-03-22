@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VoiceStateSnapshot } from '@/audio/audio-state-buffer';
-import type { AudioVisualizationData } from '../types';
 
+import type { AudioVisualizationData } from '../types';
 import {
-  StereoFieldRenderer,
   computeCorrelation,
   lissajousToCanvas,
+  StereoFieldRenderer,
 } from './StereoFieldRenderer';
 
 // ── Test Helpers ──────────────────────────────────────────────────────
@@ -58,6 +58,7 @@ function createMockCanvas(): {
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     arc: vi.fn(),
+    rect: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
     fillText: vi.fn(),
@@ -81,6 +82,7 @@ function createMockCanvas(): {
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     arc: vi.fn(),
+    rect: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
     fillText: vi.fn(),

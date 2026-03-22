@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import { audioStateBuffer } from '@/audio/audio-state-buffer';
-
 import type { VoiceStateSnapshot } from '@/audio/audio-state-buffer';
+import { audioStateBuffer } from '@/audio/audio-state-buffer';
 
 import styles from './VoiceStatePanel.module.css';
 

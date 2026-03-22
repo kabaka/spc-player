@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EncoderConfig } from './encoder-types';
 import { FlacEncoder } from './flac-encoder';

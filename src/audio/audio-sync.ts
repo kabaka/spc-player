@@ -3,11 +3,10 @@
  * Subscribes to settings changes and forwards them to the engine.
  */
 
-import { useAppStore } from '@/store/store';
 import { audioEngine } from '@/audio/engine';
-import { reportError } from '@/errors/report';
 import { audioPipelineError } from '@/errors/factories';
-
+import { reportError } from '@/errors/report';
+import { useAppStore } from '@/store/store';
 import type { SettingsSlice } from '@/store/types';
 
 function applyResamplingQuality(

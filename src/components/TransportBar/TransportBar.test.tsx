@@ -1,9 +1,10 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Provider as TooltipProvider } from '@radix-ui/react-tooltip';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SpcMetadata } from '@/core/spc-types';
-import { useAppStore } from '@/store/store';
 import { DSP_SAMPLE_RATE } from '@/core/track-duration';
+import { useAppStore } from '@/store/store';
 
 import { TransportBar } from './TransportBar';
 
@@ -88,6 +89,14 @@ function setStoreEmpty(overrides: Record<string, unknown> = {}) {
   });
 }
 
+function renderTransportBar() {
+  return render(
+    <TooltipProvider>
+      <TransportBar />
+    </TooltipProvider>,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -101,7 +110,7 @@ describe('TransportBar', () => {
   // ── Empty state ─────────────────────────────────────────────────────
 
   it('renders "No track loaded" when no track in store', () => {
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByText('No track loaded')).toBeInTheDocument();
   });
@@ -111,11 +120,11 @@ describe('TransportBar', () => {
   it('renders title and subtitle when metadata is present', () => {
     setStoreWithTrack();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByText('Wind Scene')).toBeInTheDocument();
     expect(
-      screen.getByText('Chrono Trigger · Yasunori Mitsuda'),
+      screen.getByText('Chrono Trigger · Yasunori Mitsuda · 32kHz · ID666'),
     ).toBeInTheDocument();
   });
 
@@ -124,7 +133,7 @@ describe('TransportBar', () => {
       metadata: { ...TEST_METADATA, title: '', gameTitle: '' },
     });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByText('Untitled')).toBeInTheDocument();
   });
@@ -134,7 +143,7 @@ describe('TransportBar', () => {
       metadata: { ...TEST_METADATA, title: '', gameTitle: 'Final Fantasy VI' },
     });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByText('Final Fantasy VI')).toBeInTheDocument();
   });
@@ -144,10 +153,11 @@ describe('TransportBar', () => {
       metadata: { ...TEST_METADATA, gameTitle: '', artist: '' },
     });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByText('Wind Scene')).toBeInTheDocument();
-    expect(screen.queryByText('·', { exact: false })).not.toBeInTheDocument();
+    // Subtitle still shows format info even without gameTitle/artist
+    expect(screen.getByText('32kHz · ID666')).toBeInTheDocument();
   });
 
   // ── Play/pause toggle ──────────────────────────────────────────────
@@ -155,7 +165,7 @@ describe('TransportBar', () => {
   it('calls audioEngine.play() when clicking play', () => {
     setStoreWithTrack({ playbackStatus: 'paused' });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Play' }));
 
@@ -166,7 +176,7 @@ describe('TransportBar', () => {
   it('calls audioEngine.pause() when clicking pause', () => {
     setStoreWithTrack({ playbackStatus: 'playing' });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
 
@@ -177,11 +187,15 @@ describe('TransportBar', () => {
   it('shows Play label when stopped and Pause label when playing', () => {
     setStoreWithTrack({ playbackStatus: 'stopped' });
 
-    const { rerender } = render(<TransportBar />);
+    const { rerender } = renderTransportBar();
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
 
     setStoreWithTrack({ playbackStatus: 'playing' });
-    rerender(<TransportBar />);
+    rerender(
+      <TooltipProvider>
+        <TransportBar />
+      </TooltipProvider>,
+    );
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
   });
 
@@ -192,7 +206,7 @@ describe('TransportBar', () => {
     setStoreWithTrack();
     useAppStore.setState({ previousTrack });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Previous track' }));
 
@@ -204,7 +218,7 @@ describe('TransportBar', () => {
     setStoreWithTrack();
     useAppStore.setState({ nextTrack });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next track' }));
 
@@ -216,7 +230,7 @@ describe('TransportBar', () => {
   it('calls audioEngine.seek() on seek slider value change', () => {
     setStoreWithTrack({ position: 0 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const seekSlider = screen.getByRole('slider', { name: 'Seek position' });
 
@@ -234,7 +248,7 @@ describe('TransportBar', () => {
   it('calls audioEngine.setVolume() on volume slider change', () => {
     setStoreWithTrack({ volume: 0.5 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const volumeSlider = screen.getByRole('slider', { name: 'Volume' });
 
@@ -250,7 +264,7 @@ describe('TransportBar', () => {
   it('mutes volume when clicking mute button', () => {
     setStoreWithTrack({ volume: 0.75 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Mute' }));
 
@@ -261,7 +275,7 @@ describe('TransportBar', () => {
   it('restores previous volume when clicking unmute', () => {
     setStoreWithTrack({ volume: 0.75 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     // Mute first
     fireEvent.click(screen.getByRole('button', { name: 'Mute' }));
@@ -276,7 +290,7 @@ describe('TransportBar', () => {
   it('shows Unmute label and has aria-pressed when muted', () => {
     setStoreWithTrack({ volume: 0 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const muteBtn = screen.getByRole('button', { name: 'Unmute' });
     expect(muteBtn).toHaveAttribute('aria-pressed', 'true');
@@ -285,7 +299,7 @@ describe('TransportBar', () => {
   it('shows Mute label and aria-pressed=false when not muted', () => {
     setStoreWithTrack({ volume: 0.5 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const muteBtn = screen.getByRole('button', { name: 'Mute' });
     expect(muteBtn).toHaveAttribute('aria-pressed', 'false');
@@ -296,7 +310,7 @@ describe('TransportBar', () => {
   it('disables transport buttons when no track is loaded', () => {
     setStoreEmpty();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByRole('button', { name: 'Play' })).toBeDisabled();
     expect(
@@ -308,7 +322,7 @@ describe('TransportBar', () => {
   it('renders seek slider with max=0 when no track is loaded', () => {
     setStoreEmpty();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const seekSlider = screen.getByRole('slider', { name: 'Seek position' });
     expect(seekSlider).toHaveAttribute('aria-valuemax', '0');
@@ -317,7 +331,7 @@ describe('TransportBar', () => {
   it('enables transport buttons when a track is loaded', () => {
     setStoreWithTrack();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByRole('button', { name: 'Play' })).toBeEnabled();
     expect(
@@ -329,7 +343,7 @@ describe('TransportBar', () => {
   // ── ARIA toolbar role ─────────────────────────────────────────────
 
   it('has role="toolbar" with aria-label "Playback controls"', () => {
-    render(<TransportBar />);
+    renderTransportBar();
 
     const toolbar = screen.getByRole('toolbar', {
       name: 'Playback controls',
@@ -342,7 +356,7 @@ describe('TransportBar', () => {
   it('moves focus to next button on ArrowRight', () => {
     setStoreWithTrack();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const toolbar = screen.getByRole('toolbar', {
       name: 'Playback controls',
@@ -361,7 +375,7 @@ describe('TransportBar', () => {
   it('moves focus to previous button on ArrowLeft', () => {
     setStoreWithTrack();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const toolbar = screen.getByRole('toolbar', {
       name: 'Playback controls',
@@ -381,7 +395,7 @@ describe('TransportBar', () => {
   it('wraps focus from last to first button on ArrowRight', () => {
     setStoreWithTrack();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const toolbar = screen.getByRole('toolbar', {
       name: 'Playback controls',
@@ -401,7 +415,7 @@ describe('TransportBar', () => {
     // Position = 90 seconds worth of samples
     setStoreWithTrack({ position: 90 * DSP_SAMPLE_RATE });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     // Current time: 1:30, Total time: 3:10 (190 seconds)
     expect(screen.getByText('1:30')).toBeInTheDocument();
@@ -411,7 +425,7 @@ describe('TransportBar', () => {
   it('shows 0:00 / 0:00 when no track is loaded', () => {
     setStoreEmpty();
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     const timeGroup = screen.getByRole('group', { name: 'Playback position' });
     const zeroes = within(timeGroup).getAllByText('0:00');
@@ -421,7 +435,7 @@ describe('TransportBar', () => {
   it('displays volume percentage', () => {
     setStoreWithTrack({ volume: 0.65 });
 
-    render(<TransportBar />);
+    renderTransportBar();
 
     expect(screen.getByText('65%')).toBeInTheDocument();
   });

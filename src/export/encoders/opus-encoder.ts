@@ -11,9 +11,9 @@
  * @see docs/dev/plans/audio-engine-plan.md §3.4
  */
 
-import type { Encoder, EncoderConfig } from './encoder-types';
 import type { OpusFrame } from '../webm-muxer';
 import { muxOpusWebm } from '../webm-muxer';
+import type { Encoder, EncoderConfig } from './encoder-types';
 
 // ---------------------------------------------------------------------------
 // WebCodecs type narrowing for environments without WebCodecs

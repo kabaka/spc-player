@@ -2,7 +2,7 @@
  * Unit tests for pitch-utils.ts — MIDI note to DSP pitch conversion.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { midiNoteToPitch, midiVelocityToVolume } from './pitch-utils';
 

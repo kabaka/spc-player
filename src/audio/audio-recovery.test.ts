@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  recoverAudioPipeline,
   recoverAudioContext,
+  recoverAudioPipeline,
   resetRecoveryAttempts,
 } from './audio-recovery';
 
@@ -30,8 +30,9 @@ vi.mock('@/components/Toast/toast-store', () => ({
   showToast: vi.fn(),
 }));
 
-import { audioEngine } from './engine';
 import { showToast } from '@/components/Toast/toast-store';
+
+import { audioEngine } from './engine';
 
 describe('recoverAudioPipeline', () => {
   beforeEach(() => {

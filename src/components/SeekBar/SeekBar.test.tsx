@@ -1,10 +1,10 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SeekBar } from './SeekBar';
+import type { LoopRegion } from '@/store/types';
 
 import type { SeekBarProps } from './SeekBar';
-import type { LoopRegion } from '@/store/types';
+import { SeekBar } from './SeekBar';
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 

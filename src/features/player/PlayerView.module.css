@@ -3,10 +3,59 @@
 .playerView {
   display: flex;
   flex-direction: column;
-  gap: var(--spc-space-4);
+  gap: var(--spc-space-section-gap);
   padding: var(--spc-space-3);
   max-width: 100%;
   margin: 0 auto;
+}
+
+/* ── Empty state ───────────────────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--spc-space-3);
+  padding: var(--spc-space-8) var(--spc-space-4);
+  flex: 1;
+  min-height: 300px;
+}
+
+.emptyIcon {
+  font-size: var(--spc-font-size-4xl);
+  line-height: 1;
+}
+
+.emptyHeading {
+  margin: 0;
+  font-size: var(--spc-font-size-xl);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+}
+
+.emptyDescription {
+  margin: 0;
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-relaxed);
+}
+
+.emptyLink {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-accent-text);
+  text-decoration: none;
+}
+
+.emptyLink:hover {
+  text-decoration: underline;
+}
+
+.emptyLink:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--spc-radius-sm);
 }
 
 /* ── Tablet (≥ 640px) ──────────────────────────────────────────── */
@@ -14,7 +63,7 @@
 @media (min-width: 640px) {
   .playerView {
     max-width: 640px;
-    padding: var(--spc-space-4);
+    padding: var(--spc-space-3);
   }
 }
 
@@ -23,7 +72,7 @@
 @media (min-width: 1024px) {
   .playerView {
     max-width: 800px;
-    padding: var(--spc-space-6);
-    gap: var(--spc-space-5);
+    padding: var(--spc-space-4);
+    gap: var(--spc-space-section-gap);
   }
 }

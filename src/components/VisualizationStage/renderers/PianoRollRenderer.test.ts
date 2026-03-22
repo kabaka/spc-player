@@ -1,12 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VoiceStateSnapshot } from '@/audio/audio-state-buffer';
 
 import type { AudioVisualizationData } from '../types';
-
 import {
-  PianoRollRenderer,
   frequencyToMidiNote,
+  PianoRollRenderer,
   pitchToMidiNote,
 } from './PianoRollRenderer';
 

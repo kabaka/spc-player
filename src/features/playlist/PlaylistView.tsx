@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { Button } from '@/components/Button/Button';
 import { PlaylistTrackList } from '@/components/PlaylistTrackList/PlaylistTrackList';
 import { useShortcut } from '@/shortcuts/useShortcut';
+import { useAppStore } from '@/store/store';
 
 import styles from './PlaylistView.module.css';
 

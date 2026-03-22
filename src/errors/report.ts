@@ -3,9 +3,9 @@
  * See ADR-0015 §reportError for the canonical specification.
  */
 
-import type { AppError } from '../types/errors';
-import { showToast } from '../components/Toast/toast-store';
 import type { ToastSeverity } from '../components/Toast/toast-store';
+import { showToast } from '../components/Toast/toast-store';
+import type { AppError } from '../types/errors';
 
 // ---------------------------------------------------------------------------
 // Error log entry shape

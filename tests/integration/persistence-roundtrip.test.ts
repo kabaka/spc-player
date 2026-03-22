@@ -8,7 +8,7 @@
  * rather than the IndexedDB adapter itself.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StateStorage } from 'zustand/middleware';
 
 // ---------------------------------------------------------------------------
@@ -366,16 +366,14 @@ describe('persistence round-trip', () => {
       store1.getState().setAudioSampleRate(44100);
       store1.getState().setVolume(0.6);
       store1.getState().setDefaultLoopCount(3);
-      store1
-        .getState()
-        .addTracks([
-          {
-            id: 'trk1',
-            filename: 'overworld.spc',
-            title: 'Overworld',
-            durationMs: 200_000,
-          },
-        ]);
+      store1.getState().addTracks([
+        {
+          id: 'trk1',
+          filename: 'overworld.spc',
+          title: 'Overworld',
+          durationMs: 200_000,
+        },
+      ]);
       store1.getState().setActiveIndex(0);
       store1.getState().setActiveTrackId('trk1');
       store1.getState().setRepeatMode('one');

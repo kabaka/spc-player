@@ -1,5 +1,6 @@
 /// <reference types="zustand/middleware" />
 import type { StateCreator } from 'zustand';
+
 import type { SpcMetadata } from '@/core/spc-types';
 
 // ── Domain types ──────────────────────────────────────────────────────
@@ -220,7 +221,8 @@ export type VisualizationMode =
   | 'piano-roll'
   | 'spectrum'
   | 'stereo-field'
-  | 'cover-art';
+  | 'cover-art'
+  | 'voice-timeline';
 
 export interface PianoRollSettings {
   scrollSpeed: number;
@@ -241,6 +243,13 @@ export interface StereoFieldSettings {
 
 export interface CoverArtSettings {
   externalFetchEnabled: boolean;
+  /** Bumped when user uploads new cover art, to trigger renderer refresh. */
+  version: number;
+}
+
+export interface VoiceTimelineSettings {
+  timeWindow: number;
+  showEnvelopes: boolean;
 }
 
 export interface VisualizationSlice {
@@ -249,11 +258,13 @@ export interface VisualizationSlice {
   spectrum: SpectrumSettings;
   stereoField: StereoFieldSettings;
   coverArt: CoverArtSettings;
+  voiceTimeline: VoiceTimelineSettings;
   setActiveMode: (mode: VisualizationMode) => void;
   setPianoRollSettings: (settings: Partial<PianoRollSettings>) => void;
   setSpectrumSettings: (settings: Partial<SpectrumSettings>) => void;
   setStereoFieldSettings: (settings: Partial<StereoFieldSettings>) => void;
   setCoverArtSettings: (settings: Partial<CoverArtSettings>) => void;
+  setVoiceTimelineSettings: (settings: Partial<VoiceTimelineSettings>) => void;
 }
 
 // ── Combined types ────────────────────────────────────────────────────

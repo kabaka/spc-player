@@ -5,13 +5,13 @@
  * @see docs/adr/0015-error-handling.md — toast display strategy
  */
 
-import { useCallback } from 'react';
 import { Toast as RadixToast } from 'radix-ui';
+import { useCallback } from 'react';
 
+import styles from './Toast.module.css';
 import type { ToastItem, ToastSeverity } from './toast-store';
 import { toastStore } from './toast-store';
 import { useToasts } from './useToast';
-import styles from './Toast.module.css';
 
 // ---------------------------------------------------------------------------
 // Severity → ARIA live region mapping

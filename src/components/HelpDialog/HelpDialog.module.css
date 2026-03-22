@@ -1,0 +1,322 @@
+/* HelpDialog.module.css */
+
+.dialogContent {
+  max-width: 800px;
+  width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.header {
+  padding: var(--spc-space-6) var(--spc-space-6) 0;
+  flex-shrink: 0;
+}
+
+.title {
+  margin-bottom: var(--spc-space-1);
+}
+
+.description {
+  margin-bottom: var(--spc-space-4);
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────── */
+
+.tabList {
+  display: flex;
+  gap: var(--spc-space-0-5);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  padding-bottom: 0;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabTrigger {
+  flex-shrink: 0;
+  padding: var(--spc-space-2) var(--spc-space-3);
+  font-size: var(--spc-font-size-sm);
+  font-weight: 500;
+  color: var(--spc-color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--spc-duration-fast) var(--spc-easing-out),
+    border-color var(--spc-duration-fast) var(--spc-easing-out);
+}
+
+.tabTrigger:hover {
+  color: var(--spc-color-text);
+}
+
+.tabTrigger:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--spc-radius-sm);
+}
+
+.tabTrigger[data-state='active'] {
+  color: var(--spc-color-accent-text);
+  border-bottom-color: var(--spc-color-accent);
+}
+
+/* ── Tab content ──────────────────────────────────────────────── */
+
+.tabContent {
+  padding: var(--spc-space-4) var(--spc-space-6) var(--spc-space-6);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Content sections ─────────────────────────────────────────── */
+
+.section {
+  margin-bottom: var(--spc-space-6);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: var(--spc-font-size-base);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin-bottom: var(--spc-space-2);
+}
+
+.paragraph {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-relaxed);
+  margin-bottom: var(--spc-space-3);
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Steps (Getting Started) ──────────────────────────────────── */
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+
+.step {
+  counter-increment: step;
+  display: flex;
+  gap: var(--spc-space-3);
+  align-items: flex-start;
+  padding: var(--spc-space-2) 0;
+}
+
+.step::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-accent-text);
+  background-color: var(--spc-color-accent-subtle);
+  border-radius: 50%;
+}
+
+.stepContent {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text);
+  line-height: var(--spc-leading-normal);
+}
+
+.stepContent strong {
+  font-weight: var(--spc-font-weight-semibold);
+}
+
+/* ── Link ─────────────────────────────────────────────────────── */
+
+.link {
+  color: var(--spc-color-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover {
+  color: var(--spc-color-accent);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--spc-radius-sm);
+}
+
+/* ── Keyboard shortcuts ───────────────────────────────────────── */
+
+.shortcutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spc-space-6);
+}
+
+@media (max-width: 640px) {
+  .shortcutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shortcutCategory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.categoryTitle {
+  font-size: var(--spc-font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--spc-color-text-secondary);
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  padding-bottom: var(--spc-space-1);
+  margin-bottom: var(--spc-space-1);
+}
+
+.shortcutRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spc-space-3);
+  padding: var(--spc-space-1) 0;
+}
+
+.shortcutLabel {
+  color: var(--spc-color-text);
+  font-size: var(--spc-font-size-sm);
+}
+
+.keys {
+  display: flex;
+  gap: var(--spc-space-1);
+  flex-shrink: 0;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: var(--spc-space-0-5) var(--spc-space-1-5);
+  font-family: inherit;
+  font-size: var(--spc-font-size-xs);
+  font-weight: 500;
+  color: var(--spc-color-text-secondary);
+  background-color: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  white-space: nowrap;
+}
+
+/* ── Table (Export formats, Troubleshooting) ──────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--spc-font-size-sm);
+}
+
+.table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--spc-color-text-secondary);
+  border-bottom: 1px solid var(--spc-color-border);
+  padding: var(--spc-space-2) var(--spc-space-2);
+}
+
+.table td {
+  color: var(--spc-color-text);
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  padding: var(--spc-space-2) var(--spc-space-2);
+  vertical-align: top;
+}
+
+/* ── Glossary (Analysis tab) ──────────────────────────────────── */
+
+.glossary {
+  display: grid;
+  gap: var(--spc-space-3);
+}
+
+.glossaryTerm {
+  font-size: var(--spc-font-size-sm);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-accent-text);
+  margin-bottom: var(--spc-space-1);
+}
+
+.glossaryDef {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-normal);
+  margin: 0;
+}
+
+/* ── Info list (Mixer voices, Instrument layout) ──────────────── */
+
+.infoList {
+  list-style: disc;
+  padding-left: var(--spc-space-5);
+  margin: 0;
+}
+
+.infoList li {
+  font-size: var(--spc-font-size-sm);
+  color: var(--spc-color-text-secondary);
+  line-height: var(--spc-leading-relaxed);
+  padding: var(--spc-space-1) 0;
+}
+
+/* ── About footer ─────────────────────────────────────────────── */
+
+.aboutMeta {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .dialogContent {
+    max-width: 100vw;
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .tabContent {
+    padding: var(--spc-space-3) var(--spc-space-4) var(--spc-space-4);
+  }
+
+  .header {
+    padding: var(--spc-space-4) var(--spc-space-4) 0;
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spc-space-1) var(--spc-space-1);
+    font-size: var(--spc-font-size-xs);
+  }
+}

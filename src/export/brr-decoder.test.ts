@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- test assertions validate non-null before use */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { decodeBrrSample, listBrrSamples } from './brr-decoder';
 
 // ---------------------------------------------------------------------------

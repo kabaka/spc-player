@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- test assertions validate non-null before use */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EncoderConfig, ExportMetadata } from './encoder-types';
-import { Mp3Encoder, buildId3v2Tag } from './mp3-encoder';
+import { buildId3v2Tag, Mp3Encoder } from './mp3-encoder';
 
 // ---------------------------------------------------------------------------
 // Mock wasm-media-encoders MP3 encoder via dependency injection

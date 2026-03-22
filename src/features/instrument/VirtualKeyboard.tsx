@@ -1,8 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { midiNoteToName, midiNoteToSpokenName } from './note-mapping';
-
 import styles from './VirtualKeyboard.module.css';
 
 export interface VirtualKeyboardProps {

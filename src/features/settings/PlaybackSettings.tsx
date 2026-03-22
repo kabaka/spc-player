@@ -1,8 +1,9 @@
-import { useCallback, useId } from 'react';
 import type { ChangeEvent } from 'react';
+import { useCallback, useId } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { Label } from '@/components/Label/Label';
+import { useAppStore } from '@/store/store';
+
 import styles from './PlaybackSettings.module.css';
 
 // ── Component ─────────────────────────────────────────────────────────

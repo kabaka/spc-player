@@ -1,3 +1,5 @@
+import type { HighContrastColors } from '@/utils/high-contrast';
+import { getHighContrast } from '@/utils/high-contrast';
 import { getVoiceColor } from '@/utils/voice-colors';
 
 import type { AudioVisualizationData, VisualizationRenderer } from '../types';
@@ -105,6 +107,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
   private reduceMotion = false;
   private motionQuery: MediaQueryList | null = null;
   private motionHandler: ((e: MediaQueryListEvent) => void) | null = null;
+  private hcColors: HighContrastColors | null = null;
 
   init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
     // Clean up any prior trail canvas to prevent leaks on double-init
@@ -134,6 +137,8 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     const ctx = this.ctx;
     if (!ctx) return;
 
+    this.hcColors = getHighContrast();
+
     // Read settings from data
     if (data.stereoFieldSettings) {
       this.mode = data.stereoFieldSettings.mode;
@@ -159,7 +164,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
       if (this.trailCtx) {
         this.trailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         // Clear trail on resize
-        this.trailCtx.fillStyle = BG_COLOR;
+        this.trailCtx.fillStyle = this.hcColors?.background ?? BG_COLOR;
         this.trailCtx.fillRect(0, 0, width, height);
       }
     }
@@ -196,7 +201,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
 
     if (this.reduceMotion) {
       // Static mode: clear and draw current positions only
-      ctx.fillStyle = BG_COLOR;
+      ctx.fillStyle = this.hcColors?.background ?? BG_COLOR;
       ctx.fillRect(0, 0, width, height);
       this.drawLissajousGrid(ctx, cx, cy, scale);
       this.drawLissajousPoints(ctx, data, cx, cy, scale, pointRadius);
@@ -208,14 +213,17 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     if (trailCtx && this.trailCanvas) {
       // Fade existing content: overlay semi-transparent background
       const fadeAlpha = 1 - this.decay;
-      trailCtx.fillStyle = `rgba(22, 22, 34, ${fadeAlpha})`;
+      const bgColor = this.hcColors?.background ?? '22, 22, 34';
+      trailCtx.fillStyle = this.hcColors
+        ? bgColor // Use opaque bg in HC mode (no trails)
+        : `rgba(22, 22, 34, ${fadeAlpha})`;
       trailCtx.fillRect(0, 0, width, height);
 
       // Draw new points onto the trail canvas
       this.drawLissajousPoints(trailCtx, data, cx, cy, scale, pointRadius);
 
       // Composite: draw background, grid, then trail
-      ctx.fillStyle = BG_COLOR;
+      ctx.fillStyle = this.hcColors?.background ?? BG_COLOR;
       ctx.fillRect(0, 0, width, height);
       this.drawLissajousGrid(ctx, cx, cy, scale);
 
@@ -226,7 +234,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
       ctx.restore();
     } else {
       // Fallback: no trail canvas
-      ctx.fillStyle = BG_COLOR;
+      ctx.fillStyle = this.hcColors?.background ?? BG_COLOR;
       ctx.fillRect(0, 0, width, height);
       this.drawLissajousGrid(ctx, cx, cy, scale);
       this.drawLissajousPoints(ctx, data, cx, cy, scale, pointRadius);
@@ -239,7 +247,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     cy: number,
     scale: number,
   ): void {
-    ctx.strokeStyle = GRID_COLOR;
+    ctx.strokeStyle = this.hcColors?.buttonText ?? GRID_COLOR;
     ctx.lineWidth = 1;
 
     // Horizontal center line
@@ -267,7 +275,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     ctx.stroke();
 
     // Axis labels
-    ctx.fillStyle = LABEL_COLOR;
+    ctx.fillStyle = this.hcColors?.text ?? LABEL_COLOR;
     ctx.font = LABEL_FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -301,7 +309,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
 
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = getVoiceColor(i);
+      ctx.fillStyle = this.hcColors?.highlight ?? getVoiceColor(i);
       ctx.fill();
     }
   }
@@ -326,7 +334,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     }
 
     // Clear
-    ctx.fillStyle = BG_COLOR;
+    ctx.fillStyle = this.hcColors?.background ?? BG_COLOR;
     ctx.fillRect(0, 0, width, height);
 
     const cx = width / 2;
@@ -356,7 +364,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
   ): void {
     ctx.beginPath();
     ctx.arc(cx, cy, radius, Math.PI, 0);
-    ctx.strokeStyle = GRID_COLOR;
+    ctx.strokeStyle = this.hcColors?.buttonText ?? GRID_COLOR;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -375,7 +383,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
         cx + outerR * Math.cos(angle),
         cy - outerR * Math.abs(Math.sin(angle)),
       );
-      ctx.strokeStyle = LABEL_COLOR;
+      ctx.strokeStyle = this.hcColors?.text ?? LABEL_COLOR;
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -399,20 +407,22 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(endX, endY);
-    ctx.strokeStyle = NEEDLE_COLOR;
+    ctx.strokeStyle = this.hcColors?.text ?? NEEDLE_COLOR;
     ctx.lineWidth = 2;
     ctx.stroke();
 
     // Needle tip dot
     ctx.beginPath();
     ctx.arc(endX, endY, 4, 0, Math.PI * 2);
-    ctx.fillStyle = correlationColor(clamped);
+    ctx.fillStyle = this.hcColors
+      ? this.hcColors.highlight
+      : correlationColor(clamped);
     ctx.fill();
 
     // Center pivot
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-    ctx.fillStyle = NEEDLE_COLOR;
+    ctx.fillStyle = this.hcColors?.text ?? NEEDLE_COLOR;
     ctx.fill();
   }
 
@@ -423,31 +433,52 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     radius: number,
   ): void {
     const histLen = radius * 0.85;
+    const count = this.correlationCount;
+    const hc = this.hcColors;
+
+    // Batch dots into opacity bands to reduce draw calls from ~128 to ~4-12.
+    // Use 2×2 rects instead of arcs for cheaper rendering.
+    const bandCount = 4;
 
     ctx.save();
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 1;
 
-    // Draw as individual small dots along the arc
-    for (let i = 0; i < this.correlationCount; i++) {
-      const idx =
-        (this.correlationIndex - 1 - i + CORRELATION_HISTORY_SIZE) %
-        CORRELATION_HISTORY_SIZE;
-      const val = this.correlationHistory[idx];
-      const clamped = Math.max(-1, Math.min(1, val));
-      const angle = Math.PI * (1 - (clamped + 1) / 2);
+    for (let band = 0; band < bandCount; band++) {
+      const bandStart = Math.floor((band * count) / bandCount);
+      const bandEnd = Math.floor(((band + 1) * count) / bandCount);
+      if (bandStart >= bandEnd) continue;
 
-      // Fade older samples
-      const age = i / this.correlationCount;
-      ctx.globalAlpha = 0.4 * (1 - age);
+      const midAge = (bandStart + bandEnd - 1) / (2 * count);
+      ctx.globalAlpha = 0.4 * (1 - midAge);
 
-      const px = cx + histLen * Math.cos(angle);
-      const py = cy - histLen * Math.abs(Math.sin(angle));
+      const colors = hc
+        ? [hc.highlight]
+        : [COLOR_GREEN, COLOR_YELLOW, COLOR_RED];
 
-      ctx.beginPath();
-      ctx.arc(px, py, 2, 0, Math.PI * 2);
-      ctx.fillStyle = correlationColor(clamped);
-      ctx.fill();
+      for (const color of colors) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        let hasRect = false;
+
+        for (let i = bandStart; i < bandEnd; i++) {
+          const idx =
+            (this.correlationIndex - 1 - i + CORRELATION_HISTORY_SIZE) %
+            CORRELATION_HISTORY_SIZE;
+          const val = this.correlationHistory[idx];
+          const clamped = Math.max(-1, Math.min(1, val));
+
+          if (!hc && correlationColor(clamped) !== color) continue;
+
+          const angle = Math.PI * (1 - (clamped + 1) / 2);
+          const px = cx + histLen * Math.cos(angle);
+          const py = cy - histLen * Math.abs(Math.sin(angle));
+          ctx.rect(px - 1, py - 1, 2, 2);
+          hasRect = true;
+        }
+
+        if (hasRect) {
+          ctx.fill();
+        }
+      }
     }
 
     ctx.restore();
@@ -459,7 +490,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     cy: number,
     radius: number,
   ): void {
-    ctx.fillStyle = LABEL_COLOR;
+    ctx.fillStyle = this.hcColors?.text ?? LABEL_COLOR;
     ctx.font = LABEL_FONT;
 
     const labelR = radius + 18;

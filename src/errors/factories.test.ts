@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
+import type { SpcParseWarningCode } from '../types/errors';
 import {
-  spcParseError,
   audioPipelineError,
-  storageError,
   exportError,
   midiError,
   networkError,
-  uiError,
+  spcParseError,
   spcParseWarning,
+  storageError,
+  uiError,
 } from './factories';
-import type { SpcParseWarningCode } from '../types/errors';
 
 // ---------------------------------------------------------------------------
 // SPC Parse Errors

@@ -1,5 +1,5 @@
-import type { TrackDuration } from '@/store/types';
 import type { Xid6Timing } from '@/core/spc-types';
+import type { TrackDuration } from '@/store/types';
 
 // ── Constants ─────────────────────────────────────────────────────────
 

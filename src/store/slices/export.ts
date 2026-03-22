@@ -1,17 +1,16 @@
-import type {
-  ExportJob,
-  ExportSlice,
-  ExportProgressPhase,
-  SliceCreator,
-} from '../types';
-
+import type { ExportMetadata } from '@/audio/worker-protocol';
 import {
-  getExportQueueManager,
   type ExportJobDescriptor,
   type ExportStoreCallbacks,
+  getExportQueueManager,
 } from '@/export/ExportQueueManager';
 
-import type { ExportMetadata } from '@/audio/worker-protocol';
+import type {
+  ExportJob,
+  ExportProgressPhase,
+  ExportSlice,
+  SliceCreator,
+} from '../types';
 
 // ---------------------------------------------------------------------------
 // Helpers

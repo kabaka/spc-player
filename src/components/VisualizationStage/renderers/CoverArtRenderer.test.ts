@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AudioVisualizationData } from '../types';
-
 import {
-  CoverArtRenderer,
   colorIndexFromTitle,
+  CoverArtRenderer,
   hashTitle,
 } from './CoverArtRenderer';
 

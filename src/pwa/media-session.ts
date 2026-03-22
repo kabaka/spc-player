@@ -6,8 +6,8 @@
 
 import { useEffect } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { audioEngine } from '@/audio/engine';
+import { useAppStore } from '@/store/store';
 
 /**
  * Activates Media Session integration. Call this in a component that mounts

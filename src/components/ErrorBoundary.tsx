@@ -7,11 +7,11 @@
  * @see docs/adr/0015-error-handling.md
  */
 
-import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 
-import { reportError } from '@/errors/report';
 import { uiError } from '@/errors/factories';
+import { reportError } from '@/errors/report';
 
 import styles from './ErrorBoundary.module.css';
 

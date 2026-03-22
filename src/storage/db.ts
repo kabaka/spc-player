@@ -1,5 +1,5 @@
-import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
+import { openDB } from 'idb';
 
 interface SpcPlayerDB extends DBSchema {
   'zustand-state': {
@@ -46,10 +46,19 @@ interface SpcPlayerDB extends DBSchema {
       updatedAt: number;
     };
   };
+  'cover-art': {
+    key: string;
+    value: {
+      gameTitle: string;
+      imageData: ArrayBuffer;
+      source: 'user' | 'retroarch';
+      cachedAt: number;
+    };
+  };
 }
 
 const DB_NAME = 'spc-player';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbInstance: IDBPDatabase<SpcPlayerDB> | null = null;
 
@@ -87,6 +96,15 @@ export const getDb = async (): Promise<IDBPDatabase<SpcPlayerDB>> => {
         if (!db.objectStoreNames.contains('timing-overrides')) {
           db.createObjectStore('timing-overrides', {
             keyPath: 'trackId',
+          });
+        }
+      }
+
+      // ── v2 → v3: cover art store ───────────────────────────────
+      if (oldVersion < 3) {
+        if (!db.objectStoreNames.contains('cover-art')) {
+          db.createObjectStore('cover-art', {
+            keyPath: 'gameTitle',
           });
         }
       }

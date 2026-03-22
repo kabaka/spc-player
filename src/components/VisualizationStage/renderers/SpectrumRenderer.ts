@@ -1,5 +1,7 @@
-import type { AudioVisualizationData, VisualizationRenderer } from '../types';
 import { getCssColor } from '@/utils/canvas-renderer';
+import { getHighContrast } from '@/utils/high-contrast';
+
+import type { AudioVisualizationData, VisualizationRenderer } from '../types';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -156,6 +158,7 @@ export class SpectrumRenderer implements VisualizationRenderer {
   private gridColor = 'rgba(255, 255, 255, 0.06)';
   private barGradient: CanvasGradient | null = null;
   private fillGradient: CanvasGradient | null = null;
+  private wasHighContrast = false;
 
   init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
     this.canvas = canvas;
@@ -166,6 +169,21 @@ export class SpectrumRenderer implements VisualizationRenderer {
   draw(data: AudioVisualizationData, deltaTime: number): void {
     const ctx = this.ctx;
     if (!ctx || !data.analyserData || data.analyserData.length === 0) return;
+
+    // Apply high contrast overrides if active
+    const hc = getHighContrast();
+    const isHc = hc !== null;
+    if (isHc !== this.wasHighContrast) {
+      this.wasHighContrast = isHc;
+      if (hc) {
+        this.accentColor = hc.highlight;
+        this.gridColor = hc.buttonText;
+        this.labelColor = hc.text;
+      } else {
+        this.readThemeColors();
+      }
+      this.rebuildGradients();
+    }
 
     const mode = data.spectrumSettings?.mode ?? 'bars';
 

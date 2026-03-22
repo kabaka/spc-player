@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestStore } from '../test-helpers';
 
@@ -40,6 +40,7 @@ describe('VisualizationSlice', () => {
     it('has correct cover art defaults', () => {
       expect(store.getState().coverArt).toEqual({
         externalFetchEnabled: false,
+        version: 0,
       });
     });
   });

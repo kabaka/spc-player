@@ -6,16 +6,16 @@
  */
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- test assertions validate non-null before use */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { MidiEventHandlers } from './midi-input';
 import {
-  isMidiSupported,
-  initMidi,
   disposeMidi,
   getConnectedDevices,
+  initMidi,
+  isMidiSupported,
   selectDevice,
 } from './midi-input';
-import type { MidiEventHandlers } from './midi-input';
 
 // ---------------------------------------------------------------------------
 // Mock MIDI infrastructure

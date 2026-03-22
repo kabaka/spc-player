@@ -9,8 +9,8 @@ import { CoverArtRenderer } from './renderers/CoverArtRenderer';
 import { PianoRollRenderer } from './renderers/PianoRollRenderer';
 import { SpectrumRenderer } from './renderers/SpectrumRenderer';
 import { StereoFieldRenderer } from './renderers/StereoFieldRenderer';
+import { VoiceTimelineRenderer } from './renderers/VoiceTimelineRenderer';
 import type { AudioVisualizationData, VisualizationRenderer } from './types';
-
 import styles from './VisualizationStage.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -20,17 +20,22 @@ const TABS: { mode: VisualizationMode; label: string }[] = [
   { mode: 'spectrum', label: 'Spectrum' },
   { mode: 'stereo-field', label: 'Stereo Field' },
   { mode: 'cover-art', label: 'Cover Art' },
+  { mode: 'voice-timeline', label: 'Voice Timeline' },
 ];
 
 const MOBILE_BREAKPOINT = 768;
 const MAX_MOBILE_DPR = 2;
 const REDUCED_MOTION_INTERVAL_MS = 250;
+const FRAME_BUDGET_MS = 6;
+const FRAME_WARN_INTERVAL_MS = 5_000;
 
 const ARIA_LABELS: Record<VisualizationMode, string> = {
   'piano-roll': 'Piano roll visualization showing active voices',
   spectrum: 'Frequency spectrum analyzer',
   'stereo-field': 'Stereo field visualization',
   'cover-art': 'Cover art display',
+  'voice-timeline':
+    'Voice timeline visualization showing activity of 8 audio voices over time',
 };
 
 // ── Renderer factory ──────────────────────────────────────────────────
@@ -46,6 +51,8 @@ function createRenderer(mode: VisualizationMode): VisualizationRenderer {
       return new StereoFieldRenderer();
     case 'cover-art':
       return new CoverArtRenderer();
+    case 'voice-timeline':
+      return new VoiceTimelineRenderer();
   }
 }
 
@@ -98,6 +105,7 @@ export function VisualizationStage() {
   const lastTimestampRef = useRef(0);
   const lastDrawTimeRef = useRef(0);
   const frameCountRef = useRef(0);
+  const isMobileRef = useRef(false);
 
   // ── Tab keyboard navigation ─────────────────────────────────────
   const handleTabKeyDown = useCallback(
@@ -167,6 +175,8 @@ export function VisualizationStage() {
       if (newDims) {
         renderer.resize(newDims.width, newDims.height, newDims.dpr);
       }
+      isMobileRef.current =
+        (newDims?.width ?? wrapper.clientWidth) < MOBILE_BREAKPOINT;
     });
     resizeObserver.observe(wrapper);
 
@@ -241,6 +251,13 @@ export function VisualizationStage() {
       return data;
     }
 
+    // Initialize cached mobile breakpoint from container width
+    isMobileRef.current = wrapper.clientWidth < MOBILE_BREAKPOINT;
+
+    // Frame timing instrumentation
+    let drawMax = 0;
+    let lastFrameWarnTimestamp = 0;
+
     // ── rAF loop ────────────────────────────────────────────────
     function loop(timestamp: number): void {
       rafIdRef.current = requestAnimationFrame(loop);
@@ -261,7 +278,7 @@ export function VisualizationStage() {
       }
 
       // Mobile 30fps cap: skip every other frame
-      const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+      const isMobile = isMobileRef.current;
       if (isMobile && !reduceMotion) {
         frameCountRef.current++;
         if (frameCountRef.current % 2 !== 0) {
@@ -286,7 +303,23 @@ export function VisualizationStage() {
       lastGenerationRef.current = data.generation;
       lastDrawTimeRef.current = timestamp;
 
+      const drawStart = performance.now();
       renderer.draw(data, deltaTime);
+      const drawDuration = performance.now() - drawStart;
+
+      if (drawDuration > drawMax) {
+        drawMax = drawDuration;
+      }
+      if (
+        import.meta.env.DEV &&
+        drawDuration > FRAME_BUDGET_MS &&
+        timestamp - lastFrameWarnTimestamp > FRAME_WARN_INTERVAL_MS
+      ) {
+        lastFrameWarnTimestamp = timestamp;
+        console.warn(
+          `[viz] draw exceeded ${FRAME_BUDGET_MS}ms budget: ${drawDuration.toFixed(1)}ms (max: ${drawMax.toFixed(1)}ms)`,
+        );
+      }
     }
 
     rafIdRef.current = requestAnimationFrame(loop);
@@ -304,6 +337,7 @@ export function VisualizationStage() {
       lastTimestampRef.current = 0;
       lastDrawTimeRef.current = 0;
       frameCountRef.current = 0;
+      isMobileRef.current = false;
     };
   }, [activeMode]);
 

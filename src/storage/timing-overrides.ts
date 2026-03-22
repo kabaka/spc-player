@@ -4,7 +4,6 @@
  */
 
 import type { PerFileTimingOverride } from '../types/timing';
-
 import { getDb } from './db';
 
 /**

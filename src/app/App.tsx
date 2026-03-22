@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-router';
 
 import { ViewSkeleton } from '@/components/ViewSkeleton';
+
 import { routeTree } from './routeTree.gen';
 
 const hashHistory = createHashHistory();

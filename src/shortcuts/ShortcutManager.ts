@@ -1,13 +1,13 @@
+import { useAppStore } from '@/store/store';
 import { isMacPlatform } from '@/utils/platform';
 
+import { defaultKeymap } from './default-keymap';
 import type {
   ShortcutActionId,
   ShortcutBinding,
   ShortcutOptions,
   ShortcutRegistration,
 } from './types';
-import { defaultKeymap } from './default-keymap';
-import { useAppStore } from '@/store/store';
 
 const MODIFIER_CODES = new Set([
   'ShiftLeft',

@@ -1,10 +1,10 @@
-import { useCallback, useId, useSyncExternalStore } from 'react';
 import type { ChangeEvent } from 'react';
+import { useCallback, useId, useSyncExternalStore } from 'react';
 
 import { useAppStore } from '@/store/store';
-import styles from './ThemeSettings.module.css';
-
 import type { SettingsSlice } from '@/store/types';
+
+import styles from './ThemeSettings.module.css';
 
 type ThemeOption = SettingsSlice['theme'];
 

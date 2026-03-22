@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { samplesToSeconds } from '@/core/track-duration';
 import { createTestStore } from '@/store/test-helpers';

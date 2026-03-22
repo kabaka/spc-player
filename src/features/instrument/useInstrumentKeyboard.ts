@@ -2,17 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   ALL_NOTE_MAPPINGS,
+  clampOctave,
+  clampVelocity,
+  codeToMidiNote,
   DEFAULT_OCTAVE,
   DEFAULT_VELOCITY,
+  getPassthroughCodes,
   OCTAVE_DOWN_CODE,
   OCTAVE_UP_CODE,
   VELOCITY_DOWN_CODE,
-  VELOCITY_UP_CODE,
   VELOCITY_STEP,
-  codeToMidiNote,
-  clampOctave,
-  clampVelocity,
-  getPassthroughCodes,
+  VELOCITY_UP_CODE,
 } from './note-mapping';
 
 export interface UseInstrumentKeyboardOptions {

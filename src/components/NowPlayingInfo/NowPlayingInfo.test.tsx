@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { SpcMetadata } from '@/core/spc-types';
 import { useAppStore } from '@/store/store';

@@ -6,13 +6,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- test assertions validate non-null before use */
 
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetDbInstance } from './db';
 import {
+  deleteTimingOverride,
   getTimingOverride,
   setTimingOverride,
-  deleteTimingOverride,
 } from './timing-overrides';
 
 describe('timing-overrides', () => {

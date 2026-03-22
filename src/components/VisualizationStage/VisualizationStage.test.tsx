@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppStore } from '@/store/store';
 
@@ -50,7 +50,7 @@ describe('VisualizationStage', () => {
 
   // ── Tab bar rendering ───────────────────────────────────────────
 
-  it('renders a tablist with four tabs', () => {
+  it('renders a tablist with five tabs', () => {
     render(<VisualizationStage />);
 
     const tablist = screen.getByRole('tablist', {
@@ -59,12 +59,13 @@ describe('VisualizationStage', () => {
     expect(tablist).toBeInTheDocument();
 
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(4);
+    expect(tabs).toHaveLength(5);
 
     expect(tabs[0]).toHaveTextContent('Piano Roll');
     expect(tabs[1]).toHaveTextContent('Spectrum');
     expect(tabs[2]).toHaveTextContent('Stereo Field');
     expect(tabs[3]).toHaveTextContent('Cover Art');
+    expect(tabs[4]).toHaveTextContent('Voice Timeline');
   });
 
   it('marks the active tab as selected', () => {
@@ -125,15 +126,15 @@ describe('VisualizationStage', () => {
     fireEvent.keyDown(pianoTab, { key: 'ArrowLeft' });
 
     // Wraps to last tab
-    expect(useAppStore.getState().activeMode).toBe('cover-art');
+    expect(useAppStore.getState().activeMode).toBe('voice-timeline');
   });
 
   it('moves to first tab on Home', () => {
-    useAppStore.setState({ activeMode: 'cover-art' });
+    useAppStore.setState({ activeMode: 'voice-timeline' });
     render(<VisualizationStage />);
 
-    const coverTab = screen.getByRole('tab', { name: 'Cover Art' });
-    fireEvent.keyDown(coverTab, { key: 'Home' });
+    const timelineTab = screen.getByRole('tab', { name: 'Voice Timeline' });
+    fireEvent.keyDown(timelineTab, { key: 'Home' });
 
     expect(useAppStore.getState().activeMode).toBe('piano-roll');
   });
@@ -144,7 +145,7 @@ describe('VisualizationStage', () => {
     const pianoTab = screen.getByRole('tab', { name: 'Piano Roll' });
     fireEvent.keyDown(pianoTab, { key: 'End' });
 
-    expect(useAppStore.getState().activeMode).toBe('cover-art');
+    expect(useAppStore.getState().activeMode).toBe('voice-timeline');
   });
 
   // ── ARIA attributes ─────────────────────────────────────────────

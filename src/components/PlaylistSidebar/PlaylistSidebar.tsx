@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { PlaylistTrackList } from '@/components/PlaylistTrackList/PlaylistTrackList';
+import { useAppStore } from '@/store/store';
 
 import styles from './PlaylistSidebar.module.css';
 
@@ -154,7 +154,7 @@ export function PlaylistSidebar() {
             <div className={styles.emptyState} role="status">
               <span className={styles.emptyTitle}>No tracks added yet.</span>
               <span className={styles.emptyHint}>
-                Drop files or click above.
+                Drop files or click Add Files above.
               </span>
             </div>
           ) : (

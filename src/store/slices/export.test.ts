@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createTestStore, makeJob } from '../test-helpers';
 import type { ExportJob } from '../types';

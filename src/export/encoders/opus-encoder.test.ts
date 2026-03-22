@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EncoderConfig } from './encoder-types';
 import type { OpusEncoderDeps } from './opus-encoder';
-import { OpusEncoder, isOpusEncoderAvailable } from './opus-encoder';
+import { isOpusEncoderAvailable, OpusEncoder } from './opus-encoder';
 
 // ---------------------------------------------------------------------------
 // Mock WebCodecs via dependency injection

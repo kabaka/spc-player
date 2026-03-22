@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('PWA and Service Worker', () => {
   test.use({ serviceWorkers: 'allow' });

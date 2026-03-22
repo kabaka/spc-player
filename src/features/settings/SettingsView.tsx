@@ -1,12 +1,14 @@
 import { Separator } from '@/components/Separator/Separator';
-import { ThemeSettings } from './ThemeSettings';
-import { AudioQualitySettings } from './AudioQualitySettings';
-import { SeekPerformanceSettings } from './SeekPerformanceSettings';
-import { PlaybackSettings } from './PlaybackSettings';
-import { KeyboardShortcutSettings } from './KeyboardShortcutSettings';
-import { ExportDefaultSettings } from './ExportDefaultSettings';
+
 import { AboutSection } from './AboutSection';
+import { AudioQualitySettings } from './AudioQualitySettings';
+import { ExportDefaultSettings } from './ExportDefaultSettings';
+import { KeyboardShortcutSettings } from './KeyboardShortcutSettings';
+import { PlaybackSettings } from './PlaybackSettings';
+import { PrivacySettings } from './PrivacySettings';
+import { SeekPerformanceSettings } from './SeekPerformanceSettings';
 import styles from './SettingsView.module.css';
+import { ThemeSettings } from './ThemeSettings';
 
 // ── Component ─────────────────────────────────────────────────────────
 
@@ -53,6 +55,13 @@ export function SettingsView() {
       <section className={styles.section}>
         <h2 className={styles.heading}>Export Defaults</h2>
         <ExportDefaultSettings />
+      </section>
+
+      <Separator />
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>Privacy</h2>
+        <PrivacySettings />
       </section>
 
       <Separator />

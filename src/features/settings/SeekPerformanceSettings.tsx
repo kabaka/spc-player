@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import type { ChangeEvent } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { audioEngine } from '@/audio/engine';
-import styles from './SeekPerformanceSettings.module.css';
-
+import { useAppStore } from '@/store/store';
 import type { CheckpointPreset } from '@/store/types';
+
+import styles from './SeekPerformanceSettings.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────
 

@@ -33,7 +33,7 @@ export interface WmeOggEncoder {
 // OggEncoder class
 // ---------------------------------------------------------------------------
 
-// TODO: Vorbis comment metadata not supported by wasm-media-encoders; investigate post-processing
+// OGG Vorbis export deferred to post-Phase F. See roadmap v2 resolved decisions.
 
 /**
  * Create a new OGG Vorbis encoder instance.

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { createTestStore, makeTrack } from '../test-helpers';
 
@@ -36,9 +36,9 @@ vi.mock('@/errors/report', () => ({
 
 // Import after mocks are set up
 import { audioEngine } from '@/audio/engine';
-import { loadSpcFromStorage } from '@/storage/spc-storage';
 import { parseSpcFile } from '@/core/spc-parser';
 import type { SpcMetadata } from '@/core/spc-types';
+import { loadSpcFromStorage } from '@/storage/spc-storage';
 
 // ---------------------------------------------------------------------------
 // Helpers

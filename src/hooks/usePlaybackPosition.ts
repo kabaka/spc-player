@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-import { audioEngine } from '@/audio/engine';
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
-import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
+import { audioEngine } from '@/audio/engine';
+import { DSP_SAMPLE_RATE, samplesToSeconds } from '@/core/track-duration';
 import { useAppStore } from '@/store/store';
-
 import type { LoopRegion } from '@/store/types';
 
 /**

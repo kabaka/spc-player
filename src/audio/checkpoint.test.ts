@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
+  type DspCheckpoint,
   findNearestCheckpoint,
   validateCheckpoint,
-  type DspCheckpoint,
 } from './checkpoint-utils';
 
 // ---------------------------------------------------------------------------

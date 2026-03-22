@@ -1,14 +1,14 @@
 import {
+  act,
   cleanup,
+  fireEvent,
   render,
   screen,
-  act,
-  fireEvent,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PlaylistTrack } from '@/store/types';
 import { useAppStore } from '@/store/store';
+import type { PlaylistTrack } from '@/store/types';
 
 import { PlaylistSidebar } from './PlaylistSidebar';
 
@@ -76,7 +76,9 @@ describe('PlaylistSidebar', () => {
     render(<PlaylistSidebar />);
 
     expect(screen.getByText('No tracks added yet.')).toBeInTheDocument();
-    expect(screen.getByText('Drop files or click above.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Drop files or click Add Files above.'),
+    ).toBeInTheDocument();
   });
 
   // ── 2. Tracks display ──────────────────────────────────────────

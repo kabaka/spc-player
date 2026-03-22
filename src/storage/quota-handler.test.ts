@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  isQuotaExceededError,
   handleQuotaExceeded,
-  withQuotaHandling,
+  isQuotaExceededError,
   refreshStorageQuota,
+  withQuotaHandling,
 } from './quota-handler';
 
 // Mock reportError so we can verify calls without side effects

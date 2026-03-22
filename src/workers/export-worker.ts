@@ -12,11 +12,11 @@
 
 import type { DspExports } from '../audio/dsp-exports';
 import type {
-  MainToExportWorker,
-  ExportWorkerToMain,
-  ExportPhase,
   ExportErrorCode,
   ExportMetadata,
+  ExportPhase,
+  ExportWorkerToMain,
+  MainToExportWorker,
 } from '../audio/worker-protocol';
 import { PROTOCOL_VERSION } from '../audio/worker-protocol';
 import type { Encoder } from '../export/encoders/encoder-types';

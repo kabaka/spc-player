@@ -1,5 +1,5 @@
-import { forwardRef } from 'react';
 import { Slider as RadixSlider } from 'radix-ui';
+import { forwardRef } from 'react';
 
 import styles from './Slider.module.css';
 

@@ -7,11 +7,10 @@
  * MIDI is a progressive enhancement: the app must work fully without it.
  */
 
+import { midiError } from '../errors/factories';
 import type { MidiError } from '../types/errors';
 import type { Result } from '../types/result';
-
-import { midiError } from '../errors/factories';
-import { Ok, Err } from '../types/result';
+import { Err, Ok } from '../types/result';
 
 // ---------------------------------------------------------------------------
 // Public types

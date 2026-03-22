@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
 import {
-  setupCanvas,
   getWaveformColors,
+  setupCanvas,
   type WaveformColors,
 } from '@/utils/canvas-renderer';
 

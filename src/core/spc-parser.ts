@@ -1,7 +1,3 @@
-import { Err, Ok } from '@/types/result';
-import { spcParseError, spcParseWarning } from '@/errors/factories';
-
-import type { SpcParseWarning } from '@/types/errors';
 import type {
   Id666Tags,
   SpcFile,
@@ -10,6 +6,9 @@ import type {
   Xid6Tags,
   Xid6Timing,
 } from '@/core/spc-types';
+import { spcParseError, spcParseWarning } from '@/errors/factories';
+import type { SpcParseWarning } from '@/types/errors';
+import { Err, Ok } from '@/types/result';
 
 // ---------------------------------------------------------------------------
 // Constants

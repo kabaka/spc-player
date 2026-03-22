@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import {
   useCallback,
   useEffect,
@@ -6,16 +7,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { ChangeEvent } from 'react';
 
-import { useAppStore } from '@/store/store';
-import * as Dialog from '@/components/Dialog/Dialog';
 import { Button } from '@/components/Button/Button';
+import * as Dialog from '@/components/Dialog/Dialog';
 import { Label } from '@/components/Label/Label';
-import { calculateTrackDuration } from '@/core/track-duration';
-
 import type { TimingDefaults } from '@/core/track-duration';
+import { calculateTrackDuration } from '@/core/track-duration';
 import { isOpusEncoderAvailable } from '@/export/encoders/opus-encoder';
+import { useAppStore } from '@/store/store';
 
 import styles from './ExportDialog.module.css';
 

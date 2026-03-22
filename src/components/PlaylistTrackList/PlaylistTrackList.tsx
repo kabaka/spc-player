@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { useAppStore } from '@/store/store';
 import type { PlaylistTrack } from '@/store/types';
-import { formatTime, formatSpokenTime } from '@/utils/format-time';
+import { formatSpokenTime, formatTime } from '@/utils/format-time';
 
 import styles from './PlaylistTrackList.module.css';
 

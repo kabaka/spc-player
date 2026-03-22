@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 
 import { shortcutManager } from './ShortcutManager';
-
 import type { ShortcutActionId, ShortcutOptions } from './types';
 
 export function useShortcut(

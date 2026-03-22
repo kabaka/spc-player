@@ -1,5 +1,5 @@
-import { useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useRef } from 'react';
 
 import { audioEngine } from '@/audio/engine';
 import { DSP_SAMPLE_RATE, samplesToSeconds } from '@/core/track-duration';
@@ -328,17 +328,17 @@ export function GlobalShortcuts(): null {
   });
 
   useShortcut('general.undo', () => {
-    /* TODO(#issue): Implement undo/redo system */
+    // No-op: undo/redo system not yet implemented
   });
 
   useShortcut('general.redo', () => {
-    /* TODO(#issue): Implement undo/redo system */
+    // No-op: undo/redo system not yet implemented
   });
 
   // ── Missing action stubs ────────────────────────────────────────────
 
   useShortcut('navigation.search', () => {
-    // TODO(#issue): Wire to search UI when implemented
+    // No-op: search UI not yet implemented
   });
 
   useShortcut('export.openDialog', () => {

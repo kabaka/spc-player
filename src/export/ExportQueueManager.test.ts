@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ExportPhase } from '@/audio/worker-protocol';
 import { PROTOCOL_VERSION } from '@/audio/worker-protocol';
 
 import {
-  ExportQueueManager,
-  resetExportQueueManager,
   type ExportJobDescriptor,
+  ExportQueueManager,
   type ExportStoreCallbacks,
+  resetExportQueueManager,
 } from './ExportQueueManager';
 
 // ---------------------------------------------------------------------------

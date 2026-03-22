@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import { Button } from '@/components/Button/Button';
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
+import { Button } from '@/components/Button/Button';
 
 import styles from './RegisterViewer.module.css';
 

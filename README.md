@@ -8,6 +8,8 @@ A high-fidelity SNES SPC music player, instrument explorer, and audio workstatio
 
 **[Launch SPC Player →](https://kabaka.github.io/spc-player/)**
 
+> [Screenshot placeholder — to be added after Phase F visual polish]
+
 ## Features
 
 - **Playback** — Play SPC files with cycle-accurate SPC700 + S-DSP emulation compiled to WebAssembly. Adjustable speed, A-B looping, and repeat modes.
@@ -28,6 +30,12 @@ A high-fidelity SNES SPC music player, instrument explorer, and audio workstatio
 3. Press <kbd>Space</kbd> to play.
 
 SPC files contain SNES audio data. They are widely available from game music archives for personal, non-commercial use.
+
+## Where to Find SPC Files
+
+SPC files are snapshots of SNES audio hardware state — each one contains everything needed to play back a music track from an SNES game.
+
+- **[Zophar's Domain SPC Archive](https://www.zophar.net/music/nintendo-snes-spc)** — the largest collection of SNES music rips, organized by game title.
 
 ## Keyboard Shortcuts
 
@@ -113,6 +121,12 @@ npm test                 # Unit tests (Vitest)
 npm run test:e2e         # E2E tests (Playwright)
 npm run format           # Prettier formatting
 ```
+
+> **WASM build note:** Always use `npm run build:wasm`, never bare `cargo build`. The npm script explicitly selects rustup's cargo to avoid conflicts with Homebrew-installed Rust toolchains.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, coding standards, and development workflow.
 
 ## Architecture
 

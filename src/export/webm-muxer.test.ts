@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
+import type { OpusFrame, WebmMuxerConfig } from './webm-muxer';
 import {
-  encodeVint,
   buildOpusHead,
   buildSimpleBlock,
+  encodeVint,
   muxOpusWebm,
 } from './webm-muxer';
-import type { OpusFrame, WebmMuxerConfig } from './webm-muxer';
 
 // ---------------------------------------------------------------------------
 // encodeVint

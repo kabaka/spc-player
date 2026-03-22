@@ -1,5 +1,5 @@
+import type { KeyboardEvent, PointerEvent } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import type { PointerEvent, KeyboardEvent } from 'react';
 
 import { useAppStore } from '@/store/store';
 

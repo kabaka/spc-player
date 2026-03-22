@@ -11,16 +11,16 @@
  * @see docs/design/loop-playback.md §4.1–4.4
  */
 
+import type { DspCheckpoint } from './checkpoint-utils';
+import { findNearestCheckpoint, validateCheckpoint } from './checkpoint-utils';
 import type { DspExports } from './dsp-exports';
 import type {
   MainToWorklet,
-  WorkletToMain,
-  VoiceState,
   PlaybackSegment,
+  VoiceState,
   WorkletErrorCode,
+  WorkletToMain,
 } from './worker-protocol';
-import type { DspCheckpoint } from './checkpoint-utils';
-import { findNearestCheckpoint, validateCheckpoint } from './checkpoint-utils';
 
 // PROTOCOL_VERSION is a const — duplicated here because runtime imports
 // from the main bundle are forbidden in AudioWorklet context.

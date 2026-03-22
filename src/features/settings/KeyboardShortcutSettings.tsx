@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 
 import { defaultKeymap } from '@/shortcuts/default-keymap';
-import styles from './KeyboardShortcutSettings.module.css';
-
 import type { ShortcutBinding } from '@/shortcuts/types';
+
+import styles from './KeyboardShortcutSettings.module.css';
 
 // ── Helpers ───────────────────────────────────────────────────────────
 

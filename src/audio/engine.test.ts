@@ -6,7 +6,7 @@
  * getters, and with minimal mocking for state-mutating paths.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock imports that engine.ts depends on at module scope
 vi.mock('./spc-worklet.ts?worker&url', () => ({

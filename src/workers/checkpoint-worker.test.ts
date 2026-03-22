@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import type {
-  CheckpointWorkerResult,
-  CheckpointWorkerProgress,
   CheckpointWorkerError,
   CheckpointWorkerMessage,
+  CheckpointWorkerProgress,
+  CheckpointWorkerResult,
 } from './checkpoint-worker';
 
 // ---------------------------------------------------------------------------

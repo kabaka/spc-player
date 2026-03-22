@@ -11,16 +11,16 @@
 
 import { loadDspWasmBytes } from '@/audio/wasm-loader';
 import {
-  PROTOCOL_VERSION,
-  type ExportWorkerToMain,
-  type MainToExportWorker,
   type ExportMetadata,
   type ExportPhase,
+  type ExportWorkerToMain,
+  type MainToExportWorker,
+  PROTOCOL_VERSION,
 } from '@/audio/worker-protocol';
-import { loadSpcFromStorage } from '@/storage/spc-storage';
-import { downloadBlob } from '@/export/download';
-import { reportError } from '@/errors/report';
 import { exportError } from '@/errors/factories';
+import { reportError } from '@/errors/report';
+import { downloadBlob } from '@/export/download';
+import { loadSpcFromStorage } from '@/storage/spc-storage';
 
 // ---------------------------------------------------------------------------
 // Types

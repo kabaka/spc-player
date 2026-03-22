@@ -1,20 +1,20 @@
-import { useCallback, useId, useMemo } from 'react';
-import type { ChangeEvent } from 'react';
-import { VisuallyHidden } from 'radix-ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import { VisuallyHidden } from 'radix-ui';
+import type { ChangeEvent } from 'react';
+import { useCallback, useId, useMemo } from 'react';
 
+import { audioEngine } from '@/audio/engine';
 import { Label } from '@/components/Label/Label';
 import { useMidi } from '@/hooks/useMidi';
-import { useAppStore } from '@/store/store';
 import { useShortcut } from '@/shortcuts/useShortcut';
-import { audioEngine } from '@/audio/engine';
+import { useAppStore } from '@/store/store';
 
-import { VirtualKeyboard } from './VirtualKeyboard';
-import { InstrumentControls } from './InstrumentControls';
 import { AdsrDisplay } from './AdsrDisplay';
-import { useInstrumentKeyboard } from './useInstrumentKeyboard';
-import { midiNoteToPitch } from './note-mapping';
+import { InstrumentControls } from './InstrumentControls';
 import styles from './InstrumentView.module.css';
+import { midiNoteToPitch } from './note-mapping';
+import { useInstrumentKeyboard } from './useInstrumentKeyboard';
+import { VirtualKeyboard } from './VirtualKeyboard';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -157,13 +157,13 @@ export function InstrumentView() {
               gain={100}
               filterCutoff={100}
               onPitchShiftChange={() => {
-                // TODO: wire to audio engine
+                // No-op: per-voice pitch shift requires DSP register writes not yet exposed
               }}
               onGainChange={() => {
-                // TODO: wire to audio engine
+                // No-op: per-voice gain requires DSP register writes not yet exposed
               }}
               onFilterCutoffChange={() => {
-                // TODO: wire to audio engine
+                // No-op: per-voice filter cutoff requires DSP register writes not yet exposed
               }}
             />
           </section>

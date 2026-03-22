@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
-import type { Plugin } from 'vite';
+import type { Plugin, IndexHtmlTransformResult } from 'vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import react from '@vitejs/plugin-react';
 import { build as viteBuild } from 'vite';
@@ -58,6 +58,47 @@ const buildServiceWorker = (): Plugin => {
   };
 };
 
+/**
+ * Vite plugin that injects a `<link rel="preload">` for the DSP WASM binary.
+ * The WASM filename includes a content hash that is only known after bundling,
+ * so we use `transformIndexHtml` with `order: 'post'` to read the bundle manifest.
+ */
+const wasmPreload = (): Plugin => {
+  let base = '/';
+  return {
+    name: 'wasm-preload',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx): IndexHtmlTransformResult {
+        const bundle = ctx.bundle;
+        if (!bundle) return [];
+
+        const wasmAsset = Object.keys(bundle).find((key) =>
+          key.endsWith('.wasm'),
+        );
+        if (!wasmAsset) return [];
+
+        return [
+          {
+            tag: 'link',
+            attrs: {
+              rel: 'preload',
+              href: `${base}${wasmAsset}`,
+              as: 'fetch',
+              crossorigin: true,
+            },
+            injectTo: 'head',
+          },
+        ];
+      },
+    },
+  };
+};
+
 export default defineConfig({
   base: '/spc-player/',
 
@@ -74,6 +115,7 @@ export default defineConfig({
     }),
     react(),
     buildServiceWorker(),
+    wasmPreload(),
   ],
 
   resolve: {
@@ -93,6 +135,25 @@ export default defineConfig({
             id.includes('node_modules/react/')
           ) {
             return 'react-vendor';
+          }
+          if (id.includes('node_modules/radix-ui')) {
+            return 'radix-vendor';
+          }
+          if (id.includes('node_modules/zustand')) {
+            return 'state-vendor';
+          }
+          if (
+            id.includes('node_modules/@tanstack/react-router') ||
+            id.includes('node_modules/@tanstack/zod-adapter') ||
+            id.includes('node_modules/zod')
+          ) {
+            return 'router-vendor';
+          }
+          if (
+            id.includes('node_modules/idb') ||
+            id.includes('node_modules/fflate')
+          ) {
+            return 'data-vendor';
           }
           if (id.includes('node_modules/wasm-media-encoders')) {
             return 'wasm-media-encoder';

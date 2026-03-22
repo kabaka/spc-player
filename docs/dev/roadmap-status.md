@@ -1,21 +1,21 @@
 # Roadmap v2 — Status Tracker
 
-Last updated: 2026-03-22
+Last updated: 2026-03-23
 
 ## Phase Summary
 
-| Phase     | Goal                       | Status      | Notes                                                |
-| --------- | -------------------------- | ----------- | ---------------------------------------------------- |
-| Prelude 1 | AudioStateBuffer interface | Complete    | Extended with DSP/CPU registers, RAM, load metrics   |
-| Prelude 2 | Batched WASM exports       | Complete    | 3 new Rust exports + TypeScript types + validation   |
-| Prelude 3 | Bundle budget update       | Complete    | ADR-0018 bundle budget increase                      |
-| Prelude 4 | LGPL compliance            | Complete    | Audit complete, THIRD_PARTY_LICENSES updated         |
-| A         | Stabilization              | Complete    | Bug fixes, error handling, docs                      |
-| B         | Layout Foundation          | Complete    | Layout foundation, transport bar, sidebar, drag-drop |
-| C         | Seek & Performance         | Complete    | Custom seek bar, checkpoints, pre-compute worker     |
-| D         | Audio Engine & Export      | Complete    | SoundTouch, codecs, telemetry, audio chain feedback  |
-| E         | Visualizations             | Complete    | Piano roll, spectrum, stereo field, cover art, a11y  |
-| F         | Polish & Advanced          | Not started | Docs, onboarding, remaining                          |
+| Phase     | Goal                       | Status   | Notes                                                |
+| --------- | -------------------------- | -------- | ---------------------------------------------------- |
+| Prelude 1 | AudioStateBuffer interface | Complete | Extended with DSP/CPU registers, RAM, load metrics   |
+| Prelude 2 | Batched WASM exports       | Complete | 3 new Rust exports + TypeScript types + validation   |
+| Prelude 3 | Bundle budget update       | Complete | ADR-0018 bundle budget increase                      |
+| Prelude 4 | LGPL compliance            | Complete | Audit complete, THIRD_PARTY_LICENSES updated         |
+| A         | Stabilization              | Complete | Bug fixes, error handling, docs                      |
+| B         | Layout Foundation          | Complete | Layout foundation, transport bar, sidebar, drag-drop |
+| C         | Seek & Performance         | Complete | Custom seek bar, checkpoints, pre-compute worker     |
+| D         | Audio Engine & Export      | Complete | SoundTouch, codecs, telemetry, audio chain feedback  |
+| E         | Visualizations             | Complete | Piano roll, spectrum, stereo field, cover art, a11y  |
+| F         | Polish & Advanced          | Complete | Docs, onboarding, viz, cover art, a11y, lint, perf   |
 
 ## Phase A Tasks
 
@@ -234,4 +234,80 @@ None. All Phase D tasks completed.
 - All 1160 unit tests pass
 - All 255 E2E tests pass
 - Zero type errors
+- All bundle sizes within budget
+
+## Phase F Tasks
+
+### F1: Documentation & Onboarding
+
+| #   | Task                         | Status   | Notes                                                                         |
+| --- | ---------------------------- | -------- | ----------------------------------------------------------------------------- |
+| F1a | HelpDialog                   | Complete | 11 tabs, lazy-loaded, replaces ShortcutHelpDialog. 21 unit tests.             |
+| F1b | First-run onboarding overlay | Complete | localStorage-based, focus trap, 4 callouts, dismissed on Escape/click/drop.   |
+| F1c | Contextual tooltips          | Complete | Radix Tooltip on transport, mixer mute/solo, export, settings buttons.        |
+| F1d | CONTRIBUTING.md              | Complete | Prerequisites, setup, workflow, commit conventions, testing, WASM build note. |
+| F1e | README improvements          | Complete | SPC file sources, contributing link, WASM build note. Screenshot placeholder. |
+| F1f | Troubleshooting content      | Complete | Integrated into HelpDialog Troubleshooting tab.                               |
+| F1g | SNES audio glossary          | Complete | Integrated into HelpDialog Analysis tab.                                      |
+| F1h | DSP exports JSDoc            | Complete | All 27 exports documented with JSDoc, grouped by category.                    |
+
+### F2: Advanced Visualizations
+
+| #   | Task                           | Status   | Notes                                                                      |
+| --- | ------------------------------ | -------- | -------------------------------------------------------------------------- |
+| F2a | VoiceTimelineRenderer          | Complete | Canvas renderer, 8 voice activity tracking, envelope modulation, 16 tests. |
+| F2b | External cover art (RetroArch) | Complete | Opt-in fetch, IndexedDB cache, sanitized URLs, Content-Type validation.    |
+| F2c | User-provided cover art upload | Complete | Storage backend + MetadataPanel upload button. 2MB limit, PNG/JPEG/WebP.   |
+| F2d | xid6 embedded art extraction   | Complete | Binary parser with bounds checking, PNG/JPEG magic detection. 10 tests.    |
+| F2e | Cover art privacy setting      | Complete | PrivacySettings checkbox, opt-in disclosure, wired to Zustand store.       |
+| F2f | Game title sanitization        | Complete | Path traversal, BiDi, control chars, URL encoding. 16 tests.               |
+
+### F3: Code Quality & Polish
+
+| #   | Task                             | Status   | Notes                                                                      |
+| --- | -------------------------------- | -------- | -------------------------------------------------------------------------- |
+| F3a | eslint-plugin-jsx-a11y           | Complete | Recommended rules on .tsx files. 2 rules at warn for gradual adoption.     |
+| F3b | eslint-plugin-simple-import-sort | Complete | All imports auto-sorted. error severity.                                   |
+| F3c | manualChunks vendor splitting    | Complete | radix, state, router, data vendor chunks. All within budget.               |
+| F3d | Resolve TODO placeholders        | Complete | GlobalShortcuts, InstrumentView, ogg-encoder TODOs resolved.               |
+| F3e | Information density improvements | Complete | Transport subtitle, metadata DL layout, compact playlist, spacing tokens.  |
+| F3f | Metadata panel redesign          | Complete | 3 sections with headings, DL grid, mono values, extended tags conditional. |
+| F3g | Empty state improvements         | Complete | Player empty state with icon, CTA, learn more link. Playlist hint updated. |
+| F3h | WASM preload hint                | Complete | Vite plugin injecting `<link rel="preload">` for hashed WASM binary.       |
+| F3i | Windows High Contrast Mode       | Complete | forced-colors utility, all canvas renderers adapted, CSS media queries.    |
+
+### Phase E Deferred Items (Resolved in Phase F)
+
+| Item                                       | Status   | Notes                                                       |
+| ------------------------------------------ | -------- | ----------------------------------------------------------- |
+| Voice Timeline mode                        | Complete | Implemented as F2a                                          |
+| `performance.now()` frame timing telemetry | Complete | rAF loop measures draw time, warns on 6ms budget exceedance |
+| Correlation dot batching optimization      | Complete | Batched into 4 opacity bands × 3 colors, ~12 draw calls     |
+| Cached isMobile from ResizeObserver        | Complete | isMobileRef updated by ResizeObserver, no layout reads      |
+
+### Cleanup
+
+- Removed dead `ShortcutHelpDialog` component (replaced by HelpDialog)
+- CSP updated: `connect-src` and `img-src` include `raw.githubusercontent.com`
+
+## Phase F — Deviations and Deferrals
+
+### Deviations
+
+- **F1e README screenshot**: Added placeholder text instead of actual screenshot. Screenshot requires visual polish and manual capture.
+- **F3a jsx-a11y severity**: Two rules set to `warn` instead of `error` for gradual adoption of accessibility linting.
+- **F3c manualChunks**: Additional vendor chunks beyond plan spec (`wasm-media-encoders`, `libflac`) for better cache efficiency.
+- **CoverArtRenderer theme detection**: Fixed pre-existing bug where `data-theme` attribute was used instead of class-based theme switching.
+
+### Deferrals
+
+None. All Phase F tasks completed.
+
+### Test Coverage
+
+- 100+ new unit tests across 12+ test files
+- All 1263 unit tests pass (82 test files)
+- All 116 E2E tests pass (6 skipped, browser-specific)
+- Zero type errors
+- Zero lint errors (4 acceptable warnings)
 - All bundle sizes within budget

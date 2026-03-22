@@ -2,23 +2,23 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ALL_NOTE_MAPPINGS,
+  clampOctave,
+  clampVelocity,
+  codeToMidiNote,
   DEFAULT_OCTAVE,
   DEFAULT_VELOCITY,
+  getClaimedCodes,
+  getPassthroughCodes,
   LOWER_ROW_MAPPINGS,
   MAX_OCTAVE,
   MAX_VELOCITY,
+  midiNoteToName,
+  midiNoteToPitch,
+  midiNoteToSpokenName,
   MIN_OCTAVE,
   MIN_VELOCITY,
   UPPER_ROW_MAPPINGS,
   VELOCITY_STEP,
-  codeToMidiNote,
-  clampOctave,
-  clampVelocity,
-  getClaimedCodes,
-  getPassthroughCodes,
-  midiNoteToName,
-  midiNoteToPitch,
-  midiNoteToSpokenName,
 } from './note-mapping';
 
 describe('note-mapping', () => {

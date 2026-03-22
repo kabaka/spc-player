@@ -5,20 +5,38 @@
   background-color: var(--spc-color-surface);
   border-radius: var(--spc-radius-md);
   border: 1px solid var(--spc-color-border-subtle);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-section-gap);
 }
 
 @media (min-width: 640px) {
   .panel {
-    padding: var(--spc-space-4);
+    padding: var(--spc-space-3);
   }
 }
 
-.heading {
-  margin: 0 0 var(--spc-space-3);
-  font-size: var(--spc-font-size-md);
-  font-weight: var(--spc-font-weight-semibold);
-  color: var(--spc-color-text);
+/* ── Sections ────────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-panel-gap);
 }
+
+.sectionHeading {
+  margin: 0;
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: var(--spc-space-1);
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+}
+
+/* ── Definition list ─────────────────────────────────────────────── */
 
 .list {
   display: grid;
@@ -48,6 +66,18 @@
   word-break: break-word;
 }
 
+.valueMono {
+  margin: 0;
+  padding: var(--spc-space-1) 0;
+  font-size: var(--spc-font-size-sm);
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text);
+  line-height: var(--spc-leading-normal);
+  word-break: break-word;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+
 .empty {
   padding: var(--spc-space-4);
   color: var(--spc-color-text-secondary);
@@ -55,15 +85,31 @@
   text-align: center;
 }
 
-/* xid6 section separator */
-.sectionLabel {
-  grid-column: 1 / -1;
-  margin: var(--spc-space-2) 0 0;
-  padding: var(--spc-space-1) 0;
+/* ── Cover art upload ────────────────────────────────────────────── */
+
+.coverArtButton {
+  padding: var(--spc-space-1) var(--spc-space-3);
   font-size: var(--spc-font-size-xs);
   font-weight: var(--spc-font-weight-semibold);
-  color: var(--spc-color-accent-text);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-top: 1px solid var(--spc-color-border-subtle);
+  color: var(--spc-color-text);
+  background-color: var(--spc-color-surface-raised);
+  border: 1px solid var(--spc-color-border-subtle);
+  border-radius: var(--spc-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--spc-duration-fast) var(--spc-easing-out);
+}
+
+.coverArtButton:hover {
+  background-color: var(--spc-color-accent-hover);
+}
+
+.coverArtButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.coverArtStatus {
+  margin: var(--spc-space-1) 0 0;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
 }

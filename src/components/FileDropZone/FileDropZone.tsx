@@ -1,5 +1,5 @@
-import { useCallback, useId, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 
 import styles from './FileDropZone.module.css';
 

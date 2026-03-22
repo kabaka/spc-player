@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import type { ExportMetadata } from './encoders/encoder-types';
 import { generateFilename, sanitizeFilename } from './download';
+import type { ExportMetadata } from './encoders/encoder-types';
 
 describe('sanitizeFilename', () => {
   it('replaces illegal characters with underscores', () => {

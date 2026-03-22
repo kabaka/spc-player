@@ -1,18 +1,18 @@
-import { useCallback } from 'react';
-import { Tabs } from 'radix-ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Tabs } from 'radix-ui';
+import { useCallback } from 'react';
 
 import { Button } from '@/components/Button/Button';
 import { useShortcut } from '@/shortcuts/useShortcut';
 import { useAppStore } from '@/store/store';
 
-import { useHexDecimalToggle } from './useHexDecimalToggle';
+import styles from './AnalysisView.module.css';
+import { AudioChainPanel } from './AudioChainPanel';
+import { EchoBufferView } from './EchoBufferView';
 import { MemoryViewer } from './MemoryViewer';
 import { RegisterViewer } from './RegisterViewer';
+import { useHexDecimalToggle } from './useHexDecimalToggle';
 import { VoiceStatePanel } from './VoiceStatePanel';
-import { EchoBufferView } from './EchoBufferView';
-import { AudioChainPanel } from './AudioChainPanel';
-import styles from './AnalysisView.module.css';
 
 type AnalysisTab = 'memory' | 'registers' | 'voices' | 'echo';
 

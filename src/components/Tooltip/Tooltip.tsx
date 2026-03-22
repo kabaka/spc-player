@@ -1,6 +1,6 @@
-import { forwardRef } from 'react';
-import type { ComponentPropsWithoutRef } from 'react';
 import { Tooltip as RadixTooltip } from 'radix-ui';
+import type { ComponentPropsWithoutRef } from 'react';
+import { forwardRef } from 'react';
 
 import styles from './Tooltip.module.css';
 

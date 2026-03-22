@@ -259,9 +259,10 @@ export function CoverArt({
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
 
-    const isDark =
-      window.matchMedia('(prefers-color-scheme: dark)').matches ||
-      document.documentElement.getAttribute('data-theme') !== 'light';
+    let isDark: boolean;
+    if (document.documentElement.classList.contains('light')) isDark = false;
+    else if (document.documentElement.classList.contains('dark')) isDark = true;
+    else isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     drawCartridge(canvas, gameTitle, isDark);
   }, [gameTitle, width, height]);
@@ -276,11 +277,11 @@ export function CoverArt({
     const onChange = () => redraw();
     mql.addEventListener('change', onChange);
 
-    // Also watch for data-theme attribute changes on <html>
+    // Also watch for class-based theme changes on <html>
     const observer = new MutationObserver(redraw);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['class'],
     });
 
     return () => {

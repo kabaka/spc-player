@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import type { Xid6Timing } from '@/core/spc-types';
+import { describe, expect, it } from 'vitest';
 
+import type { Xid6Timing } from '@/core/spc-types';
+import type { TimingDefaults, UserTimingOverride } from '@/core/track-duration';
 import {
   calculateTrackDuration,
-  secondsToSamples,
-  samplesToSeconds,
   DSP_SAMPLE_RATE,
+  samplesToSeconds,
+  secondsToSamples,
 } from '@/core/track-duration';
-import type { UserTimingOverride, TimingDefaults } from '@/core/track-duration';
 
 // ---------------------------------------------------------------------------
 // Shared helpers

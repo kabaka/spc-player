@@ -5,15 +5,16 @@
  */
 
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach } from 'vitest';
+
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { resetDbInstance } from './db';
-import {
-  saveSpcToStorage,
-  loadSpcFromStorage,
-  deleteSpcFromStorage,
-} from './spc-storage';
 import type { StoredSpcFile } from './spc-storage';
+import {
+  deleteSpcFromStorage,
+  loadSpcFromStorage,
+  saveSpcToStorage,
+} from './spc-storage';
 
 const makeSpcFile = (
   overrides: Partial<StoredSpcFile> = {},

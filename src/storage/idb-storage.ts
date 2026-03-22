@@ -1,4 +1,5 @@
 import type { StateStorage } from 'zustand/middleware';
+
 import { getDb } from './db';
 
 const STORE_NAME = 'zustand-state' as const;

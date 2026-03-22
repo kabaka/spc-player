@@ -8,16 +8,18 @@
  * @see docs/adr/0007-wasm-build-pipeline.md
  */
 
+import type { SoundTouchNode as SoundTouchNodeType } from '@soundtouchjs/audio-worklet';
+
+import { audioPipelineError, spcParseError } from '@/errors/factories';
+import { reportError } from '@/errors/report';
+import type { CheckpointPreset } from '@/store/types';
+import type { CheckpointWorkerMessage } from '@/workers/checkpoint-worker';
+
+import { audioStateBuffer, resetAudioStateBuffer } from './audio-state-buffer';
 import spcWorkletUrl from './spc-worklet.ts?worker&url';
 import { loadDspWasmBytes } from './wasm-loader';
-import { audioStateBuffer, resetAudioStateBuffer } from './audio-state-buffer';
 import type { MainToWorklet, WorkletToMain } from './worker-protocol';
 import { PROTOCOL_VERSION } from './worker-protocol';
-import { reportError } from '@/errors/report';
-import { audioPipelineError, spcParseError } from '@/errors/factories';
-import type { CheckpointWorkerMessage } from '@/workers/checkpoint-worker';
-import type { CheckpointPreset } from '@/store/types';
-import type { SoundTouchNode as SoundTouchNodeType } from '@soundtouchjs/audio-worklet';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 type SoundTouchModule = typeof import('@soundtouchjs/audio-worklet');

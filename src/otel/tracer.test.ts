@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTracer, traceSync, traceAsync } from './tracer';
+import { getTracer, traceAsync, traceSync } from './tracer';
 
 // Vitest test env has import.meta.env.DEV = true by default
 

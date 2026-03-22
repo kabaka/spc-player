@@ -1,15 +1,15 @@
-import { useCallback, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
-import { useAppStore } from '@/store/store';
-import { Button } from '@/components/Button/Button';
-import { Slider } from '@/components/Slider/Slider';
-import { SeekBar } from '@/components/SeekBar/SeekBar';
 import { audioEngine } from '@/audio/engine';
-import { samplesToSeconds, DSP_SAMPLE_RATE } from '@/core/track-duration';
+import { Button } from '@/components/Button/Button';
+import { SeekBar } from '@/components/SeekBar/SeekBar';
+import { Slider } from '@/components/Slider/Slider';
+import * as Tooltip from '@/components/Tooltip/Tooltip';
+import { DSP_SAMPLE_RATE, samplesToSeconds } from '@/core/track-duration';
+import { useAppStore } from '@/store/store';
+import { formatTransportSubtitle } from '@/utils/format-metadata';
 import { formatTime } from '@/utils/format-time';
-
-import { formatSubtitle } from '@/utils/format-metadata';
 
 import styles from './TransportBar.module.css';
 
@@ -50,9 +50,11 @@ export function TransportBar() {
   const hasTrack = metadata !== null;
 
   const title = metadata?.title || metadata?.gameTitle || 'Untitled';
-  const subtitle = formatSubtitle(
+  const subtitle = formatTransportSubtitle(
     metadata?.gameTitle ?? '',
     metadata?.artist ?? '',
+    metadata ? 32000 : undefined,
+    metadata?.id666Format,
   );
 
   // ── Handlers ──────────────────────────────────────────────────────
@@ -207,39 +209,54 @@ export function TransportBar() {
           className={styles.transportButtons}
           onKeyDown={handleToolbarKeyDown}
         >
-          <Button
-            variant="icon"
-            size="sm"
-            className={styles.prevNextBtn}
-            aria-label="Previous track"
-            onClick={handlePrevious}
-            disabled={!hasTrack}
-            tabIndex={0 === rovingIndex ? 0 : -1}
-          >
-            ⏮
-          </Button>
-          <Button
-            variant="icon"
-            size="md"
-            className={styles.playPauseBtn}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-            onClick={handlePlayPause}
-            disabled={!hasTrack}
-            tabIndex={1 === rovingIndex ? 0 : -1}
-          >
-            {isPlaying ? '⏸' : '▶'}
-          </Button>
-          <Button
-            variant="icon"
-            size="sm"
-            className={styles.prevNextBtn}
-            aria-label="Next track"
-            onClick={handleNext}
-            disabled={!hasTrack}
-            tabIndex={2 === rovingIndex ? 0 : -1}
-          >
-            ⏭
-          </Button>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <Button
+                variant="icon"
+                size="sm"
+                className={styles.prevNextBtn}
+                aria-label="Previous track"
+                onClick={handlePrevious}
+                disabled={!hasTrack}
+                tabIndex={0 === rovingIndex ? 0 : -1}
+              >
+                ⏮
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Previous track</Tooltip.Content>
+          </Tooltip.Root>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <Button
+                variant="icon"
+                size="md"
+                className={styles.playPauseBtn}
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+                onClick={handlePlayPause}
+                disabled={!hasTrack}
+                tabIndex={1 === rovingIndex ? 0 : -1}
+              >
+                {isPlaying ? '⏸' : '▶'}
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
+          </Tooltip.Root>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <Button
+                variant="icon"
+                size="sm"
+                className={styles.prevNextBtn}
+                aria-label="Next track"
+                onClick={handleNext}
+                disabled={!hasTrack}
+                tabIndex={2 === rovingIndex ? 0 : -1}
+              >
+                ⏭
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Next track</Tooltip.Content>
+          </Tooltip.Root>
         </div>
 
         <div className={styles.seekGroup}>
@@ -268,16 +285,21 @@ export function TransportBar() {
 
       {/* RIGHT ZONE — Volume */}
       <div className={styles.rightZone}>
-        <Button
-          variant="icon"
-          size="sm"
-          className={styles.muteBtn}
-          aria-label={isMuted ? 'Unmute' : 'Mute'}
-          aria-pressed={isMuted}
-          onClick={handleMuteToggle}
-        >
-          {isMuted ? '🔇' : '🔊'}
-        </Button>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            <Button
+              variant="icon"
+              size="sm"
+              className={styles.muteBtn}
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+              aria-pressed={isMuted}
+              onClick={handleMuteToggle}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>{isMuted ? 'Unmute' : 'Mute'}</Tooltip.Content>
+        </Tooltip.Root>
         <Slider
           className={styles.volumeSlider}
           min={0}

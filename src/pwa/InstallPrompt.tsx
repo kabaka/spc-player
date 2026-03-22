@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { onSwUpdate, applySwUpdate } from './sw-registration';
-import type { SwUpdateState } from './sw-registration';
 import styles from './InstallPrompt.module.css';
+import type { SwUpdateState } from './sw-registration';
+import { applySwUpdate, onSwUpdate } from './sw-registration';
 
 const DISMISS_KEY = 'spc-install-dismissed';
 

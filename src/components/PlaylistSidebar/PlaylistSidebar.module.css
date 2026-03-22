@@ -79,7 +79,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spc-space-6) var(--spc-space-4);
+  padding: var(--spc-space-4) var(--spc-space-3);
   text-align: center;
   color: var(--spc-color-text-muted);
   font-size: var(--spc-font-size-sm);

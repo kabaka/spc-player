@@ -1,6 +1,6 @@
-import { forwardRef } from 'react';
-import type { ComponentPropsWithoutRef } from 'react';
 import { Label as RadixLabel } from 'radix-ui';
+import type { ComponentPropsWithoutRef } from 'react';
+import { forwardRef } from 'react';
 
 import styles from './Label.module.css';
 

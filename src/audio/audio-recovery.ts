@@ -5,10 +5,11 @@
  * @see src/audio/engine.ts — AudioEngine singleton
  */
 
-import { audioEngine } from './engine';
-import { reportError } from '@/errors/report';
-import { audioPipelineError } from '@/errors/factories';
 import { showToast } from '@/components/Toast/toast-store';
+import { audioPipelineError } from '@/errors/factories';
+import { reportError } from '@/errors/report';
+
+import { audioEngine } from './engine';
 
 // ---------------------------------------------------------------------------
 // Constants

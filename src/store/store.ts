@@ -3,22 +3,22 @@ import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 
 import { parseSpcFile } from '@/core/spc-parser';
 import { calculateTrackDuration } from '@/core/track-duration';
-import { reportError } from '@/errors/report';
 import { uiError } from '@/errors/factories';
+import { reportError } from '@/errors/report';
 import { idbStorage } from '@/storage/idb-storage';
 import { loadSpcFromStorage } from '@/storage/spc-storage';
 
-import type { AppStore } from './types';
+import { createExportSlice } from './slices/export';
+import { createInstrumentSlice } from './slices/instrument';
+import { createMetadataSlice } from './slices/metadata';
+import { createMixerSlice } from './slices/mixer';
+import { createOrchestrationSlice } from './slices/orchestration';
 import { createPlaybackSlice } from './slices/playback';
 import { createPlaylistSlice } from './slices/playlist';
-import { createMixerSlice } from './slices/mixer';
-import { createMetadataSlice } from './slices/metadata';
 import { createSettingsSlice } from './slices/settings';
-import { createInstrumentSlice } from './slices/instrument';
 import { createUISlice } from './slices/ui';
-import { createExportSlice } from './slices/export';
-import { createOrchestrationSlice } from './slices/orchestration';
 import { createVisualizationSlice } from './slices/visualization';
+import type { AppStore } from './types';
 
 export const useAppStore = create<AppStore>()(
   devtools(

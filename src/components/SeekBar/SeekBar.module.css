@@ -132,3 +132,23 @@
 .timeTooltipVisible {
   opacity: 1;
 }
+
+/* ============================================================
+   HIGH CONTRAST MODE
+   ============================================================ */
+
+@media (forced-colors: active) {
+  .loopMarker {
+    background: Highlight;
+  }
+
+  .loopRegionOverlay {
+    background: transparent;
+    border-top: 1px dashed Highlight;
+    border-bottom: 1px dashed Highlight;
+  }
+
+  .timeTooltip {
+    border: 1px solid ButtonText;
+  }
+}

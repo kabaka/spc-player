@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  initMidi,
-  disposeMidi,
-  isMidiSupported as checkMidiSupported,
-  getConnectedDevices,
-} from '@/midi/midi-input';
 import type { MidiDeviceInfo } from '@/midi/midi-input';
+import {
+  disposeMidi,
+  getConnectedDevices,
+  initMidi,
+  isMidiSupported as checkMidiSupported,
+} from '@/midi/midi-input';
 import { useAppStore } from '@/store/store';
 
 // ── Types ─────────────────────────────────────────────────────────────

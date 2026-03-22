@@ -1,19 +1,18 @@
-import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
+import { create } from 'zustand';
 
-import type { AppStore, SliceCreator } from './types';
+import { createExportSlice } from './slices/export';
+import { createInstrumentSlice } from './slices/instrument';
+import { createMetadataSlice } from './slices/metadata';
+import { createMixerSlice } from './slices/mixer';
+import { createOrchestrationSlice } from './slices/orchestration';
 import { createPlaybackSlice } from './slices/playback';
 import { createPlaylistSlice } from './slices/playlist';
-import { createMixerSlice } from './slices/mixer';
-import { createMetadataSlice } from './slices/metadata';
 import { createSettingsSlice } from './slices/settings';
-import { createInstrumentSlice } from './slices/instrument';
 import { createUISlice } from './slices/ui';
-import { createExportSlice } from './slices/export';
-import { createOrchestrationSlice } from './slices/orchestration';
 import { createVisualizationSlice } from './slices/visualization';
-
-import type { PlaylistTrack, ExportJob } from './types';
+import type { AppStore, SliceCreator } from './types';
+import type { ExportJob, PlaylistTrack } from './types';
 
 // Test stores omit devtools/persist middleware. The inner function is typed
 // with middleware params so slice creators receive their expected args,

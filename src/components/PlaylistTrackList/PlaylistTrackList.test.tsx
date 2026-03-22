@@ -1,8 +1,8 @@
-import { cleanup, render, screen, fireEvent } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PlaylistTrack } from '@/store/types';
 import { useAppStore } from '@/store/store';
+import type { PlaylistTrack } from '@/store/types';
 
 import { PlaylistTrackList } from './PlaylistTrackList';
 

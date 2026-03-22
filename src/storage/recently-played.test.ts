@@ -5,11 +5,12 @@
  */
 
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetDbInstance } from './db';
-import { recordRecentPlay } from './recently-played';
 import { getDb } from './db';
+import { recordRecentPlay } from './recently-played';
 
 describe('recently-played', () => {
   beforeEach(() => {

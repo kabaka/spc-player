@@ -1,0 +1,106 @@
+/* OnboardingOverlay.module.css */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--spc-z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(0 0 0 / 0.6);
+  animation: backdropFadeIn var(--spc-duration-normal) var(--spc-easing-out);
+}
+
+.panel {
+  background-color: var(--spc-color-surface);
+  border-radius: var(--spc-radius-lg);
+  box-shadow: var(--spc-shadow-lg);
+  padding: var(--spc-space-8);
+  max-width: 460px;
+  width: calc(100% - var(--spc-space-8));
+  animation: panelSlideIn var(--spc-duration-normal) var(--spc-easing-out);
+}
+
+.heading {
+  font-size: var(--spc-font-size-xl);
+  font-weight: 600;
+  color: var(--spc-color-text);
+  margin: 0 0 var(--spc-space-6);
+  text-align: center;
+}
+
+.callouts {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spc-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-4);
+}
+
+.callout {
+  font-size: var(--spc-font-size-sm);
+  line-height: var(--spc-leading-relaxed);
+  color: var(--spc-color-text-secondary);
+}
+
+.callout kbd {
+  display: inline-block;
+  padding: var(--spc-space-0-5) var(--spc-space-1);
+  font-size: var(--spc-font-size-xs);
+  font-family: inherit;
+  background-color: var(--spc-color-surface-raised);
+  border: 1px solid var(--spc-color-border-subtle);
+  border-radius: var(--spc-radius-sm);
+  box-shadow: 0 1px 0 var(--spc-color-border-subtle);
+}
+
+.dismissButton {
+  display: block;
+  width: 100%;
+  padding: var(--spc-space-3) var(--spc-space-6);
+  font-size: var(--spc-font-size-sm);
+  font-weight: 600;
+  color: var(--spc-color-accent-text);
+  background-color: var(--spc-color-accent);
+  border: none;
+  border-radius: var(--spc-radius-md);
+  cursor: pointer;
+  transition: background-color var(--spc-duration-fast) var(--spc-easing-out);
+}
+
+.dismissButton:hover {
+  background-color: var(--spc-color-accent-hover);
+}
+
+.dismissButton:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: 2px;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    animation: none;
+  }
+}

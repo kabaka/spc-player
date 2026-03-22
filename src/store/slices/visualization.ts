@@ -1,4 +1,4 @@
-import type { VisualizationSlice, SliceCreator } from '../types';
+import type { SliceCreator, VisualizationSlice } from '../types';
 
 export const createVisualizationSlice: SliceCreator<VisualizationSlice> = (
   set,
@@ -11,7 +11,8 @@ export const createVisualizationSlice: SliceCreator<VisualizationSlice> = (
   },
   spectrum: { mode: 'bars', fftSize: 1024, smoothing: 0.8 },
   stereoField: { mode: 'lissajous', decay: 0.95 },
-  coverArt: { externalFetchEnabled: false },
+  coverArt: { externalFetchEnabled: false, version: 0 },
+  voiceTimeline: { timeWindow: 5, showEnvelopes: true },
 
   setActiveMode: (mode) => {
     set({ activeMode: mode }, false, 'visualization/setActiveMode');
@@ -46,6 +47,16 @@ export const createVisualizationSlice: SliceCreator<VisualizationSlice> = (
       (state) => ({ coverArt: { ...state.coverArt, ...settings } }),
       false,
       'visualization/setCoverArtSettings',
+    );
+  },
+
+  setVoiceTimelineSettings: (settings) => {
+    set(
+      (state) => ({
+        voiceTimeline: { ...state.voiceTimeline, ...settings },
+      }),
+      false,
+      'visualization/setVoiceTimelineSettings',
     );
   },
 });

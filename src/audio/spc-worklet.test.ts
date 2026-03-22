@@ -6,7 +6,8 @@
  * playback-ended timing, and config update handling.
  */
 
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { DspExports } from './dsp-exports';
 import type { MainToWorklet, WorkletToMain } from './worker-protocol';
 

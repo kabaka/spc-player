@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { audioStateBuffer } from '@/audio/audio-state-buffer';
 import { samplesToSeconds } from '@/core/track-duration';
-import { formatTime, formatSpokenTime } from '@/utils/format-time';
+import type { LoopRegion } from '@/store/types';
+import { formatSpokenTime, formatTime } from '@/utils/format-time';
+import { getHighContrast } from '@/utils/high-contrast';
 
 import styles from './SeekBar.module.css';
-
-import type { LoopRegion } from '@/store/types';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -96,6 +96,12 @@ function renderSeekCanvas(
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
+  // High contrast overrides
+  const hc = getHighContrast();
+  const accent = hc?.highlight ?? accentColor;
+  const trackBg = hc?.buttonText ?? surfaceRaisedColor;
+  const loopBg = hc ? hc.text : accentSubtleColor;
+
   const isActive = state !== 'idle';
   const trackH = isActive ? TRACK_HEIGHT_HOVER : TRACK_HEIGHT_IDLE;
   const trackY = (height - trackH) / 2;
@@ -107,13 +113,13 @@ function renderSeekCanvas(
     const loopEndX = (loopRegion.endTime / totalSeconds) * width;
     const regionWidth = loopEndX - loopStartX;
 
-    ctx.fillStyle = accentSubtleColor;
+    ctx.fillStyle = loopBg;
     ctx.fillRect(loopStartX, trackY - 4, regionWidth, trackH + 8);
 
     // Dashed borders top and bottom
     ctx.save();
     ctx.setLineDash([4, 3]);
-    ctx.strokeStyle = accentColor;
+    ctx.strokeStyle = accent;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(loopStartX, trackY - 4);
@@ -125,14 +131,14 @@ function renderSeekCanvas(
   }
 
   // Remaining region (full track background)
-  ctx.fillStyle = surfaceRaisedColor;
+  ctx.fillStyle = trackBg;
   ctx.beginPath();
   ctx.roundRect(0, trackY, width, trackH, trackH / 2);
   ctx.fill();
 
   // Played region
   if (playedWidth > 0) {
-    ctx.fillStyle = accentColor;
+    ctx.fillStyle = accent;
     ctx.beginPath();
     ctx.roundRect(0, trackY, Math.max(playedWidth, trackH), trackH, trackH / 2);
     ctx.fill();
@@ -140,7 +146,7 @@ function renderSeekCanvas(
 
   // Loop markers (vertical lines)
   if (loopRegion?.active && totalSeconds > 0) {
-    ctx.fillStyle = accentColor;
+    ctx.fillStyle = accent;
     ctx.globalAlpha = 0.8;
     const markerWidth = 2;
     const markerHeight = 16;
@@ -164,19 +170,21 @@ function renderSeekCanvas(
 
     ctx.beginPath();
     ctx.arc(thumbX, thumbY, thumbR, 0, Math.PI * 2);
-    ctx.fillStyle = accentColor;
+    ctx.fillStyle = accent;
     ctx.fill();
 
-    // Subtle shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetY = 1;
-    ctx.beginPath();
-    ctx.arc(thumbX, thumbY, thumbR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    // Subtle shadow (skip in high contrast — shadows can reduce clarity)
+    if (!hc) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
+      ctx.beginPath();
+      ctx.arc(thumbX, thumbY, thumbR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+    }
   }
 }
 

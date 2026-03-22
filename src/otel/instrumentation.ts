@@ -5,8 +5,8 @@
  * Only activates in development mode; no-ops in production.
  */
 
+import { ATTR, SPAN_DOCUMENT_LOAD } from './spans';
 import { getTracer } from './tracer';
-import { SPAN_DOCUMENT_LOAD, ATTR } from './spans';
 
 /**
  * Initialize client-side instrumentation.

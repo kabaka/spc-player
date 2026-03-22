@@ -1,10 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
-import { useAppStore } from '@/store/store';
 import { audioEngine } from '@/audio/engine';
+import * as Tooltip from '@/components/Tooltip/Tooltip';
+import { useAppStore } from '@/store/store';
 
-import { VuMeter } from './VuMeter';
 import styles from './MixerPanel.module.css';
+import { VuMeter } from './VuMeter';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -215,35 +216,51 @@ export const MixerPanel = memo(function MixerPanel() {
               </div>
 
               <div role="gridcell">
-                <button
-                  tabIndex={getTabIndex(i, 1)}
-                  onFocus={() => handleCellFocus(i, 1)}
-                  ref={(el) => {
-                    cellRefs.current[i][1] = el;
-                  }}
-                  className={`${styles.toggle} ${isMuted ? styles.muteActive : ''}`}
-                  aria-label={`Mute channel ${i + 1}`}
-                  aria-pressed={!!isMuted}
-                  onClick={() => handleMute(i)}
-                >
-                  M
-                </button>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button
+                      tabIndex={getTabIndex(i, 1)}
+                      onFocus={() => handleCellFocus(i, 1)}
+                      ref={(el) => {
+                        cellRefs.current[i][1] = el;
+                      }}
+                      className={`${styles.toggle} ${isMuted ? styles.muteActive : ''}`}
+                      aria-label={`Mute channel ${i + 1}`}
+                      aria-pressed={!!isMuted}
+                      onClick={() => handleMute(i)}
+                    >
+                      M
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {isMuted ? `Unmute voice ${i + 1}` : `Mute voice ${i + 1}`}{' '}
+                    ({i + 1})
+                  </Tooltip.Content>
+                </Tooltip.Root>
               </div>
 
               <div role="gridcell">
-                <button
-                  tabIndex={getTabIndex(i, 2)}
-                  onFocus={() => handleCellFocus(i, 2)}
-                  ref={(el) => {
-                    cellRefs.current[i][2] = el;
-                  }}
-                  className={`${styles.toggle} ${isSoloed ? styles.soloActive : ''}`}
-                  aria-label={`Solo channel ${i + 1}`}
-                  aria-pressed={!!isSoloed}
-                  onClick={() => handleSolo(i)}
-                >
-                  S
-                </button>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button
+                      tabIndex={getTabIndex(i, 2)}
+                      onFocus={() => handleCellFocus(i, 2)}
+                      ref={(el) => {
+                        cellRefs.current[i][2] = el;
+                      }}
+                      className={`${styles.toggle} ${isSoloed ? styles.soloActive : ''}`}
+                      aria-label={`Solo channel ${i + 1}`}
+                      aria-pressed={!!isSoloed}
+                      onClick={() => handleSolo(i)}
+                    >
+                      S
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {isSoloed ? `Unsolo voice ${i + 1}` : `Solo voice ${i + 1}`}{' '}
+                    (Shift+{i + 1})
+                  </Tooltip.Content>
+                </Tooltip.Root>
               </div>
             </div>
           );
