@@ -18,6 +18,7 @@ import { createInstrumentSlice } from './slices/instrument';
 import { createUISlice } from './slices/ui';
 import { createExportSlice } from './slices/export';
 import { createOrchestrationSlice } from './slices/orchestration';
+import { createVisualizationSlice } from './slices/visualization';
 
 export const useAppStore = create<AppStore>()(
   devtools(
@@ -32,6 +33,7 @@ export const useAppStore = create<AppStore>()(
         ...createUISlice(...a),
         ...createExportSlice(...a),
         ...createOrchestrationSlice(...a),
+        ...createVisualizationSlice(...a),
       }),
       {
         name: 'spc-player-state',
@@ -48,6 +50,12 @@ export const useAppStore = create<AppStore>()(
             defaultPlayDuration: state.defaultPlayDuration,
             defaultFadeDuration: state.defaultFadeDuration,
             checkpointPreset: state.checkpointPreset,
+            // Visualization — persisted
+            activeMode: state.activeMode,
+            pianoRoll: state.pianoRoll,
+            spectrum: state.spectrum,
+            stereoField: state.stereoField,
+            coverArt: state.coverArt,
             // Playlist — full
             tracks: state.tracks,
             activeIndex: state.activeIndex,

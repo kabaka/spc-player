@@ -1,6 +1,6 @@
 # Roadmap v2 — Status Tracker
 
-Last updated: 2026-03-21
+Last updated: 2026-03-22
 
 ## Phase Summary
 
@@ -14,7 +14,7 @@ Last updated: 2026-03-21
 | B         | Layout Foundation          | Complete    | Layout foundation, transport bar, sidebar, drag-drop |
 | C         | Seek & Performance         | Complete    | Custom seek bar, checkpoints, pre-compute worker     |
 | D         | Audio Engine & Export      | Complete    | SoundTouch, codecs, telemetry, audio chain feedback  |
-| E         | Visualizations             | Not started | Piano roll, spectrum, cover art                      |
+| E         | Visualizations             | Complete    | Piano roll, spectrum, stereo field, cover art, a11y  |
 | F         | Polish & Advanced          | Not started | Docs, onboarding, remaining                          |
 
 ## Phase A Tasks
@@ -182,3 +182,56 @@ Corrected libflacjs license from LGPL-2.1 to MIT in THIRD_PARTY_LICENSES. Added 
 ### Deferrals
 
 None. All Phase D tasks completed.
+
+## Phase E Tasks
+
+| #   | Task                         | Status   | Notes                                                                  |
+| --- | ---------------------------- | -------- | ---------------------------------------------------------------------- |
+| E1  | VisualizationStage shell     | Complete | Tab bar, shared rAF loop, React.lazy + Suspense                        |
+| E2  | PianoRollRenderer            | Complete | Voice pitch tracking, note bars, scrolling, canvas shift, auto-range   |
+| E3  | SpectrumRenderer             | Complete | AnalyserNode FFT, bars/line/filled modes, logarithmic bins, peak hold  |
+| E4  | AnalyserNode integration     | Complete | Non-destructive tap on audio graph                                     |
+| E5  | CoverArt placeholder         | Complete | SNES cartridge shape, title-hash colors, wired into VisualizationStage |
+| E6  | Voice color palette          | Complete | 8 WCAG 3:1 compliant colors                                            |
+| E7  | Canvas resolution management | Complete | DPR-aware sizing, mobile 2× cap                                        |
+| E8  | Mobile adaptations           | Complete | 30fps frame skip, shorter time window, no glow/peak hold               |
+| E9  | prefers-reduced-motion       | Complete | ~4fps static snapshots                                                 |
+| E10 | Accessibility                | Complete | ARIA tablist/tab/tabpanel, keyboard navigation, skip link              |
+| E11 | Visualization Zustand slice  | Complete | Mode, per-mode settings, localStorage persistence                      |
+| E12 | Remove old SpectrumAnalyzer  | Complete | Removed from AnalysisView                                              |
+| E13 | StereoFieldRenderer          | Complete | Lissajous and correlation modes, trail decay                           |
+
+## Phase B/C Deferred Tasks (Resolved in Phase E)
+
+| #   | Task                                  | Status   | Notes              |
+| --- | ------------------------------------- | -------- | ------------------ |
+| —   | Code-splitting for VisualizationStage | Complete | React.lazy() in E1 |
+| —   | Code-splitting for ShortcutHelpDialog | Complete | React.lazy()       |
+
+## Phase E Documentation Deliverables
+
+- ADR-0020: Visualization Rendering Approach (Canvas 2D for all viz, AnalyserNode for FFT)
+- ADR-0021: Cover Art Approach (procedural placeholder, no IGDB, RetroArch deferred to Phase F)
+
+## Phase E — Deviations and Deferrals
+
+### Deviations
+
+- **E5 rendering approach**: Roadmap task title said "SVG-based" but the visualization plan and ADR-0021 specify Canvas 2D. Implementation follows the plan/ADR (canvas-drawn cartridge), not the roadmap task title.
+
+### Deferrals
+
+| Item                                       | Target Phase | Task # | Reason                                                                 |
+| ------------------------------------------ | ------------ | ------ | ---------------------------------------------------------------------- |
+| Voice Timeline mode (`voice-timeline`)     | F            | F2a    | Intentionally deferred per roadmap Phase F definition                  |
+| `performance.now()` frame timing telemetry | F            | —      | P2 improvement; frame budget enforcement works without instrumentation |
+| Correlation dot batching optimization      | F            | —      | P2 performance optimization; current performance within budget         |
+| Cached isMobile from ResizeObserver        | F            | —      | P2 performance optimization; `matchMedia` check is sufficient          |
+
+### Test Coverage
+
+- 107+ new unit tests across 8 test files
+- All 1160 unit tests pass
+- All 255 E2E tests pass
+- Zero type errors
+- All bundle sizes within budget

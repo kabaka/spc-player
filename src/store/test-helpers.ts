@@ -11,6 +11,7 @@ import { createInstrumentSlice } from './slices/instrument';
 import { createUISlice } from './slices/ui';
 import { createExportSlice } from './slices/export';
 import { createOrchestrationSlice } from './slices/orchestration';
+import { createVisualizationSlice } from './slices/visualization';
 
 import type { PlaylistTrack, ExportJob } from './types';
 
@@ -28,6 +29,7 @@ export const createTestStore = () =>
     ...createUISlice(...a),
     ...createExportSlice(...a),
     ...createOrchestrationSlice(...a),
+    ...createVisualizationSlice(...a),
   })) as StateCreator<AppStore>);
 
 export const makeTrack = (

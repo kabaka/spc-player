@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   createRootRoute,
   Link,
@@ -6,7 +13,11 @@ import {
   useRouterState,
 } from '@tanstack/react-router';
 
-import { ShortcutHelpDialog } from '@/components/ShortcutHelpDialog/ShortcutHelpDialog';
+const ShortcutHelpDialog = lazy(() =>
+  import('@/components/ShortcutHelpDialog/ShortcutHelpDialog').then((mod) => ({
+    default: mod.ShortcutHelpDialog,
+  })),
+);
 import { BottomNav } from '@/components/BottomNav/BottomNav';
 import { DragDropOverlay } from '@/components/DragDropOverlay/DragDropOverlay';
 import { PlaylistSidebar } from '@/components/PlaylistSidebar/PlaylistSidebar';
@@ -150,10 +161,12 @@ function RootComponent() {
 
       <DragDropOverlay />
 
-      <ShortcutHelpDialog
-        open={showShortcutHelp}
-        onOpenChange={setShowShortcutHelp}
-      />
+      <Suspense fallback={null}>
+        <ShortcutHelpDialog
+          open={showShortcutHelp}
+          onOpenChange={setShowShortcutHelp}
+        />
+      </Suspense>
 
       <InstallPrompt />
       <UpdatePrompt />

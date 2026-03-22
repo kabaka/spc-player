@@ -1,7 +1,7 @@
 # SPC Player — Implementation Roadmap v2
 
 **Status:** Accepted  
-**Date:** 2026-03-21  
+**Date:** 2026-03-22  
 **Supersedes:** `docs/dev/implementation-roadmap.md` (Phases 1–5a remain historical record; this document governs all future work)  
 **Audience:** Orchestrator agents and implementing agent teams
 
@@ -428,7 +428,7 @@ The following items were identified during Phase C implementation and peer revie
 
 ---
 
-## Phase E: Visualizations
+## Phase E: Visualizations — COMPLETE
 
 **Goal:** Ship piano roll, spectrum EQ, and cover art visualizations. Code-split all canvas renderers.
 

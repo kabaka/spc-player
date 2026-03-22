@@ -214,6 +214,48 @@ export interface OrchestrationSlice {
   removeTrackSafe: (trackId: string) => void;
 }
 
+// ── Visualization types ───────────────────────────────────────────────
+
+export type VisualizationMode =
+  | 'piano-roll'
+  | 'spectrum'
+  | 'stereo-field'
+  | 'cover-art';
+
+export interface PianoRollSettings {
+  scrollSpeed: number;
+  noteScale: 'chromatic' | 'octave';
+  showVoiceLabels: boolean;
+}
+
+export interface SpectrumSettings {
+  mode: 'bars' | 'line' | 'filled';
+  fftSize: 256 | 512 | 1024;
+  smoothing: number;
+}
+
+export interface StereoFieldSettings {
+  mode: 'lissajous' | 'correlation';
+  decay: number;
+}
+
+export interface CoverArtSettings {
+  externalFetchEnabled: boolean;
+}
+
+export interface VisualizationSlice {
+  activeMode: VisualizationMode;
+  pianoRoll: PianoRollSettings;
+  spectrum: SpectrumSettings;
+  stereoField: StereoFieldSettings;
+  coverArt: CoverArtSettings;
+  setActiveMode: (mode: VisualizationMode) => void;
+  setPianoRollSettings: (settings: Partial<PianoRollSettings>) => void;
+  setSpectrumSettings: (settings: Partial<SpectrumSettings>) => void;
+  setStereoFieldSettings: (settings: Partial<StereoFieldSettings>) => void;
+  setCoverArtSettings: (settings: Partial<CoverArtSettings>) => void;
+}
+
 // ── Combined types ────────────────────────────────────────────────────
 
 export type AppStore = PlaybackSlice &
@@ -224,7 +266,8 @@ export type AppStore = PlaybackSlice &
   InstrumentSlice &
   UISlice &
   ExportSlice &
-  OrchestrationSlice;
+  OrchestrationSlice &
+  VisualizationSlice;
 
 type AppMiddleware = [
   ['zustand/devtools', never],

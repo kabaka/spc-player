@@ -52,6 +52,7 @@ class AudioEngine {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private gainNode: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
   private wasmBytes: ArrayBuffer | null = null;
   private spcData: ArrayBuffer | null = null;
   private isInitialized = false;
@@ -101,6 +102,12 @@ class AudioEngine {
       this.gainNode = this.audioContext.createGain();
       this.workletNode.connect(this.gainNode);
       this.gainNode.connect(this.audioContext.destination);
+
+      // 4b. Create AnalyserNode as a non-destructive tap off the gain node
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 1024;
+      this.analyserNode.smoothingTimeConstant = 0.8;
+      this.gainNode.connect(this.analyserNode);
 
       // 5. Wire message handler
       this.workletNode.port.onmessage = (event: MessageEvent<WorkletToMain>) =>
@@ -497,6 +504,12 @@ class AudioEngine {
       this.workletNode.connect(this.gainNode);
       this.gainNode.connect(this.audioContext.destination);
 
+      // Recreate AnalyserNode tap
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 1024;
+      this.analyserNode.smoothingTimeConstant = 0.8;
+      this.gainNode.connect(this.analyserNode);
+
       this.workletNode.port.onmessage = (event: MessageEvent<WorkletToMain>) =>
         this.handleWorkletMessage(event.data);
 
@@ -880,6 +893,11 @@ class AudioEngine {
       this.workletNode = null;
     }
 
+    if (this.analyserNode) {
+      this.analyserNode.disconnect();
+      this.analyserNode = null;
+    }
+
     if (this.gainNode) {
       this.gainNode.disconnect();
       this.gainNode = null;
@@ -1032,6 +1050,12 @@ class AudioEngine {
     }
 
     this.gainNode.connect(this.audioContext.destination);
+
+    // Reconnect analyser as a parallel tap off the gain node
+    if (this.analyserNode) {
+      this.analyserNode.disconnect();
+      this.gainNode.connect(this.analyserNode);
+    }
   }
 
   /**
@@ -1060,6 +1084,11 @@ class AudioEngine {
       // Fallback for Safari (no requestIdleCallback)
       setTimeout(doLoad, 2000);
     }
+  }
+
+  /** Get the AnalyserNode for visualization (non-destructive tap). */
+  getAnalyserNode(): AnalyserNode | null {
+    return this.analyserNode;
   }
 
   /** Audio chain info for the feedback display (D14). */

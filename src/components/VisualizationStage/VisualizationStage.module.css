@@ -1,0 +1,156 @@
+/* VisualizationStage.module.css — Tabbed visualization container */
+
+/* ── Skip link (visible only on focus) ──────────────────────── */
+.skipLink {
+  position: absolute;
+  top: -40px;
+  left: var(--spc-space-2);
+  z-index: 10;
+  padding: var(--spc-space-1) var(--spc-space-2);
+  background: var(--spc-color-surface);
+  color: var(--spc-color-text);
+  font-size: var(--spc-font-size-sm);
+  border: 2px solid var(--spc-color-focus-ring);
+  border-radius: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.skipLink:focus {
+  top: var(--spc-space-1);
+}
+
+/* ── Stage container ────────────────────────────────────────── */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border-subtle);
+}
+
+/* ── Tab bar ────────────────────────────────────────────────── */
+.tabBar {
+  display: flex;
+  gap: 0;
+  background: var(--spc-color-surface);
+  border-bottom: 1px solid var(--spc-color-border-subtle);
+  flex-shrink: 0;
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--spc-color-text-secondary);
+  font-family: var(--spc-font-sans);
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  padding: var(--spc-space-1) var(--spc-space-3);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--spc-color-text);
+  background: var(--spc-color-hover);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--spc-color-focus-ring);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--spc-color-accent-text);
+  background: var(--spc-color-accent-subtle);
+}
+
+.tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--spc-color-accent);
+}
+
+/* ── Canvas panel ───────────────────────────────────────────── */
+.canvasPanel {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.canvasWrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Suspense fallback ──────────────────────────────────────── */
+.fallback {
+  height: 300px;
+  border-radius: 8px;
+  background: var(--spc-color-skeleton);
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Tablet (768–1023px) ────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .stage {
+    height: 200px;
+  }
+  .fallback {
+    height: 200px;
+  }
+}
+
+/* ── Mobile (<768px) ────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .stage {
+    height: 120px;
+  }
+  .fallback {
+    height: 120px;
+  }
+  .tab {
+    font-size: 0.625rem;
+    padding: var(--spc-space-1) var(--spc-space-2);
+  }
+}
+
+/* ── prefers-reduced-motion ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+  .fallback {
+    animation: none;
+    opacity: 0.8;
+  }
+}

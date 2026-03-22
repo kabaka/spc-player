@@ -54,22 +54,22 @@
   /* --- Voice Channels --- */
   --spc-color-voice-0: #60a5fa;
   --spc-color-voice-1: #a78bfa;
-  --spc-color-voice-2: #fb7185;
+  --spc-color-voice-2: #4ade80;
   --spc-color-voice-3: #fbbf24;
-  --spc-color-voice-4: #34d399;
-  --spc-color-voice-5: #22d3ee;
+  --spc-color-voice-4: #22d3ee;
+  --spc-color-voice-5: #f472b6;
   --spc-color-voice-6: #fb923c;
-  --spc-color-voice-7: #f472b6;
+  --spc-color-voice-7: #f87171;
 
   /* --- Voice Channel Subtle Variants --- */
   --spc-color-voice-0-subtle: color-mix(in srgb, #60a5fa 15%, transparent);
   --spc-color-voice-1-subtle: color-mix(in srgb, #a78bfa 15%, transparent);
-  --spc-color-voice-2-subtle: color-mix(in srgb, #fb7185 15%, transparent);
+  --spc-color-voice-2-subtle: color-mix(in srgb, #4ade80 15%, transparent);
   --spc-color-voice-3-subtle: color-mix(in srgb, #fbbf24 15%, transparent);
-  --spc-color-voice-4-subtle: color-mix(in srgb, #34d399 15%, transparent);
-  --spc-color-voice-5-subtle: color-mix(in srgb, #22d3ee 15%, transparent);
+  --spc-color-voice-4-subtle: color-mix(in srgb, #22d3ee 15%, transparent);
+  --spc-color-voice-5-subtle: color-mix(in srgb, #f472b6 15%, transparent);
   --spc-color-voice-6-subtle: color-mix(in srgb, #fb923c 15%, transparent);
-  --spc-color-voice-7-subtle: color-mix(in srgb, #f472b6 15%, transparent);
+  --spc-color-voice-7-subtle: color-mix(in srgb, #f87171 15%, transparent);
 
   /* --- Audio Visualization (theme-independent) --- */
   --spc-color-vu-green: #22c55e;
@@ -263,22 +263,22 @@
   /* --- Voice Channels --- */
   --spc-color-voice-0: #2563eb;
   --spc-color-voice-1: #7c3aed;
-  --spc-color-voice-2: #e11d48;
+  --spc-color-voice-2: #16a34a;
   --spc-color-voice-3: #d97706;
-  --spc-color-voice-4: #059669;
-  --spc-color-voice-5: #0891b2;
+  --spc-color-voice-4: #0891b2;
+  --spc-color-voice-5: #db2777;
   --spc-color-voice-6: #ea580c;
-  --spc-color-voice-7: #db2777;
+  --spc-color-voice-7: #dc2626;
 
   /* --- Voice Channel Subtle Variants --- */
   --spc-color-voice-0-subtle: color-mix(in srgb, #2563eb 15%, transparent);
   --spc-color-voice-1-subtle: color-mix(in srgb, #7c3aed 15%, transparent);
-  --spc-color-voice-2-subtle: color-mix(in srgb, #e11d48 15%, transparent);
+  --spc-color-voice-2-subtle: color-mix(in srgb, #16a34a 15%, transparent);
   --spc-color-voice-3-subtle: color-mix(in srgb, #d97706 15%, transparent);
-  --spc-color-voice-4-subtle: color-mix(in srgb, #059669 15%, transparent);
-  --spc-color-voice-5-subtle: color-mix(in srgb, #0891b2 15%, transparent);
+  --spc-color-voice-4-subtle: color-mix(in srgb, #0891b2 15%, transparent);
+  --spc-color-voice-5-subtle: color-mix(in srgb, #db2777 15%, transparent);
   --spc-color-voice-6-subtle: color-mix(in srgb, #ea580c 15%, transparent);
-  --spc-color-voice-7-subtle: color-mix(in srgb, #db2777 15%, transparent);
+  --spc-color-voice-7-subtle: color-mix(in srgb, #dc2626 15%, transparent);
 
   /* --- Waveform --- */
   --spc-color-waveform: #7c3aed;

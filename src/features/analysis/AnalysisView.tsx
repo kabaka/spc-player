@@ -11,7 +11,6 @@ import { MemoryViewer } from './MemoryViewer';
 import { RegisterViewer } from './RegisterViewer';
 import { VoiceStatePanel } from './VoiceStatePanel';
 import { EchoBufferView } from './EchoBufferView';
-import { SpectrumAnalyzer } from './SpectrumAnalyzer';
 import { AudioChainPanel } from './AudioChainPanel';
 import styles from './AnalysisView.module.css';
 
@@ -62,7 +61,6 @@ export function AnalysisView() {
     <main aria-label="Analysis" className={styles.view}>
       <h1 className={styles.visuallyHidden}>Analysis</h1>
 
-      <SpectrumAnalyzer />
       <AudioChainPanel />
 
       <Tabs.Root value={tab} onValueChange={setTab}>
