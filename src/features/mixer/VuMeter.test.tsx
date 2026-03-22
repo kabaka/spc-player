@@ -33,11 +33,10 @@ describe('VuMeter', () => {
     vi.restoreAllMocks();
   });
 
-  describe('regression: negative VU values', () => {
-    it('shows non-zero level for phase-inverted voice', () => {
-      // Negative VU values represent phase-inverted DSP volumes
-      audioStateBuffer.vuLeft[0] = -0.8;
-      audioStateBuffer.vuRight[0] = -0.8;
+  describe('unsigned VU values', () => {
+    it('shows 100% level when envelope is full', () => {
+      audioStateBuffer.vuLeft[0] = 1.0;
+      audioStateBuffer.vuRight[0] = 1.0;
 
       const { container } = render(
         <VuMeter voiceIndex={0} label="Voice 0 level" />,
@@ -47,9 +46,22 @@ describe('VuMeter', () => {
 
       const fill = container.querySelector('[aria-hidden="true"]');
       const level = fill?.getAttribute('style') ?? '';
-      // With Math.abs, level should be 80%, not 0%
-      expect(level).toContain('--vu-level');
-      expect(level).not.toContain('--vu-level: 0%');
+      expect(level).toContain('--vu-level: 100%');
+    });
+
+    it('shows 50% level for half-amplitude envelope', () => {
+      audioStateBuffer.vuLeft[0] = 0.5;
+      audioStateBuffer.vuRight[0] = 0.5;
+
+      const { container } = render(
+        <VuMeter voiceIndex={0} label="Voice 0 level" />,
+      );
+
+      flushRaf();
+
+      const fill = container.querySelector('[aria-hidden="true"]');
+      const level = fill?.getAttribute('style') ?? '';
+      expect(level).toContain('--vu-level: 50%');
     });
   });
 });

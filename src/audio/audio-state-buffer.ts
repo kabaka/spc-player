@@ -20,6 +20,8 @@ export interface AudioStateBuffer {
   positionSamples: number;
   vuLeft: Float32Array;
   vuRight: Float32Array;
+  stereoLeft: Float32Array;
+  stereoRight: Float32Array;
   masterVuLeft: number;
   masterVuRight: number;
   voices: VoiceStateSnapshot[];
@@ -59,6 +61,8 @@ function createDefaultBuffer(): AudioStateBuffer {
     positionSamples: 0,
     vuLeft: new Float32Array(8),
     vuRight: new Float32Array(8),
+    stereoLeft: new Float32Array(8),
+    stereoRight: new Float32Array(8),
     masterVuLeft: 0,
     masterVuRight: 0,
     voices: Array.from({ length: 8 }, (_, i) => createDefaultVoice(i)),
@@ -81,6 +85,8 @@ export function resetAudioStateBuffer(): void {
   audioStateBuffer.positionSamples = 0;
   audioStateBuffer.vuLeft.fill(0);
   audioStateBuffer.vuRight.fill(0);
+  audioStateBuffer.stereoLeft.fill(0);
+  audioStateBuffer.stereoRight.fill(0);
   audioStateBuffer.masterVuLeft = 0;
   audioStateBuffer.masterVuRight = 0;
 

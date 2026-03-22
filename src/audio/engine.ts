@@ -689,6 +689,11 @@ class AudioEngine {
       audioStateBuffer.vuRight[i] = msg.vuRight[i];
     }
 
+    for (let i = 0; i < 8; i++) {
+      audioStateBuffer.stereoLeft[i] = msg.stereoLeft[i];
+      audioStateBuffer.stereoRight[i] = msg.stereoRight[i];
+    }
+
     for (let i = 0; i < msg.voices.length; i++) {
       const src = msg.voices[i];
       const dst = audioStateBuffer.voices[i];

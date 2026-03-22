@@ -7,7 +7,6 @@ import type { AudioVisualizationData } from '../types';
 import {
   PianoRollRenderer,
   frequencyToMidiNote,
-  pitchToFrequency,
   pitchToMidiNote,
 } from './PianoRollRenderer';
 
@@ -35,6 +34,8 @@ function createData(
     voices: Array.from({ length: 8 }, (_, i) => createVoice({ index: i })),
     vuLeft: new Float32Array(8),
     vuRight: new Float32Array(8),
+    stereoLeft: new Float32Array(8),
+    stereoRight: new Float32Array(8),
     masterVuLeft: 0,
     masterVuRight: 0,
     generation: 0,
@@ -80,28 +81,9 @@ function createRenderer(
   return { renderer, ctx };
 }
 
-// Compute the raw VxPITCH value for a given frequency in Hz.
-function frequencyToPitch(freq: number): number {
-  return Math.round((freq * 0x1000) / 32000);
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────
 
 describe('PianoRollRenderer', () => {
-  describe('pitchToFrequency', () => {
-    it('converts unity pitch (0x1000) to 32000 Hz', () => {
-      expect(pitchToFrequency(0x1000)).toBe(32000);
-    });
-
-    it('converts zero pitch to 0 Hz', () => {
-      expect(pitchToFrequency(0)).toBe(0);
-    });
-
-    it('converts half pitch (0x800) to 16000 Hz', () => {
-      expect(pitchToFrequency(0x800)).toBe(16000);
-    });
-  });
-
   describe('frequencyToMidiNote', () => {
     it('converts 440 Hz to MIDI 69 (A4)', () => {
       expect(frequencyToMidiNote(440)).toBeCloseTo(69, 5);
@@ -125,9 +107,20 @@ describe('PianoRollRenderer', () => {
   });
 
   describe('pitchToMidiNote', () => {
-    it('converts VxPITCH for ~440 Hz to near MIDI 69', () => {
-      const pitch = frequencyToPitch(440);
-      expect(pitchToMidiNote(pitch)).toBeCloseTo(69, 0);
+    it('maps unity pitch (0x1000) to MIDI 60 (C4)', () => {
+      expect(pitchToMidiNote(0x1000)).toBeCloseTo(60, 5);
+    });
+
+    it('maps 0x2000 to MIDI 72 (one octave up)', () => {
+      expect(pitchToMidiNote(0x2000)).toBeCloseTo(72, 5);
+    });
+
+    it('maps 0x0800 to MIDI 48 (one octave down)', () => {
+      expect(pitchToMidiNote(0x0800)).toBeCloseTo(48, 5);
+    });
+
+    it('maps max register 0x3FFF below MIDI 127', () => {
+      expect(pitchToMidiNote(0x3fff)).toBeLessThan(127);
     });
 
     it('returns 0 for zero pitch', () => {
@@ -139,9 +132,7 @@ describe('PianoRollRenderer', () => {
     });
 
     it('gives higher notes for higher pitch values', () => {
-      const low = pitchToMidiNote(frequencyToPitch(200));
-      const high = pitchToMidiNote(frequencyToPitch(800));
-      expect(high).toBeGreaterThan(low);
+      expect(pitchToMidiNote(0x1800)).toBeGreaterThan(pitchToMidiNote(0x0800));
     });
   });
 
@@ -166,7 +157,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
 
       const data = createData({ voices, positionSamples: 32000 });
@@ -186,7 +177,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
 
       const mutedVoices = [
@@ -221,7 +212,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
 
       const data = createData({ voices, positionSamples: 32000 });
@@ -242,7 +233,6 @@ describe('PianoRollRenderer', () => {
     it('converges toward active note ± 1 octave', () => {
       const { renderer } = createRenderer();
 
-      const pitchForC4 = frequencyToPitch(261.63);
       const voices = Array.from({ length: 8 }, (_, i) =>
         createVoice({ index: i }),
       );
@@ -250,13 +240,13 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: pitchForC4,
+        pitch: 0x1000, // MIDI 60 (C4)
       });
 
       const data = createData({ voices, positionSamples: 32000 });
 
-      // Run enough frames for convergence (lerp factor 0.2)
-      for (let i = 0; i < 60; i++) {
+      // Run enough frames for convergence (asymmetric lerp: expand 0.25, contract 0.08)
+      for (let i = 0; i < 80; i++) {
         renderer.draw(data, 1 / 60);
       }
 
@@ -277,7 +267,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
       const data = createData({ voices, positionSamples: 32000 });
       for (let i = 0; i < 30; i++) {
@@ -290,15 +280,15 @@ describe('PianoRollRenderer', () => {
         voices,
         positionSamples: 32000 * 10, // 10 seconds — note at ~1s is outside 3s window
       });
-      for (let i = 0; i < 80; i++) {
+      for (let i = 0; i < 120; i++) {
         silentData.positionSamples += 32000;
         renderer.draw(silentData, 1 / 60);
       }
 
       const range = renderer.getVisibleRange();
-      // Should converge back toward default [36, 96]
-      expect(range.min).toBeCloseTo(36, 0);
-      expect(range.max).toBeCloseTo(96, 0);
+      // Should converge back toward default [24, 84]
+      expect(range.min).toBeCloseTo(24, 0);
+      expect(range.max).toBeCloseTo(84, 0);
     });
   });
 
@@ -312,11 +302,11 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
 
-      // Run enough frames for auto-range to converge (lerp factor 0.2)
-      for (let i = 0; i < 60; i++) {
+      // Run enough frames for auto-range to converge (asymmetric lerp)
+      for (let i = 0; i < 120; i++) {
         const data = createData({
           voices,
           positionSamples: 32000 + i * 533,
@@ -328,7 +318,7 @@ describe('PianoRollRenderer', () => {
       vi.mocked(ctx.drawImage).mockClear();
       const nextData = createData({
         voices,
-        positionSamples: 32000 + 60 * 533,
+        positionSamples: 32000 + 120 * 533,
       });
       renderer.draw(nextData, 1 / 60);
       expect(vi.mocked(ctx.drawImage)).toHaveBeenCalledTimes(1);
@@ -393,7 +383,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
       renderer.draw(createData({ voices, positionSamples: 32000 }), 1 / 60);
 
@@ -418,7 +408,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: true,
-        pitch: frequencyToPitch(1000),
+        pitch: 0x2000, // MIDI 72 — shifts range away from defaults
       });
       for (let i = 0; i < 20; i++) {
         renderer.draw(
@@ -430,8 +420,8 @@ describe('PianoRollRenderer', () => {
       renderer.dispose();
 
       const range = renderer.getVisibleRange();
-      expect(range.min).toBe(36);
-      expect(range.max).toBe(96);
+      expect(range.min).toBe(24);
+      expect(range.max).toBe(84);
     });
   });
 
@@ -447,7 +437,7 @@ describe('PianoRollRenderer', () => {
         index: 0,
         active: true,
         keyOn: false,
-        pitch: frequencyToPitch(440),
+        pitch: 0x1000,
       });
 
       const data = createData({ voices, positionSamples: 32000 });
@@ -456,6 +446,31 @@ describe('PianoRollRenderer', () => {
       // Should have background fill + at least one note bar
       expect(vi.mocked(ctx.fillRect).mock.calls.length).toBeGreaterThanOrEqual(
         2,
+      );
+    });
+  });
+
+  describe('regression: 0x1000 pitch produces visible notes', () => {
+    it('creates notes for voices at unity pitch (0x1000)', () => {
+      const { renderer, ctx } = createRenderer();
+
+      const voices = Array.from({ length: 8 }, (_, i) =>
+        createVoice({ index: i }),
+      );
+      // 0x1000 is the most common SPC700 pitch value (unity = C4, MIDI 60)
+      voices[0] = createVoice({
+        index: 0,
+        active: true,
+        keyOn: false,
+        pitch: 0x1000,
+      });
+
+      const data = createData({ voices, positionSamples: 32000 });
+      renderer.draw(data, 1 / 60);
+
+      // MIDI 60 is within default visible range [24, 84] — note bar must be drawn
+      expect(vi.mocked(ctx.fillRect).mock.calls.length).toBeGreaterThanOrEqual(
+        2, // background fill + at least one note bar
       );
     });
   });

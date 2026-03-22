@@ -179,6 +179,8 @@ export function VisualizationStage() {
       voices: audioStateBuffer.voices,
       vuLeft: audioStateBuffer.vuLeft,
       vuRight: audioStateBuffer.vuRight,
+      stereoLeft: audioStateBuffer.stereoLeft,
+      stereoRight: audioStateBuffer.stereoRight,
       masterVuLeft: audioStateBuffer.masterVuLeft,
       masterVuRight: audioStateBuffer.masterVuRight,
       generation: audioStateBuffer.generation,
@@ -194,6 +196,8 @@ export function VisualizationStage() {
       data.voices = audioStateBuffer.voices;
       data.vuLeft = audioStateBuffer.vuLeft;
       data.vuRight = audioStateBuffer.vuRight;
+      data.stereoLeft = audioStateBuffer.stereoLeft;
+      data.stereoRight = audioStateBuffer.stereoRight;
       data.masterVuLeft = audioStateBuffer.masterVuLeft;
       data.masterVuRight = audioStateBuffer.masterVuRight;
       data.generation = audioStateBuffer.generation;

@@ -11,6 +11,8 @@ export interface AudioVisualizationData {
   voices: VoiceStateSnapshot[];
   vuLeft: Float32Array;
   vuRight: Float32Array;
+  stereoLeft: Float32Array;
+  stereoRight: Float32Array;
   masterVuLeft: number;
   masterVuRight: number;
   generation: number;

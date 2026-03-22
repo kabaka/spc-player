@@ -23,6 +23,8 @@ vi.mock('@/audio/audio-state-buffer', () => ({
     })),
     vuLeft: new Float32Array(8),
     vuRight: new Float32Array(8),
+    stereoLeft: new Float32Array(8),
+    stereoRight: new Float32Array(8),
     masterVuLeft: 0,
     masterVuRight: 0,
     generation: 0,

@@ -30,6 +30,8 @@ function createData(
     voices: Array.from({ length: 8 }, (_, i) => createVoice(i)),
     vuLeft: new Float32Array(8),
     vuRight: new Float32Array(8),
+    stereoLeft: new Float32Array(8),
+    stereoRight: new Float32Array(8),
     masterVuLeft: 0,
     masterVuRight: 0,
     generation: 1,
@@ -187,9 +189,13 @@ describe('StereoFieldRenderer', () => {
   });
 
   it('draws without errors in lissajous mode', () => {
+    const stereoLeft = new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]);
+    const stereoRight = new Float32Array([0.4, 0.6, 0, 0, 0, 0, 0, 0]);
     const vuLeft = new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]);
     const vuRight = new Float32Array([0.4, 0.6, 0, 0, 0, 0, 0, 0]);
     const data = createData({
+      stereoLeft,
+      stereoRight,
       vuLeft,
       vuRight,
       stereoFieldSettings: { mode: 'lissajous', decay: 0.95 },
@@ -199,9 +205,13 @@ describe('StereoFieldRenderer', () => {
   });
 
   it('draws without errors in correlation mode', () => {
+    const stereoLeft = new Float32Array([0.5, 0.3, 0.2, 0, 0, 0, 0, 0]);
+    const stereoRight = new Float32Array([0.5, 0.3, 0.2, 0, 0, 0, 0, 0]);
     const vuLeft = new Float32Array([0.5, 0.3, 0.2, 0, 0, 0, 0, 0]);
     const vuRight = new Float32Array([0.5, 0.3, 0.2, 0, 0, 0, 0, 0]);
     const data = createData({
+      stereoLeft,
+      stereoRight,
       vuLeft,
       vuRight,
       stereoFieldSettings: { mode: 'correlation', decay: 0.95 },
@@ -211,11 +221,15 @@ describe('StereoFieldRenderer', () => {
   });
 
   it('switches modes via settings', () => {
+    const stereoLeft = new Float32Array([0.5, 0, 0, 0, 0, 0, 0, 0]);
+    const stereoRight = new Float32Array([0.3, 0, 0, 0, 0, 0, 0, 0]);
     const vuLeft = new Float32Array([0.5, 0, 0, 0, 0, 0, 0, 0]);
     const vuRight = new Float32Array([0.3, 0, 0, 0, 0, 0, 0, 0]);
 
     // Draw in lissajous mode
     const lissajousData = createData({
+      stereoLeft,
+      stereoRight,
       vuLeft,
       vuRight,
       stereoFieldSettings: { mode: 'lissajous', decay: 0.95 },
@@ -224,6 +238,8 @@ describe('StereoFieldRenderer', () => {
 
     // Switch to correlation mode
     const correlationData = createData({
+      stereoLeft,
+      stereoRight,
       vuLeft,
       vuRight,
       stereoFieldSettings: { mode: 'correlation', decay: 0.95 },
@@ -254,11 +270,13 @@ describe('StereoFieldRenderer', () => {
     rmRenderer.init(canvas, ctx);
     rmRenderer.resize(400, 400, 1);
 
-    const vuLeft = new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]);
-    const vuRight = new Float32Array([0.4, 0.6, 0, 0, 0, 0, 0, 0]);
+    const stereoLeft = new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]);
+    const stereoRight = new Float32Array([0.4, 0.6, 0, 0, 0, 0, 0, 0]);
     const data = createData({
-      vuLeft,
-      vuRight,
+      stereoLeft,
+      stereoRight,
+      vuLeft: new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]),
+      vuRight: new Float32Array([0.4, 0.6, 0, 0, 0, 0, 0, 0]),
       stereoFieldSettings: { mode: 'lissajous', decay: 0.95 },
     });
 
@@ -268,13 +286,17 @@ describe('StereoFieldRenderer', () => {
 
   it('accumulates correlation history across frames', () => {
     const data1 = createData({
+      stereoLeft: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
+      stereoRight: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
       vuLeft: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
       vuRight: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
       stereoFieldSettings: { mode: 'correlation', decay: 0.95 },
     });
     const data2 = createData({
+      stereoLeft: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
+      stereoRight: new Float32Array([-1, 0, 0, 0, 0, 0, 0, 0]),
       vuLeft: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
-      vuRight: new Float32Array([-1, 0, 0, 0, 0, 0, 0, 0]),
+      vuRight: new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]),
       stereoFieldSettings: { mode: 'correlation', decay: 0.95 },
     });
 
@@ -286,7 +308,7 @@ describe('StereoFieldRenderer', () => {
     expect(() => renderer.draw(data2, 0.016)).not.toThrow();
   });
 
-  describe('regression: negative VU values', () => {
+  describe('stereoLeft/stereoRight for Lissajous and correlation', () => {
     it('renders Lissajous dot in correct quadrant for phase-inverted right channel', () => {
       // Positive left, negative right (phase inversion)
       const { x, y } = lissajousToCanvas(0.5, -0.5, 200, 200, 100);
@@ -296,10 +318,14 @@ describe('StereoFieldRenderer', () => {
       expect(y).toBe(250);
     });
 
-    it('does not skip voices with negative VU values as silent', () => {
-      const vuLeft = new Float32Array([-0.5, 0, 0, 0, 0, 0, 0, 0]);
-      const vuRight = new Float32Array([-0.5, 0, 0, 0, 0, 0, 0, 0]);
+    it('uses stereoLeft/stereoRight (signed) for Lissajous dot placement', () => {
+      const stereoLeft = new Float32Array([-0.5, 0, 0, 0, 0, 0, 0, 0]);
+      const stereoRight = new Float32Array([-0.5, 0, 0, 0, 0, 0, 0, 0]);
+      const vuLeft = new Float32Array([0.5, 0, 0, 0, 0, 0, 0, 0]);
+      const vuRight = new Float32Array([0.5, 0, 0, 0, 0, 0, 0, 0]);
       const data = createData({
+        stereoLeft,
+        stereoRight,
         vuLeft,
         vuRight,
         stereoFieldSettings: { mode: 'lissajous', decay: 0.95 },
@@ -313,7 +339,7 @@ describe('StereoFieldRenderer', () => {
       );
     });
 
-    it('computes negative correlation for anti-phase signals', () => {
+    it('computes negative correlation for anti-phase stereo signals', () => {
       const l = new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]);
       const r = new Float32Array([-0.5, -0.3, 0, 0, 0, 0, 0, 0]);
       expect(computeCorrelation(l, r)).toBeCloseTo(-1, 5);

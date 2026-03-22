@@ -4,7 +4,6 @@ import { VOICE_COLORS } from '@/utils/voice-colors';
 // ── Constants ─────────────────────────────────────────────────────────
 
 const SNES_SAMPLE_RATE = 32000;
-const PITCH_DIVISOR = 0x1000;
 const VOICE_COUNT = 8;
 const DESKTOP_TIME_WINDOW_S = 3;
 const MOBILE_TIME_WINDOW_S = 2;
@@ -12,11 +11,13 @@ const MOBILE_BREAKPOINT_PX = 768;
 const NOTE_GAP_PX = 1;
 const MUTED_ALPHA = 0.3;
 const INACTIVE_NOTE_ALPHA = 0.7;
-const AUTO_RANGE_LERP = 0.2;
+const AUTO_RANGE_EXPAND_LERP = 0.25;
+const AUTO_RANGE_CONTRACT_LERP = 0.08;
 const AUTO_RANGE_PAD = 12;
 const MIN_VISIBLE_SPAN = 24;
-const DEFAULT_MIN_NOTE = 36;
-const DEFAULT_MAX_NOTE = 96;
+const MAX_VISIBLE_SPAN = 72;
+const DEFAULT_MIN_NOTE = 24;
+const DEFAULT_MAX_NOTE = 84;
 const GRID_ALPHA = 0.06;
 const LABEL_MARGIN_PX = 32;
 const LABEL_FONT = '10px monospace';
@@ -24,14 +25,6 @@ const LABEL_ALPHA = 0.4;
 const BG_COLOR = '#161622';
 
 // ── Pitch conversion (exported for testing) ───────────────────────────
-
-/**
- * Convert raw VxPITCH register value to playback frequency in Hz.
- * Formula: frequency = (VxPITCH / 0x1000) * 32000
- */
-export function pitchToFrequency(rawPitch: number): number {
-  return (rawPitch / PITCH_DIVISOR) * SNES_SAMPLE_RATE;
-}
 
 /**
  * Convert frequency in Hz to a MIDI note number (continuous).
@@ -43,12 +36,14 @@ export function frequencyToMidiNote(frequency: number): number {
 }
 
 /**
- * Convert raw VxPITCH register value directly to a continuous MIDI note.
- * Returns 0 for non-positive pitch values.
+ * Map SPC700 VxPITCH register to relative MIDI note.
+ * 0x1000 (unity playback rate) → C4 (MIDI 60).
+ * Relative pitch relationships are exact; absolute note names
+ * are approximate since the BRR sample's recorded pitch is unknown.
  */
 export function pitchToMidiNote(rawPitch: number): number {
   if (rawPitch <= 0) return 0;
-  return frequencyToMidiNote(pitchToFrequency(rawPitch));
+  return 12 * Math.log2(rawPitch / 0x1000) + 60;
 }
 
 // ── Note name helper ──────────────────────────────────────────────────
@@ -312,14 +307,35 @@ export class PianoRollRenderer implements VisualizationRenderer {
       this.targetMaxNote = center + MIN_VISIBLE_SPAN / 2;
     }
 
+    // Enforce maximum span — clamp to MAX_VISIBLE_SPAN centered on median
+    if (this.targetMaxNote - this.targetMinNote > MAX_VISIBLE_SPAN && found) {
+      const notes: number[] = [];
+      for (let i = 0; i < VOICE_COUNT; i++) {
+        const active = this.activeNotes[i];
+        if (active) notes.push(active.midiNote);
+        for (const n of this.noteHistory[i]) notes.push(n.midiNote);
+      }
+      notes.sort((a, b) => a - b);
+      const median =
+        notes.length % 2 === 0
+          ? (notes[notes.length / 2 - 1] + notes[notes.length / 2]) / 2
+          : notes[Math.floor(notes.length / 2)];
+      this.targetMinNote = median - MAX_VISIBLE_SPAN / 2;
+      this.targetMaxNote = median + MAX_VISIBLE_SPAN / 2;
+    }
+
     this.targetMinNote = Math.max(0, this.targetMinNote);
     this.targetMaxNote = Math.min(127, this.targetMaxNote);
 
-    // Smooth animation toward target
-    this.visibleMinNote +=
-      (this.targetMinNote - this.visibleMinNote) * AUTO_RANGE_LERP;
-    this.visibleMaxNote +=
-      (this.targetMaxNote - this.visibleMaxNote) * AUTO_RANGE_LERP;
+    // Smooth animation toward target — expand faster, contract slower
+    const minDelta = this.targetMinNote - this.visibleMinNote;
+    const maxDelta = this.targetMaxNote - this.visibleMaxNote;
+    const minLerp =
+      minDelta < 0 ? AUTO_RANGE_EXPAND_LERP : AUTO_RANGE_CONTRACT_LERP;
+    const maxLerp =
+      maxDelta > 0 ? AUTO_RANGE_EXPAND_LERP : AUTO_RANGE_CONTRACT_LERP;
+    this.visibleMinNote += minDelta * minLerp;
+    this.visibleMaxNote += maxDelta * maxLerp;
   }
 
   private purgeOldNotes(cutoff: number): void {

@@ -148,6 +148,26 @@ class SpcProcessor extends AudioWorkletProcessor {
     number,
     number,
   ] = [0, 0, 0, 0, 0, 0, 0, 0];
+  private readonly telemetryStereoLeft: [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ] = [0, 0, 0, 0, 0, 0, 0, 0];
+  private readonly telemetryStereoRight: [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ] = [0, 0, 0, 0, 0, 0, 0, 0];
 
   // -- Init queuing -----------------------------------------------------------
   private initPromise: Promise<void> | null = null;
@@ -1390,6 +1410,12 @@ class SpcProcessor extends AudioWorkletProcessor {
       vuRight: [
         ...this.telemetryVuRight,
       ] as unknown as WorkletToMain.Telemetry['vuRight'],
+      stereoLeft: [
+        ...this.telemetryStereoLeft,
+      ] as unknown as WorkletToMain.Telemetry['stereoLeft'],
+      stereoRight: [
+        ...this.telemetryStereoRight,
+      ] as unknown as WorkletToMain.Telemetry['stereoRight'],
       masterVuLeft,
       masterVuRight,
       voices: this.telemetryVoices.map((v) => ({ ...v })),
@@ -1434,6 +1460,8 @@ class SpcProcessor extends AudioWorkletProcessor {
       for (let i = 0; i < VOICE_COUNT; i++) {
         this.telemetryVuLeft[i] = 0;
         this.telemetryVuRight[i] = 0;
+        this.telemetryStereoLeft[i] = 0;
+        this.telemetryStereoRight[i] = 0;
         const v = this.telemetryVoices[i];
         v.envelopePhase = 'silent';
         v.envelopeLevel = 0;
@@ -1453,6 +1481,12 @@ class SpcProcessor extends AudioWorkletProcessor {
       'silent',
     ];
 
+    // Create DSP register view once, outside the voice loop.
+    const dspRegs =
+      this.dspRegistersPtr !== 0
+        ? new Uint8Array(this.wasm.memory.buffer, this.dspRegistersPtr, 128)
+        : null;
+
     for (let i = 0; i < VOICE_COUNT; i++) {
       this.wasm.dsp_get_voice_state(i, this.voiceStatePtr);
       const stateView = new Uint32Array(
@@ -1461,25 +1495,23 @@ class SpcProcessor extends AudioWorkletProcessor {
         6,
       );
 
-      // Stereo VU: envelope level scaled by per-voice signed volume registers.
-      // VOL_L at DSP register $N0, VOL_R at $N1 (signed 8-bit, range [-128, 127]).
-      // dsp_get_registers is called before this method; read from same memory buffer.
       const envelopeNorm = stateView[1] / 2047;
-      if (this.dspRegistersPtr !== 0) {
-        const dspRegs = new Uint8Array(
-          this.wasm.memory.buffer,
-          this.dspRegistersPtr,
-          128,
-        );
+
+      // VU: envelope-only, unsigned [0, 1] — for level meters
+      this.telemetryVuLeft[i] = envelopeNorm;
+      this.telemetryVuRight[i] = envelopeNorm;
+
+      // Stereo: envelope × signed volume [-1, 1] — for Lissajous/correlation
+      if (dspRegs) {
         const volLRaw = dspRegs[i * 0x10];
         const volRRaw = dspRegs[i * 0x10 + 1];
         const signedL = volLRaw > 127 ? volLRaw - 256 : volLRaw;
         const signedR = volRRaw > 127 ? volRRaw - 256 : volRRaw;
-        this.telemetryVuLeft[i] = envelopeNorm * (signedL / 128);
-        this.telemetryVuRight[i] = envelopeNorm * (signedR / 128);
+        this.telemetryStereoLeft[i] = envelopeNorm * (signedL / 128);
+        this.telemetryStereoRight[i] = envelopeNorm * (signedR / 128);
       } else {
-        this.telemetryVuLeft[i] = envelopeNorm;
-        this.telemetryVuRight[i] = envelopeNorm;
+        this.telemetryStereoLeft[i] = envelopeNorm;
+        this.telemetryStereoRight[i] = envelopeNorm;
       }
 
       // Voice state — mutate pre-allocated objects in place.

@@ -32,17 +32,17 @@ const NEEDLE_COLOR = '#ededf0';
  * Returns 0 when both channels are silent (avoids NaN).
  */
 export function computeCorrelation(
-  vuLeft: Float32Array,
-  vuRight: Float32Array,
+  stereoLeft: Float32Array,
+  stereoRight: Float32Array,
 ): number {
   let sumLR = 0;
   let sumLL = 0;
   let sumRR = 0;
 
-  const len = Math.min(vuLeft.length, vuRight.length);
+  const len = Math.min(stereoLeft.length, stereoRight.length);
   for (let i = 0; i < len; i++) {
-    const l = vuLeft[i];
-    const r = vuRight[i];
+    const l = stereoLeft[i];
+    const r = stereoRight[i];
     sumLR += l * r;
     sumLL += l * l;
     sumRR += r * r;
@@ -287,12 +287,12 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     scale: number,
     radius: number,
   ): void {
-    const { vuLeft, vuRight } = data;
-    const count = Math.min(vuLeft.length, vuRight.length, VOICE_COUNT);
+    const { stereoLeft, stereoRight } = data;
+    const count = Math.min(stereoLeft.length, stereoRight.length, VOICE_COUNT);
 
     for (let i = 0; i < count; i++) {
-      const l = vuLeft[i];
-      const r = vuRight[i];
+      const l = stereoLeft[i];
+      const r = stereoRight[i];
 
       // Skip silent voices
       if (Math.abs(l) < 0.001 && Math.abs(r) < 0.001) continue;
@@ -315,7 +315,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
     const { width, height } = this;
 
     // Compute correlation from VU data
-    const correlation = computeCorrelation(data.vuLeft, data.vuRight);
+    const correlation = computeCorrelation(data.stereoLeft, data.stereoRight);
 
     // Push to history ring buffer
     this.correlationHistory[this.correlationIndex] = correlation;

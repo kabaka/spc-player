@@ -163,6 +163,8 @@ describe('SpectrumRenderer', () => {
       voices: [],
       vuLeft: new Float32Array(),
       vuRight: new Float32Array(),
+      stereoLeft: new Float32Array(),
+      stereoRight: new Float32Array(),
       masterVuLeft: 0,
       masterVuRight: 0,
       generation: 0,
