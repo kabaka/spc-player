@@ -240,7 +240,8 @@ export class PianoRollRenderer implements VisualizationRenderer {
   private updateNotes(data: AudioVisualizationData, currentTime: number): void {
     for (let i = 0; i < VOICE_COUNT; i++) {
       const voice = data.voices[i];
-      const isPlaying = voice?.active && voice.keyOn && voice.pitch > 0;
+      // keyOn is a momentary DSP trigger (~31μs), not a sustained state indicator
+      const isPlaying = voice?.active && voice.pitch > 0;
 
       if (isPlaying) {
         const midiNote = Math.round(pitchToMidiNote(voice.pitch));

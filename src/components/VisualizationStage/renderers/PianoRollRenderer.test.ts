@@ -434,4 +434,29 @@ describe('PianoRollRenderer', () => {
       expect(range.max).toBe(96);
     });
   });
+
+  describe('regression: keyOn false voices', () => {
+    it('renders notes for active voices with keyOn false', () => {
+      const { renderer, ctx } = createRenderer();
+
+      const voices = Array.from({ length: 8 }, (_, i) =>
+        createVoice({ index: i }),
+      );
+      // keyOn is a momentary DSP trigger (~31μs) — almost always false when polled
+      voices[0] = createVoice({
+        index: 0,
+        active: true,
+        keyOn: false,
+        pitch: frequencyToPitch(440),
+      });
+
+      const data = createData({ voices, positionSamples: 32000 });
+      renderer.draw(data, 1 / 60);
+
+      // Should have background fill + at least one note bar
+      expect(vi.mocked(ctx.fillRect).mock.calls.length).toBeGreaterThanOrEqual(
+        2,
+      );
+    });
+  });
 });

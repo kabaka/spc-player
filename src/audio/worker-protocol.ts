@@ -271,7 +271,7 @@ export namespace WorkletToMain {
     readonly type: 'telemetry';
     /** Current playback position in DSP output samples (32 kHz basis). */
     readonly positionSamples: number;
-    /** Per-voice VU levels. 8 entries, range [0.0, 1.0]. Left channel. */
+    /** Per-voice VU levels. 8 entries, range [-1.0, 1.0]. Left channel. */
     readonly vuLeft: readonly [
       number,
       number,
@@ -282,7 +282,7 @@ export namespace WorkletToMain {
       number,
       number,
     ];
-    /** Per-voice VU levels. 8 entries, range [0.0, 1.0]. Right channel. */
+    /** Per-voice VU levels. 8 entries, range [-1.0, 1.0]. Right channel. */
     readonly vuRight: readonly [
       number,
       number,

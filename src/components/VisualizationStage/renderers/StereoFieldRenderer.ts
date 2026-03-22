@@ -57,7 +57,7 @@ export function computeCorrelation(
  * Map a Lissajous point from L/R amplitudes to canvas pixel coordinates.
  *
  * X axis = left channel amplitude, Y axis = right channel amplitude (inverted so up = positive).
- * Values are in [0, 1] and mapped to fit within the available plot area.
+ * Values are in [-1, 1] and mapped to fit within the available plot area.
  */
 export function lissajousToCanvas(
   left: number,
@@ -295,7 +295,7 @@ export class StereoFieldRenderer implements VisualizationRenderer {
       const r = vuRight[i];
 
       // Skip silent voices
-      if (l < 0.001 && r < 0.001) continue;
+      if (Math.abs(l) < 0.001 && Math.abs(r) < 0.001) continue;
 
       const { x, y } = lissajousToCanvas(l, r, cx, cy, scale);
 

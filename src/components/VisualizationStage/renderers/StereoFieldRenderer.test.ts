@@ -285,4 +285,38 @@ describe('StereoFieldRenderer', () => {
 
     expect(() => renderer.draw(data2, 0.016)).not.toThrow();
   });
+
+  describe('regression: negative VU values', () => {
+    it('renders Lissajous dot in correct quadrant for phase-inverted right channel', () => {
+      // Positive left, negative right (phase inversion)
+      const { x, y } = lissajousToCanvas(0.5, -0.5, 200, 200, 100);
+      // x = cx + left * scale = 200 + 50 = 250 (right of center)
+      expect(x).toBe(250);
+      // y = cy - right * scale = 200 - (-50) = 250 (below center)
+      expect(y).toBe(250);
+    });
+
+    it('does not skip voices with negative VU values as silent', () => {
+      const vuLeft = new Float32Array([-0.5, 0, 0, 0, 0, 0, 0, 0]);
+      const vuRight = new Float32Array([-0.5, 0, 0, 0, 0, 0, 0, 0]);
+      const data = createData({
+        vuLeft,
+        vuRight,
+        stereoFieldSettings: { mode: 'lissajous', decay: 0.95 },
+      });
+
+      renderer.draw(data, 0.016);
+
+      // arc is called once per non-silent voice dot
+      expect(vi.mocked(mockCtx.arc).mock.calls.length).toBeGreaterThanOrEqual(
+        1,
+      );
+    });
+
+    it('computes negative correlation for anti-phase signals', () => {
+      const l = new Float32Array([0.5, 0.3, 0, 0, 0, 0, 0, 0]);
+      const r = new Float32Array([-0.5, -0.3, 0, 0, 0, 0, 0, 0]);
+      expect(computeCorrelation(l, r)).toBeCloseTo(-1, 5);
+    });
+  });
 });

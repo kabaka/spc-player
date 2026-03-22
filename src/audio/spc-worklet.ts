@@ -1283,6 +1283,11 @@ class SpcProcessor extends AudioWorkletProcessor {
   private emitTelemetry(left: Float32Array, right: Float32Array): void {
     this.generation++;
 
+    // Populate DSP register buffer before VU read (stereo VU needs VOL_L/VOL_R).
+    if (this.wasm && this.dspRegistersPtr !== 0) {
+      this.wasm.dsp_get_registers(this.dspRegistersPtr);
+    }
+
     this.readVoiceStatesAndVu();
     const masterVuLeft = this.computeRms(left);
     const masterVuRight = this.computeRms(right);
@@ -1336,7 +1341,7 @@ class SpcProcessor extends AudioWorkletProcessor {
     let cpuRegisters: ArrayBuffer | undefined;
 
     if (this.wasm && this.dspRegistersPtr !== 0) {
-      this.wasm.dsp_get_registers(this.dspRegistersPtr);
+      // dsp_get_registers already called above (before readVoiceStatesAndVu).
       const dspView = new Uint8Array(
         this.wasm.memory.buffer,
         this.dspRegistersPtr,
@@ -1456,10 +1461,26 @@ class SpcProcessor extends AudioWorkletProcessor {
         6,
       );
 
-      // VU level from envelope (normalized 11-bit → [0, 1]).
-      const vuLevel = stateView[1] / 2047;
-      this.telemetryVuLeft[i] = vuLevel;
-      this.telemetryVuRight[i] = vuLevel;
+      // Stereo VU: envelope level scaled by per-voice signed volume registers.
+      // VOL_L at DSP register $N0, VOL_R at $N1 (signed 8-bit, range [-128, 127]).
+      // dsp_get_registers is called before this method; read from same memory buffer.
+      const envelopeNorm = stateView[1] / 2047;
+      if (this.dspRegistersPtr !== 0) {
+        const dspRegs = new Uint8Array(
+          this.wasm.memory.buffer,
+          this.dspRegistersPtr,
+          128,
+        );
+        const volLRaw = dspRegs[i * 0x10];
+        const volRRaw = dspRegs[i * 0x10 + 1];
+        const signedL = volLRaw > 127 ? volLRaw - 256 : volLRaw;
+        const signedR = volRRaw > 127 ? volRRaw - 256 : volRRaw;
+        this.telemetryVuLeft[i] = envelopeNorm * (signedL / 128);
+        this.telemetryVuRight[i] = envelopeNorm * (signedR / 128);
+      } else {
+        this.telemetryVuLeft[i] = envelopeNorm;
+        this.telemetryVuRight[i] = envelopeNorm;
+      }
 
       // Voice state — mutate pre-allocated objects in place.
       const v = this.telemetryVoices[i];

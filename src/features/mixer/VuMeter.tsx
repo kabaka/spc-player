@@ -37,7 +37,7 @@ function readLevel(voiceIndex: number): number {
   // Per-voice: average left and right channels
   const l = audioStateBuffer.vuLeft[voiceIndex] ?? 0;
   const r = audioStateBuffer.vuRight[voiceIndex] ?? 0;
-  return ((l + r) / 2) * 100;
+  return ((Math.abs(l) + Math.abs(r)) / 2) * 100;
 }
 
 // ── Component ─────────────────────────────────────────────────────────
