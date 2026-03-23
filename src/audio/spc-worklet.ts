@@ -556,7 +556,12 @@ class SpcProcessor extends AudioWorkletProcessor {
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           const clampedPitch = Math.max(0, Math.min(0x3fff, msg.pitch));
           if (this.instrumentModeActive) {
-            // In instrument mode: always play on voice 0 with selected SRCN
+            // In instrument mode: always play on voice 0 with selected SRCN.
+            // Clear KOFF first — mode entry wrote KOFF=0xFF to silence all
+            // voices, and l_kof persists until explicitly cleared. Without
+            // this, every subsequent DSP sample re-applies key-off,
+            // canceling the note after a single sample (~31µs).
+            this.wasm.dsp_set_register(0x5c, 0x00);
             this.wasm.dsp_set_register(0x04, this.instrumentSrcn);
             this.wasm.dsp_voice_note_on(this.instrumentVoice, clampedPitch);
           } else {

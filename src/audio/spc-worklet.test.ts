@@ -570,4 +570,63 @@ describe('SpcProcessor', () => {
       expect(result).toBe(true);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Instrument mode: KOFF clearing on note-on (regression)
+  // -------------------------------------------------------------------------
+
+  describe('instrument mode note-on clears KOFF', () => {
+    it('clears KOFF register before triggering KON in instrument mode', async () => {
+      const { processor, wasm } = await initProcessor();
+
+      // Snapshot size must be non-zero for enter-instrument-mode to succeed;
+      // snapshot() returns the number of bytes written.
+      (wasm.dsp_snapshot_size as ReturnType<typeof vi.fn>).mockReturnValue(64);
+      (wasm.dsp_snapshot as ReturnType<typeof vi.fn>).mockReturnValue(64);
+      (wasm.dsp_get_register as ReturnType<typeof vi.fn>).mockReturnValue(0);
+      (
+        wasm.dsp_get_cpu_registers as ReturnType<typeof vi.fn>
+      ).mockImplementation((ptr: number) => {
+        // Write a PC at address 0x0200 (below IPL ROM at 0xFFC0)
+        const view = new Uint8Array(wasm.memory.buffer, ptr, 8);
+        view[0] = 0x00; // PC low
+        view[1] = 0x02; // PC high (0x0200)
+      });
+
+      // Enter instrument mode — this writes KOFF=0xFF internally
+      sendMessage(processor, { type: 'enter-instrument-mode' });
+
+      // Verify KOFF=0xFF was written during mode entry
+      const setRegCalls = (wasm.dsp_set_register as ReturnType<typeof vi.fn>)
+        .mock.calls;
+      const koffWritesDuringEntry = setRegCalls.filter(
+        (args: unknown[]) => args[0] === 0x5c && args[1] === 0xff,
+      );
+      expect(koffWritesDuringEntry.length).toBeGreaterThanOrEqual(1);
+
+      // Clear mock history to isolate note-on behavior
+      (wasm.dsp_set_register as ReturnType<typeof vi.fn>).mockClear();
+
+      // Send a note-on
+      sendMessage(processor, { type: 'note-on', voice: 0, pitch: 0x1000 });
+
+      // Verify KOFF=0x00 was written BEFORE KON
+      const noteOnSetRegCalls = (
+        wasm.dsp_set_register as ReturnType<typeof vi.fn>
+      ).mock.calls;
+      const koffClearIndex = noteOnSetRegCalls.findIndex(
+        (args: unknown[]) => args[0] === 0x5c && args[1] === 0x00,
+      );
+      expect(koffClearIndex).toBeGreaterThanOrEqual(0);
+
+      // Verify dsp_voice_note_on was called (KON fires)
+      expect(wasm.dsp_voice_note_on).toHaveBeenCalledWith(0, 0x1000);
+
+      // Verify KOFF clear happened before SRCN write (register 0x04)
+      const srcnWriteIndex = noteOnSetRegCalls.findIndex(
+        (args: unknown[]) => args[0] === 0x04,
+      );
+      expect(koffClearIndex).toBeLessThan(srcnWriteIndex);
+    });
+  });
 });
