@@ -381,9 +381,10 @@ export function GlobalShortcuts(): null {
           .exitInstrumentMode()
           .then(() => {
             useAppStore.getState().exitInstrumentMode();
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
           })
-          .catch(() => {});
+          .catch(() => {
+            // Intentional no-op — instrument mode exit is best-effort
+          });
       }
       // Radix handles Escape for dialogs natively — no further action needed.
     },
@@ -397,9 +398,10 @@ export function GlobalShortcuts(): null {
         .exitInstrumentMode()
         .then(() => {
           useAppStore.getState().exitInstrumentMode();
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
         })
-        .catch(() => {});
+        .catch(() => {
+          // Intentional no-op — instrument mode exit is best-effort
+        });
     } else {
       audioEngine
         .enterInstrumentMode()
@@ -415,9 +417,10 @@ export function GlobalShortcuts(): null {
           } catch {
             // Sample catalog fetch failed — mode is active but no samples
           }
-          // eslint-disable-next-line @typescript-eslint/no-empty-function
         })
-        .catch(() => {});
+        .catch(() => {
+          // Intentional no-op — instrument mode enter is best-effort
+        });
     }
   });
 
