@@ -1,12 +1,12 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { VisuallyHidden } from 'radix-ui';
 import type { ChangeEvent } from 'react';
-import { useCallback, useId, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import { audioEngine } from '@/audio/engine';
+import { Button } from '@/components/Button/Button';
 import { Label } from '@/components/Label/Label';
 import { useMidi } from '@/hooks/useMidi';
-import { useShortcut } from '@/shortcuts/useShortcut';
 import { useAppStore } from '@/store/store';
 
 import { AdsrDisplay } from './AdsrDisplay';
@@ -32,15 +32,23 @@ export function InstrumentView() {
 
   const activeInstrumentIndex = useAppStore((s) => s.activeInstrumentIndex);
   const setActiveInstrument = useAppStore((s) => s.setActiveInstrument);
+  const isInstrumentModeActive = useAppStore((s) => s.isInstrumentModeActive);
+  const toggleInstrumentMode = useAppStore((s) => s.toggleInstrumentMode);
 
   const selectedVoice = activeInstrumentIndex ?? instrument ?? 0;
 
+  // ── Slider state ──────────────────────────────────────────────────────────
+  const [pitchShift, setPitchShift] = useState(0);
+  const [gain, setGain] = useState(100);
+  const [filterCutoff, setFilterCutoff] = useState(100);
+
   const handleNoteOn = useCallback(
     (midiNote: number, _velocity?: number) => {
-      const pitch = midiNoteToPitch(midiNote, 60);
+      const adjustedMidi = midiNote + pitchShift;
+      const pitch = midiNoteToPitch(adjustedMidi, 60);
       audioEngine.noteOn(selectedVoice, pitch);
     },
-    [selectedVoice],
+    [selectedVoice, pitchShift],
   );
 
   const handleNoteOff = useCallback(
@@ -55,12 +63,22 @@ export function InstrumentView() {
   const keyboard = useInstrumentKeyboard({
     onNoteOn: handleNoteOn,
     onNoteOff: handleNoteOff,
-    isInstrumentView: true,
+    isActive: isInstrumentModeActive,
   });
 
-  useShortcut('instrument.toggleKeyboard', keyboard.toggle, {
-    scope: 'global',
-  });
+  // Sync instrument mode to engine; deactivate on unmount
+  useEffect(() => {
+    audioEngine.setInstrumentMode(isInstrumentModeActive);
+  }, [isInstrumentModeActive]);
+
+  useEffect(() => {
+    return () => {
+      audioEngine.setInstrumentMode(false);
+      if (useAppStore.getState().isInstrumentModeActive) {
+        useAppStore.getState().toggleInstrumentMode();
+      }
+    };
+  }, []);
 
   const handleVoiceChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
@@ -111,11 +129,19 @@ export function InstrumentView() {
         </div>
 
         <div className={styles.statusGroup}>
-          {keyboard.isActive && (
-            <span className={styles.modeBadge} aria-hidden="true">
-              Keyboard Mode
-            </span>
-          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            aria-pressed={isInstrumentModeActive}
+            onClick={toggleInstrumentMode}
+            className={
+              isInstrumentModeActive
+                ? styles.modeToggleActive
+                : styles.modeToggle
+            }
+          >
+            Keyboard Mode
+          </Button>
           {midi.connectedDevices.length > 0 && (
             <span className={styles.midiBadge} aria-hidden="true">
               MIDI Connected
@@ -153,18 +179,12 @@ export function InstrumentView() {
           >
             <h2 className={styles.sectionHeading}>Controls</h2>
             <InstrumentControls
-              pitchShift={0}
-              gain={100}
-              filterCutoff={100}
-              onPitchShiftChange={() => {
-                // No-op: per-voice pitch shift requires DSP register writes not yet exposed
-              }}
-              onGainChange={() => {
-                // No-op: per-voice gain requires DSP register writes not yet exposed
-              }}
-              onFilterCutoffChange={() => {
-                // No-op: per-voice filter cutoff requires DSP register writes not yet exposed
-              }}
+              pitchShift={pitchShift}
+              gain={gain}
+              filterCutoff={filterCutoff}
+              onPitchShiftChange={setPitchShift}
+              onGainChange={setGain}
+              onFilterCutoffChange={setFilterCutoff}
             />
           </section>
 

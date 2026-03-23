@@ -25,11 +25,13 @@ const OnboardingOverlay = lazy(() =>
 );
 import { BottomNav } from '@/components/BottomNav/BottomNav';
 import { DragDropOverlay } from '@/components/DragDropOverlay/DragDropOverlay';
+import { GamepadIcon } from '@/components/Icons/TransportIcons';
 import { PlaylistSidebar } from '@/components/PlaylistSidebar/PlaylistSidebar';
 import { ToastContainer } from '@/components/Toast/Toast';
 import * as Tooltip from '@/components/Tooltip/Tooltip';
 import { TransportBar } from '@/components/TransportBar/TransportBar';
 import { ViewErrorBoundary } from '@/components/ViewErrorBoundary';
+import { MetadataPanel } from '@/features/metadata/MetadataPanel';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { usePlaybackPosition } from '@/hooks/usePlaybackPosition';
 import { useTheme } from '@/hooks/useTheme';
@@ -52,6 +54,7 @@ function RootComponent() {
   const location = useRouterState({ select: (s) => s.location });
   const [showHelp, setShowHelp] = useState(false);
   const announcement = useAppStore((s) => s.announcement);
+  const hasTrack = useAppStore((s) => s.metadata !== null);
 
   // Apply theme from Zustand store
   useTheme();
@@ -92,13 +95,15 @@ function RootComponent() {
         {/* Mobile top bar — visible on mobile only */}
         <div className={styles.mobileTopBar}>
           <span className={styles.logo} aria-hidden="true">
-            🎮 SPC Player
+            <GamepadIcon /> SPC Player
           </span>
         </div>
 
         {/* Top nav — hidden on mobile, horizontal on tablet+ */}
         <nav className={styles.topNav} aria-label="Main navigation">
-          <span className={styles.topNavLogo}>🎮 SPC Player</span>
+          <span className={styles.topNavLogo}>
+            <GamepadIcon /> SPC Player
+          </span>
           <div className={styles.topNavLinks}>
             <Link
               to="/"
@@ -164,6 +169,12 @@ function RootComponent() {
               <Outlet />
             </ViewErrorBoundary>
           </main>
+
+          {hasTrack && (
+            <aside className={styles.detailSidebar} aria-label="Track details">
+              <MetadataPanel />
+            </aside>
+          )}
         </div>
 
         {/* Transport controls — always visible */}

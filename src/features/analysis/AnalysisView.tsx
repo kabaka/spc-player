@@ -7,7 +7,6 @@ import { useShortcut } from '@/shortcuts/useShortcut';
 import { useAppStore } from '@/store/store';
 
 import styles from './AnalysisView.module.css';
-import { AudioChainPanel } from './AudioChainPanel';
 import { EchoBufferView } from './EchoBufferView';
 import { MemoryViewer } from './MemoryViewer';
 import { RegisterViewer } from './RegisterViewer';
@@ -60,8 +59,6 @@ export function AnalysisView() {
   return (
     <main aria-label="Analysis" className={styles.view}>
       <h1 className={styles.visuallyHidden}>Analysis</h1>
-
-      <AudioChainPanel />
 
       <Tabs.Root value={tab} onValueChange={setTab}>
         <div className={styles.header}>

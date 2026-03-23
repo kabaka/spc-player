@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { GamepadIcon } from '@/components/Icons/TransportIcons';
 import { showToast } from '@/components/Toast/toast-store';
 import { useAppStore } from '@/store/store';
 
@@ -116,7 +117,9 @@ export function DragDropOverlay() {
         aria-hidden="true"
       >
         <div className={styles.card}>
-          <span className={styles.icon}>🎮</span>
+          <span className={styles.icon}>
+            <GamepadIcon />
+          </span>
           <span className={styles.text}>Drop SPC files to play</span>
         </div>
       </div>

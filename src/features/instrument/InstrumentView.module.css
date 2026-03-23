@@ -36,11 +36,17 @@
   margin-left: auto;
 }
 
-.modeBadge {
+.modeToggle {
   font-size: var(--spc-font-size-xs);
-  padding: var(--spc-space-1) var(--spc-space-2);
+  border-radius: var(--spc-radius-full);
+  font-weight: 600;
+}
+
+.modeToggleActive {
+  font-size: var(--spc-font-size-xs);
   background: var(--spc-color-accent);
   color: var(--spc-color-text-inverse);
+  border-color: var(--spc-color-accent);
   border-radius: var(--spc-radius-full);
   font-weight: 600;
 }

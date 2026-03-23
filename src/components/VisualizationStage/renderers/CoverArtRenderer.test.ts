@@ -42,6 +42,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     restore: vi.fn(),
     setTransform: vi.fn(),
     measureText: vi.fn(() => ({ width: 10 })),
+    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,

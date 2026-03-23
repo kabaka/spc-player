@@ -375,13 +375,24 @@ export function GlobalShortcuts(): null {
   useShortcut(
     'general.closeDialog',
     () => {
-      // Radix handles Escape for dialogs natively — no action needed here.
+      // Deactivate instrument mode if active
+      if (useAppStore.getState().isInstrumentModeActive) {
+        useAppStore.getState().toggleInstrumentMode();
+        audioEngine.setInstrumentMode(false);
+        audioEngine.noteOff(7);
+      }
+      // Radix handles Escape for dialogs natively — no further action needed.
     },
     { preventDefault: false },
   );
 
   useShortcut('general.toggleInstrumentMode', () => {
     useAppStore.getState().toggleInstrumentMode();
+    const nowActive = useAppStore.getState().isInstrumentModeActive;
+    audioEngine.setInstrumentMode(nowActive);
+    if (!nowActive) {
+      audioEngine.noteOff(7);
+    }
   });
 
   return null;

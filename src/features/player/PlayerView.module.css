@@ -76,3 +76,11 @@
     gap: var(--spc-space-section-gap);
   }
 }
+
+/* ── Wide desktop (≥ 1440px) — hide inline track info ──────────── */
+
+@media (min-width: 1440px) {
+  .trackInfoCollapsible {
+    display: none;
+  }
+}

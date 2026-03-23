@@ -1,0 +1,178 @@
+/* SpeedControl.module.css — Speed badge + popover in transport bar */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 var(--spc-space-2);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  background: var(--spc-color-surface);
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    background var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.trigger:hover {
+  border-color: var(--spc-color-text-muted);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--spc-color-accent);
+  outline-offset: 2px;
+}
+
+.triggerActive {
+  color: var(--spc-color-accent-text);
+  border-color: var(--spc-color-accent);
+  background: var(--spc-color-accent-subtle);
+}
+
+/* ── Popover content ─────────────────────────────────────── */
+
+.popoverContent {
+  z-index: var(--spc-z-popover);
+  background: var(--spc-color-surface-raised);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  box-shadow: var(--spc-shadow-lg);
+  padding: var(--spc-space-3);
+  min-width: 160px;
+  animation: popoverFadeIn var(--spc-duration-fast) var(--spc-easing-out);
+}
+
+.popoverContent[data-state='closed'] {
+  animation: popoverFadeOut var(--spc-duration-fast) var(--spc-easing-in);
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popoverFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+}
+
+.popoverArrow {
+  fill: var(--spc-color-surface-raised);
+}
+
+.popoverTitle {
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-semibold);
+  color: var(--spc-color-text);
+  margin: 0 0 var(--spc-space-2) 0;
+}
+
+/* ── Speed option grid ──────────────────────────────────── */
+
+.speedGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spc-space-1);
+  margin-bottom: var(--spc-space-3);
+}
+
+.speedOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  background: var(--spc-color-surface);
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  cursor: pointer;
+  transition:
+    background var(--spc-duration-fast) var(--spc-easing-default),
+    border-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.speedOption:hover {
+  background: var(--spc-color-bg-subtle);
+  border-color: var(--spc-color-text-muted);
+}
+
+.speedOption:focus-visible {
+  outline: 2px solid var(--spc-color-accent);
+  outline-offset: -2px;
+}
+
+.speedOptionActive {
+  background: var(--spc-color-accent-subtle);
+  border-color: var(--spc-color-accent);
+  color: var(--spc-color-accent-text);
+  font-weight: var(--spc-font-weight-medium);
+}
+
+/* ── Shortcuts footer ───────────────────────────────────── */
+
+.shortcutsFooter {
+  border-top: 1px solid var(--spc-color-border);
+  padding-top: var(--spc-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-1);
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-muted);
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px var(--spc-space-1);
+  background: var(--spc-color-bg-subtle);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-xs, 2px);
+  font-size: 10px;
+  font-family: var(--spc-font-mono);
+  color: var(--spc-color-text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Mobile — keep compact ──────────────────────────────── */
+@media (max-width: 767px) {
+  .popoverContent {
+    min-width: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popoverContent,
+  .popoverContent[data-state='closed'] {
+    animation: none;
+  }
+}

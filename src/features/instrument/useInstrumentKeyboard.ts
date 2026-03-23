@@ -18,12 +18,11 @@ import {
 export interface UseInstrumentKeyboardOptions {
   onNoteOn: (midiNote: number, velocity: number) => void;
   onNoteOff: (midiNote: number) => void;
-  isInstrumentView: boolean;
+  isActive: boolean;
 }
 
 export interface UseInstrumentKeyboardReturn {
   readonly isActive: boolean;
-  readonly toggle: () => void;
   readonly deactivate: () => void;
   readonly baseOctave: number;
   readonly velocity: number;
@@ -35,9 +34,8 @@ const PASSTHROUGH_CODES = getPassthroughCodes();
 export function useInstrumentKeyboard(
   options: UseInstrumentKeyboardOptions,
 ): UseInstrumentKeyboardReturn {
-  const { onNoteOn, onNoteOff, isInstrumentView } = options;
+  const { onNoteOn, onNoteOff, isActive } = options;
 
-  const [isActive, setIsActive] = useState(false);
   const [baseOctave, setBaseOctave] = useState(DEFAULT_OCTAVE);
   const [velocity, setVelocity] = useState(DEFAULT_VELOCITY);
   const [activeNotes, setActiveNotes] = useState<ReadonlySet<number>>(
@@ -59,31 +57,14 @@ export function useInstrumentKeyboard(
     }
     pressed.clear();
     setActiveNotes(new Set());
-    setIsActive(false);
   }, []);
 
-  const toggle = useCallback(() => {
-    setIsActive((prev) => {
-      if (prev) {
-        // Deactivating — release all notes
-        const pressed = pressedKeysRef.current;
-        for (const midiNote of pressed.values()) {
-          onNoteOffRef.current(midiNote);
-        }
-        pressed.clear();
-        setActiveNotes(new Set());
-        return false;
-      }
-      return true;
-    });
-  }, []);
-
-  // Auto-deactivate when leaving the instrument view
+  // Release notes when instrument mode is deactivated externally
   useEffect(() => {
-    if (!isInstrumentView && isActive) {
+    if (!isActive) {
       deactivate();
     }
-  }, [isInstrumentView, isActive, deactivate]);
+  }, [isActive, deactivate]);
 
   // Key event handlers
   useEffect(() => {
@@ -96,14 +77,7 @@ export function useInstrumentKeyboard(
       const { code } = event;
 
       // Passthrough: let these fall through to global shortcuts
-      if (PASSTHROUGH_CODES.has(code)) {
-        // Escape deactivates instrument mode
-        if (code === 'Escape') {
-          deactivate();
-          event.preventDefault();
-        }
-        return;
-      }
+      if (PASSTHROUGH_CODES.has(code)) return;
 
       // Suppress key repeats for note keys
       if (event.repeat) return;
@@ -164,11 +138,10 @@ export function useInstrumentKeyboard(
       document.removeEventListener('keydown', handleKeyDown, { capture: true });
       document.removeEventListener('keyup', handleKeyUp, { capture: true });
     };
-  }, [isActive, baseOctave, velocity, deactivate]);
+  }, [isActive, baseOctave, velocity]);
 
   return {
     isActive,
-    toggle,
     deactivate,
     baseOctave,
     velocity,

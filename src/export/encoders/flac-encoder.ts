@@ -87,8 +87,10 @@ async function loadLibFlac(): Promise<LibFlac> {
 
   try {
     // Dynamic import — Vite code-splits this into a separate chunk.
+    // Use the asm.js dist build directly: the default 'libflacjs' entry point
+    // is Node-only (require('path'), process.env) and fails in browsers.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- WASM interop module has no published types
-    const mod = (await import('libflacjs')) as any;
+    const mod = (await import('libflacjs/dist/libflac.js')) as any;
     const flac: LibFlac = mod.default ?? mod;
 
     // Some builds require waiting for the WASM to be ready.

@@ -70,9 +70,8 @@ function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
-  fontSize: number,
+  _fontSize: number,
 ): string[] {
-  ctx.font = `${fontSize}px monospace`;
   const words = text.split(/\s+/);
   if (words.length === 0) return [''];
 
@@ -261,10 +260,10 @@ export class CoverArtRenderer implements VisualizationRenderer {
     }
 
     if (hc) {
-      this.drawCartridgeHighContrast(ctx, w, h, title, hc);
+      this.drawPlaceholderHighContrast(ctx, w, h, title, hc);
     } else {
       const isDark = this.detectTheme();
-      this.drawCartridge(ctx, w, h, title, isDark);
+      this.drawPlaceholder(ctx, w, h, title, isDark);
     }
 
     // Show loading indicator if resolving
@@ -313,7 +312,7 @@ export class CoverArtRenderer implements VisualizationRenderer {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
-  private drawCartridge(
+  private drawPlaceholder(
     ctx: CanvasRenderingContext2D,
     w: number,
     h: number,
@@ -323,124 +322,108 @@ export class CoverArtRenderer implements VisualizationRenderer {
     const dpr = this.dpr;
     const colorIdx = colorIndexFromTitle(title);
     const primaryColor = VOICE_COLORS[colorIdx];
+    const artist = useAppStore.getState().metadata?.artist ?? '';
 
-    const pad = Math.round(w * 0.08);
-    const bodyX = pad;
-    const bodyY = pad;
-    const bodyW = w - pad * 2;
-    const bodyH = h - pad * 2;
-    const bodyR = Math.round(w * 0.04);
+    const pad = Math.round(w * 0.06);
+    const cardX = pad;
+    const cardY = pad;
+    const cardW = w - pad * 2;
+    const cardH = h - pad * 2;
+    const r = 8 * dpr;
 
-    // Cartridge body
-    const bodyColor = isDark
-      ? darkenHex(primaryColor, 0.65)
-      : lightenHex(primaryColor, 0.75);
-    roundedRect(ctx, bodyX, bodyY, bodyW, bodyH, bodyR);
-    ctx.fillStyle = bodyColor;
+    // Background
+    ctx.fillStyle = isDark ? '#161622' : '#e8e8ee';
+    ctx.fillRect(0, 0, w, h);
+
+    // Gradient card
+    const gradStart = isDark
+      ? darkenHex(primaryColor, 0.55)
+      : lightenHex(primaryColor, 0.4);
+    const gradEnd = isDark
+      ? darkenHex(primaryColor, 0.75)
+      : lightenHex(primaryColor, 0.6);
+    const gradient = ctx.createLinearGradient(
+      cardX,
+      cardY,
+      cardX,
+      cardY + cardH,
+    );
+    gradient.addColorStop(0, gradStart);
+    gradient.addColorStop(1, gradEnd);
+
+    roundedRect(ctx, cardX, cardY, cardW, cardH, r);
+    ctx.fillStyle = gradient;
     ctx.fill();
-
-    ctx.strokeStyle = isDark
-      ? darkenHex(primaryColor, 0.4)
-      : lightenHex(primaryColor, 0.5);
-    ctx.lineWidth = Math.max(1, dpr);
-    ctx.stroke();
-
-    // Label area (upper 55%)
-    const labelPad = Math.round(bodyW * 0.08);
-    const labelX = bodyX + labelPad;
-    const labelY = bodyY + labelPad;
-    const labelW = bodyW - labelPad * 2;
-    const labelH = Math.round(bodyH * 0.55);
-    const labelR = Math.round(w * 0.02);
-
-    const labelColor = isDark
-      ? darkenHex(primaryColor, 0.35)
-      : lightenHex(primaryColor, 0.45);
-    roundedRect(ctx, labelX, labelY, labelW, labelH, labelR);
-    ctx.fillStyle = labelColor;
-    ctx.fill();
-
-    ctx.strokeStyle = isDark
-      ? darkenHex(primaryColor, 0.2)
-      : lightenHex(primaryColor, 0.25);
-    ctx.lineWidth = Math.max(1, dpr);
-    ctx.stroke();
-
-    // Connector pins at bottom
-    const pinAreaY = bodyY + bodyH - Math.round(bodyH * 0.1);
-    const pinH = Math.round(bodyH * 0.04);
-    const pinCount = 8;
-    const pinGap = Math.round(labelW / (pinCount * 2 + 1));
-    const pinW = pinGap;
-    const pinsStartX = labelX + pinGap;
-
-    ctx.fillStyle = isDark
-      ? 'rgba(255, 255, 255, 0.15)'
-      : 'rgba(0, 0, 0, 0.12)';
-    for (let i = 0; i < pinCount; i++) {
-      const px = pinsStartX + i * pinGap * 2;
-      ctx.fillRect(px, pinAreaY, pinW, pinH);
-    }
 
     // Title text
-    if (title) {
-      const textColor = isDark
-        ? lightenHex(primaryColor, 0.6)
-        : darkenHex(primaryColor, 0.55);
+    const textColor = isDark
+      ? lightenHex(primaryColor, 0.7)
+      : darkenHex(primaryColor, 0.65);
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'center';
 
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+    const textPad = Math.round(cardW * 0.1);
+    const maxTextW = cardW - textPad * 2;
 
-      const maxTextW = labelW - labelPad * 2;
-      const maxTextH = labelH - labelPad * 2;
-      let fontSize = Math.round(maxTextH * 0.35);
-      const minFontSize = Math.round(6 * dpr);
-      ctx.font = `${fontSize}px monospace`;
+    let titleFontSize = Math.round(Math.min(cardH * 0.15, cardW * 0.1));
+    const minFontSize = Math.round(6 * dpr);
+    titleFontSize = Math.max(titleFontSize, minFontSize);
+    ctx.font = `600 ${titleFontSize}px sans-serif`;
 
-      while (fontSize > minFontSize) {
-        ctx.font = `${fontSize}px monospace`;
-        const wrapped = wrapText(ctx, title, maxTextW, fontSize);
-        const totalTextH = wrapped.length * fontSize * 1.3;
-        const widthFits = wrapped.every(
-          (line) => ctx.measureText(line).width <= maxTextW,
-        );
-        if (widthFits && totalTextH <= maxTextH) break;
-        fontSize -= Math.max(1, Math.round(dpr));
-      }
-
-      const finalLines = wrapText(ctx, title, maxTextW, fontSize);
-      const lineHeight = fontSize * 1.3;
-      const totalH = finalLines.length * lineHeight;
-      const startY = labelY + labelH / 2 - totalH / 2 + lineHeight / 2;
-
-      for (let i = 0; i < finalLines.length; i++) {
-        ctx.fillText(
-          finalLines[i],
-          labelX + labelW / 2,
-          startY + i * lineHeight,
-        );
-      }
+    while (titleFontSize > minFontSize) {
+      ctx.font = `600 ${titleFontSize}px sans-serif`;
+      const wrapped = wrapText(ctx, title, maxTextW, titleFontSize);
+      const totalH = wrapped.length * titleFontSize * 1.3;
+      const widthFits = wrapped.every(
+        (line) => ctx.measureText(line).width <= maxTextW,
+      );
+      if (widthFits && totalH <= cardH * 0.5) break;
+      titleFontSize -= Math.max(1, Math.round(dpr));
     }
 
-    // "SUPER NINTENDO" branding
-    const brandFontSize = Math.max(Math.round(w * 0.035), Math.round(4 * dpr));
-    ctx.font = `${brandFontSize}px monospace`;
-    ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.2)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(
-      'SUPER NINTENDO',
-      bodyX + bodyW / 2,
-      labelY + labelH + Math.round(bodyH * 0.04),
-    );
+    const titleLines = wrapText(ctx, title, maxTextW, titleFontSize);
+    const lineHeight = titleFontSize * 1.3;
+    const titleBlockH = titleLines.length * lineHeight;
+
+    // Vertical centering: offset upward if artist is present
+    const artistFontSize = Math.round(titleFontSize * 0.6);
+    const artistOffset = artist ? artistFontSize * 1.8 : 0;
+    const startY =
+      cardY + cardH / 2 - (titleBlockH + artistOffset) / 2 + lineHeight / 2;
+
+    ctx.font = `600 ${titleFontSize}px sans-serif`;
+    for (let i = 0; i < titleLines.length; i++) {
+      ctx.fillText(titleLines[i], cardX + cardW / 2, startY + i * lineHeight);
+    }
+
+    // Artist text (smaller, below title)
+    if (artist) {
+      ctx.font = `${artistFontSize}px sans-serif`;
+      ctx.fillStyle = isDark
+        ? lightenHex(primaryColor, 0.5)
+        : darkenHex(primaryColor, 0.45);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        artist,
+        cardX + cardW / 2,
+        startY + titleBlockH + artistFontSize * 0.4,
+      );
+    }
+
+    // "SPC" format indicator in bottom right
+    const spcFontSize = Math.max(Math.round(w * 0.035), Math.round(4 * dpr));
+    ctx.font = `${spcFontSize}px sans-serif`;
+    ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('SPC', cardX + cardW - textPad, cardY + cardH - textPad * 0.5);
   }
 
   /**
-   * Simplified cartridge placeholder for high contrast mode.
+   * Simplified placeholder for high contrast mode.
    * Uses only system colors to guarantee visibility.
    */
-  private drawCartridgeHighContrast(
+  private drawPlaceholderHighContrast(
     ctx: CanvasRenderingContext2D,
     w: number,
     h: number,
@@ -448,84 +431,81 @@ export class CoverArtRenderer implements VisualizationRenderer {
     hc: HighContrastColors,
   ): void {
     const dpr = this.dpr;
+    const artist = useAppStore.getState().metadata?.artist ?? '';
 
     // Background
     ctx.fillStyle = hc.background;
     ctx.fillRect(0, 0, w, h);
 
-    const pad = Math.round(w * 0.08);
-    const bodyX = pad;
-    const bodyY = pad;
-    const bodyW = w - pad * 2;
-    const bodyH = h - pad * 2;
-    const bodyR = Math.round(w * 0.04);
+    const pad = Math.round(w * 0.06);
+    const cardX = pad;
+    const cardY = pad;
+    const cardW = w - pad * 2;
+    const cardH = h - pad * 2;
+    const r = 8 * dpr;
 
-    // Cartridge body — outlined
-    roundedRect(ctx, bodyX, bodyY, bodyW, bodyH, bodyR);
+    // Card outline
+    roundedRect(ctx, cardX, cardY, cardW, cardH, r);
     ctx.strokeStyle = hc.buttonText;
     ctx.lineWidth = Math.max(2, dpr);
     ctx.stroke();
 
-    // Label area (upper 55%)
-    const labelPad = Math.round(bodyW * 0.08);
-    const labelX = bodyX + labelPad;
-    const labelY = bodyY + labelPad;
-    const labelW = bodyW - labelPad * 2;
-    const labelH = Math.round(bodyH * 0.55);
-    const labelR = Math.round(w * 0.02);
-
-    roundedRect(ctx, labelX, labelY, labelW, labelH, labelR);
-    ctx.strokeStyle = hc.text;
-    ctx.lineWidth = Math.max(1, dpr);
-    ctx.stroke();
-
     // Title text
+    const textPad = Math.round(cardW * 0.1);
+    const maxTextW = cardW - textPad * 2;
+
     if (title) {
       ctx.fillStyle = hc.text;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      const maxTextW = labelW - labelPad * 2;
-      const maxTextH = labelH - labelPad * 2;
-      let fontSize = Math.round(maxTextH * 0.35);
+      let fontSize = Math.round(Math.min(cardH * 0.15, cardW * 0.1));
       const minFontSize = Math.round(6 * dpr);
-      ctx.font = `${fontSize}px monospace`;
+      fontSize = Math.max(fontSize, minFontSize);
+      ctx.font = `600 ${fontSize}px sans-serif`;
 
       while (fontSize > minFontSize) {
-        ctx.font = `${fontSize}px monospace`;
+        ctx.font = `600 ${fontSize}px sans-serif`;
         const wrapped = wrapText(ctx, title, maxTextW, fontSize);
-        const totalTextH = wrapped.length * fontSize * 1.3;
+        const totalH = wrapped.length * fontSize * 1.3;
         const widthFits = wrapped.every(
           (line) => ctx.measureText(line).width <= maxTextW,
         );
-        if (widthFits && totalTextH <= maxTextH) break;
+        if (widthFits && totalH <= cardH * 0.5) break;
         fontSize -= Math.max(1, Math.round(dpr));
       }
 
-      const finalLines = wrapText(ctx, title, maxTextW, fontSize);
+      const titleLines = wrapText(ctx, title, maxTextW, fontSize);
       const lineHeight = fontSize * 1.3;
-      const totalH = finalLines.length * lineHeight;
-      const startY = labelY + labelH / 2 - totalH / 2 + lineHeight / 2;
+      const titleBlockH = titleLines.length * lineHeight;
 
-      for (let i = 0; i < finalLines.length; i++) {
+      const artistFontSize = Math.round(fontSize * 0.6);
+      const artistOffset = artist ? artistFontSize * 1.8 : 0;
+      const startY =
+        cardY + cardH / 2 - (titleBlockH + artistOffset) / 2 + lineHeight / 2;
+
+      ctx.font = `600 ${fontSize}px sans-serif`;
+      for (let i = 0; i < titleLines.length; i++) {
+        ctx.fillText(titleLines[i], cardX + cardW / 2, startY + i * lineHeight);
+      }
+
+      // Artist text
+      if (artist) {
+        ctx.font = `${artistFontSize}px sans-serif`;
         ctx.fillText(
-          finalLines[i],
-          labelX + labelW / 2,
-          startY + i * lineHeight,
+          artist,
+          cardX + cardW / 2,
+          startY + titleBlockH + artistFontSize * 0.4,
         );
       }
     }
 
-    // "SUPER NINTENDO" branding
-    const brandFontSize = Math.max(Math.round(w * 0.035), Math.round(4 * dpr));
-    ctx.font = `${brandFontSize}px monospace`;
+    // "SPC" format indicator
+    const spcFontSize = Math.max(Math.round(w * 0.035), Math.round(4 * dpr));
+    ctx.font = `${spcFontSize}px sans-serif`;
     ctx.fillStyle = hc.text;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(
-      'SUPER NINTENDO',
-      bodyX + bodyW / 2,
-      labelY + labelH + Math.round(bodyH * 0.04),
-    );
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('SPC', cardX + cardW - textPad, cardY + cardH - textPad * 0.5);
   }
 }

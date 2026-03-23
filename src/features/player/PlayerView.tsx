@@ -3,6 +3,7 @@ import { lazy, Suspense, useCallback, useRef } from 'react';
 
 import { Button } from '@/components/Button/Button';
 import { CollapsiblePanel } from '@/components/CollapsiblePanel/CollapsiblePanel';
+import { GamepadIcon } from '@/components/Icons/TransportIcons';
 import { NowPlayingInfo } from '@/components/NowPlayingInfo/NowPlayingInfo';
 import * as Tooltip from '@/components/Tooltip/Tooltip';
 import { VisualizationStageFallback } from '@/components/VisualizationStage/VisualizationStage';
@@ -73,7 +74,7 @@ export function PlayerView() {
         />
         <div className={styles.emptyState}>
           <span className={styles.emptyIcon} aria-hidden="true">
-            🎮
+            <GamepadIcon />
           </span>
           <h2 className={styles.emptyHeading}>No track loaded</h2>
           <p className={styles.emptyDescription}>
@@ -115,11 +116,13 @@ export function PlayerView() {
       {/* Waveform Visualization */}
       {hasTrack && <WaveformDisplay />}
 
-      {/* Metadata Panel */}
+      {/* Metadata Panel (hidden at wide desktop where sidebar shows it) */}
       {hasTrack && (
-        <CollapsiblePanel title="Track Info">
-          <MetadataPanel />
-        </CollapsiblePanel>
+        <div className={styles.trackInfoCollapsible}>
+          <CollapsiblePanel title="Track Info">
+            <MetadataPanel />
+          </CollapsiblePanel>
+        </div>
       )}
 
       {/* Mixer Panel */}

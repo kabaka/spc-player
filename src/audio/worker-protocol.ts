@@ -42,7 +42,8 @@ export type MainToWorklet =
   | MainToWorklet.SetCheckpointConfig
   | MainToWorklet.ImportCheckpoints
   | MainToWorklet.NoteOn
-  | MainToWorklet.NoteOff;
+  | MainToWorklet.NoteOff
+  | MainToWorklet.SetInstrumentMode;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace MainToWorklet {
@@ -198,6 +199,12 @@ export namespace MainToWorklet {
     readonly type: 'note-off';
     /** Voice index 0–7. */
     readonly voice: number;
+  }
+
+  /** Enable or disable instrument mode (allows DSP rendering while paused). */
+  export interface SetInstrumentMode {
+    readonly type: 'set-instrument-mode';
+    readonly active: boolean;
   }
 
   /**

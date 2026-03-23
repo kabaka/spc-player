@@ -160,7 +160,7 @@ export class VoiceTimelineRenderer implements VisualizationRenderer {
   ): void {
     for (let i = 0; i < VOICE_COUNT; i++) {
       const voice = data.voices[i];
-      const isActive = voice?.keyOn && voice.active;
+      const isActive = voice?.active && voice.envelopeLevel > 0;
 
       if (isActive) {
         if (!this.activeEntries[i]) {

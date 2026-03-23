@@ -377,6 +377,18 @@ class AudioEngine {
     this.postCommand({ type: 'note-off', voice });
   }
 
+  /** Enable or disable instrument mode in the worklet. */
+  setInstrumentMode(active: boolean): void {
+    this.postCommand({ type: 'set-instrument-mode', active });
+
+    // Resume AudioContext if suspended (autoplay policy) — key press
+    // counts as a user gesture that allows audio.
+    if (active && this.audioContext?.state === 'suspended') {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      this.audioContext.resume().catch(() => {});
+    }
+  }
+
   /** Set output resampler mode. 0=linear (JS), 1=sinc (WASM Lanczos-3). */
   setResamplerMode(mode: 'linear' | 'sinc'): void {
     this.postCommand({

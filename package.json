@@ -1,6 +1,6 @@
 {
   "name": "spc-player",
-  "version": "2026.03.19",
+  "version": "2026.03.23",
   "private": true,
   "type": "module",
   "engines": {

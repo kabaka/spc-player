@@ -89,6 +89,9 @@ class SpcProcessor extends AudioWorkletProcessor {
   private consecutiveRenderFailures = 0;
   private renderDisabled = false;
 
+  // -- Instrument mode (render DSP while paused for note playback) ----------
+  private instrumentModeActive = false;
+
   // -- Voice state buffer (pre-allocated for telemetry) ---------------------
   private voiceStatePtr = 0;
 
@@ -223,15 +226,17 @@ class SpcProcessor extends AudioWorkletProcessor {
     const left = output[0];
     const right = output[1];
 
-    // If not playing, no WASM, or rendering has been disabled due to
-    // repeated failures, fill with silence and keep the processor alive.
-    if (!this.isPlaying || !this.wasm || this.renderDisabled) {
+    // If not playing (and not in instrument mode), no WASM, or rendering
+    // has been disabled due to repeated failures, fill with silence.
+    const shouldRender = this.isPlaying || this.instrumentModeActive;
+    if (!shouldRender || !this.wasm || this.renderDisabled) {
       this.fillSilence(left, right);
       return true;
     }
 
     // Check if playback has already finished (past duration + fade).
-    if (this.isPlaybackFinished()) {
+    // Skipped in instrument-mode-only rendering (no timed playback).
+    if (this.isPlaying && this.isPlaybackFinished()) {
       this.fillSilence(left, right);
       return true;
     }
@@ -349,28 +354,32 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
       }
 
-      // Track position in DSP sample domain (32kHz) for seek/duration.
-      this.renderedSamples += intAdvance;
+      // Playback-specific tracking: position, checkpoints, fade, end detection.
+      // Skipped in instrument-mode-only rendering (paused but rendering for notes).
+      if (this.isPlaying) {
+        // Track position in DSP sample domain (32kHz) for seek/duration.
+        this.renderedSamples += intAdvance;
 
-      // Capture a checkpoint if we've passed the next capture position.
-      if (this.renderedSamples >= this.checkpointStore.nextCapturePosition) {
-        this.captureCheckpoint(this.renderedSamples);
-        this.checkpointStore.nextCapturePosition +=
-          this.checkpointStore.intervalSamples;
-      }
+        // Capture a checkpoint if we've passed the next capture position.
+        if (this.renderedSamples >= this.checkpointStore.nextCapturePosition) {
+          this.captureCheckpoint(this.renderedSamples);
+          this.checkpointStore.nextCapturePosition +=
+            this.checkpointStore.intervalSamples;
+        }
 
-      // Apply fade gain ramp if we've passed durationSamples.
-      this.applyFade(left, right, intAdvance);
+        // Apply fade gain ramp if we've passed durationSamples.
+        this.applyFade(left, right, intAdvance);
 
-      // Check if playback just finished after this quantum.
-      if (this.isPlaybackFinished()) {
-        this.postMessage({
-          type: 'playback-ended',
-          totalSamples: this.renderedSamples,
-        });
-        this.isPlaying = false;
-        // Silence any remaining audio in this quantum that is past the end.
-        // (applyFade already zeroed samples past the fade region.)
+        // Check if playback just finished after this quantum.
+        if (this.isPlaybackFinished()) {
+          this.postMessage({
+            type: 'playback-ended',
+            totalSamples: this.renderedSamples,
+          });
+          this.isPlaying = false;
+          // Silence any remaining audio in this quantum that is past the end.
+          // (applyFade already zeroed samples past the fade region.)
+        }
       }
 
       // Telemetry emission at configured interval.
@@ -538,7 +547,15 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           const clampedPitch = Math.max(0, Math.min(0x3fff, msg.pitch));
-          this.wasm.dsp_voice_note_on(msg.voice, clampedPitch);
+          if (this.instrumentModeActive) {
+            // Reserve voice 7 for instrument use — copy sample source
+            // from the selected voice so the correct instrument plays.
+            const srcn = this.wasm.dsp_get_register(msg.voice * 0x10 + 0x04);
+            this.wasm.dsp_set_register(0x74, srcn); // voice 7 SRCN
+            this.wasm.dsp_voice_note_on(7, clampedPitch);
+          } else {
+            this.wasm.dsp_voice_note_on(msg.voice, clampedPitch);
+          }
         }
         break;
       case 'note-off':
@@ -547,7 +564,11 @@ class SpcProcessor extends AudioWorkletProcessor {
           return;
         }
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
-          this.wasm.dsp_voice_note_off(msg.voice);
+          if (this.instrumentModeActive) {
+            this.wasm.dsp_voice_note_off(7);
+          } else {
+            this.wasm.dsp_voice_note_off(msg.voice);
+          }
         }
         break;
       case 'set-checkpoint-config':
@@ -563,6 +584,9 @@ class SpcProcessor extends AudioWorkletProcessor {
           return;
         }
         this.handleImportCheckpoints(msg);
+        break;
+      case 'set-instrument-mode':
+        this.instrumentModeActive = msg.active;
         break;
     }
   }

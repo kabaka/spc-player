@@ -160,6 +160,7 @@ export function getPassthroughCodes(): ReadonlySet<string> {
     'Space',
     'Escape',
     'Tab',
+    'Backquote',
   ]);
 }
 

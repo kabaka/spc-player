@@ -8,6 +8,7 @@
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  min-height: 0;
 }
 
 .header {

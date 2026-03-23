@@ -3,6 +3,15 @@ import { useCallback, useRef, useState } from 'react';
 
 import { audioEngine } from '@/audio/engine';
 import { Button } from '@/components/Button/Button';
+import {
+  GamepadIcon,
+  NextTrackIcon,
+  PauseIcon,
+  PlayIcon,
+  PreviousTrackIcon,
+  VolumeHighIcon,
+  VolumeMuteIcon,
+} from '@/components/Icons/TransportIcons';
 import { SeekBar } from '@/components/SeekBar/SeekBar';
 import { Slider } from '@/components/Slider/Slider';
 import * as Tooltip from '@/components/Tooltip/Tooltip';
@@ -11,6 +20,8 @@ import { useAppStore } from '@/store/store';
 import { formatTransportSubtitle } from '@/utils/format-metadata';
 import { formatTime } from '@/utils/format-time';
 
+import { AudioQualityBadge } from './AudioQualityBadge';
+import { SpeedControl } from './SpeedControl';
 import styles from './TransportBar.module.css';
 
 // ── Component ─────────────────────────────────────────────────────────
@@ -186,7 +197,7 @@ export function TransportBar() {
         {hasTrack ? (
           <>
             <div className={styles.thumbnail} aria-hidden="true">
-              🎮
+              <GamepadIcon />
             </div>
             <div className={styles.trackText}>
               <p className={styles.trackTitle}>{title}</p>
@@ -220,7 +231,7 @@ export function TransportBar() {
                 disabled={!hasTrack}
                 tabIndex={0 === rovingIndex ? 0 : -1}
               >
-                ⏮
+                <PreviousTrackIcon />
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>Previous track</Tooltip.Content>
@@ -236,7 +247,7 @@ export function TransportBar() {
                 disabled={!hasTrack}
                 tabIndex={1 === rovingIndex ? 0 : -1}
               >
-                {isPlaying ? '⏸' : '▶'}
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
@@ -252,7 +263,7 @@ export function TransportBar() {
                 disabled={!hasTrack}
                 tabIndex={2 === rovingIndex ? 0 : -1}
               >
-                ⏭
+                <NextTrackIcon />
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>Next track</Tooltip.Content>
@@ -283,8 +294,10 @@ export function TransportBar() {
         </div>
       </div>
 
-      {/* RIGHT ZONE — Volume */}
+      {/* RIGHT ZONE — Speed, Audio Quality, Volume */}
       <div className={styles.rightZone}>
+        <SpeedControl />
+        <AudioQualityBadge />
         <Tooltip.Root>
           <Tooltip.Trigger asChild>
             <Button
@@ -295,7 +308,7 @@ export function TransportBar() {
               aria-pressed={isMuted}
               onClick={handleMuteToggle}
             >
-              {isMuted ? '🔇' : '🔊'}
+              {isMuted ? <VolumeMuteIcon /> : <VolumeHighIcon />}
             </Button>
           </Tooltip.Trigger>
           <Tooltip.Content>{isMuted ? 'Unmute' : 'Mute'}</Tooltip.Content>

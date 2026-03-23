@@ -18,7 +18,7 @@ const AUTO_RANGE_EXPAND_LERP = 0.25;
 const AUTO_RANGE_CONTRACT_LERP = 0.08;
 const AUTO_RANGE_PAD = 12;
 const MIN_VISIBLE_SPAN = 24;
-const MAX_VISIBLE_SPAN = 72;
+const MAX_VISIBLE_SPAN = 96;
 const DEFAULT_MIN_NOTE = 24;
 const DEFAULT_MAX_NOTE = 84;
 const GRID_ALPHA = 0.06;
@@ -118,7 +118,7 @@ export class PianoRollRenderer implements VisualizationRenderer {
     this.ctx = ctx;
   }
 
-  draw(data: AudioVisualizationData, _deltaTime: number): void {
+  draw(data: AudioVisualizationData, deltaTime: number): void {
     const ctx = this.ctx;
     if (!ctx || this.width <= 0 || this.height <= 0) return;
 
@@ -145,8 +145,8 @@ export class PianoRollRenderer implements VisualizationRenderer {
     }
 
     this.updateNotes(data, currentTime);
-    this.updateAutoRange();
     this.purgeOldNotes(currentTime - timeWindow);
+    this.updateAutoRange(deltaTime);
 
     const noteRange = this.visibleMaxNote - this.visibleMinNote;
     if (noteRange <= 0) return;
@@ -277,7 +277,7 @@ export class PianoRollRenderer implements VisualizationRenderer {
 
   // ── Auto-range ──────────────────────────────────────────────────
 
-  private updateAutoRange(): void {
+  private updateAutoRange(deltaTime: number): void {
     let min = 127;
     let max = 0;
     let found = false;
@@ -297,48 +297,32 @@ export class PianoRollRenderer implements VisualizationRenderer {
     }
 
     if (found) {
-      this.targetMinNote = min - AUTO_RANGE_PAD;
-      this.targetMaxNote = max + AUTO_RANGE_PAD;
+      const mid = (min + max) / 2;
+      const rawSpan = max - min + AUTO_RANGE_PAD * 2;
+      const clampedSpan = Math.max(
+        MIN_VISIBLE_SPAN,
+        Math.min(MAX_VISIBLE_SPAN, rawSpan),
+      );
+      this.targetMinNote = mid - clampedSpan / 2;
+      this.targetMaxNote = mid + clampedSpan / 2;
     } else {
       this.targetMinNote = DEFAULT_MIN_NOTE;
       this.targetMaxNote = DEFAULT_MAX_NOTE;
-    }
-
-    // Enforce minimum span
-    const span = this.targetMaxNote - this.targetMinNote;
-    if (span < MIN_VISIBLE_SPAN) {
-      const center = (this.targetMinNote + this.targetMaxNote) / 2;
-      this.targetMinNote = center - MIN_VISIBLE_SPAN / 2;
-      this.targetMaxNote = center + MIN_VISIBLE_SPAN / 2;
-    }
-
-    // Enforce maximum span — clamp to MAX_VISIBLE_SPAN centered on median
-    if (this.targetMaxNote - this.targetMinNote > MAX_VISIBLE_SPAN && found) {
-      const notes: number[] = [];
-      for (let i = 0; i < VOICE_COUNT; i++) {
-        const active = this.activeNotes[i];
-        if (active) notes.push(active.midiNote);
-        for (const n of this.noteHistory[i]) notes.push(n.midiNote);
-      }
-      notes.sort((a, b) => a - b);
-      const median =
-        notes.length % 2 === 0
-          ? (notes[notes.length / 2 - 1] + notes[notes.length / 2]) / 2
-          : notes[Math.floor(notes.length / 2)];
-      this.targetMinNote = median - MAX_VISIBLE_SPAN / 2;
-      this.targetMaxNote = median + MAX_VISIBLE_SPAN / 2;
     }
 
     this.targetMinNote = Math.max(0, this.targetMinNote);
     this.targetMaxNote = Math.min(127, this.targetMaxNote);
 
     // Smooth animation toward target — expand faster, contract slower
+    // Frame-rate independent lerp: ensures consistent animation speed
     const minDelta = this.targetMinNote - this.visibleMinNote;
     const maxDelta = this.targetMaxNote - this.visibleMaxNote;
-    const minLerp =
+    const minBaseLerp =
       minDelta < 0 ? AUTO_RANGE_EXPAND_LERP : AUTO_RANGE_CONTRACT_LERP;
-    const maxLerp =
+    const maxBaseLerp =
       maxDelta > 0 ? AUTO_RANGE_EXPAND_LERP : AUTO_RANGE_CONTRACT_LERP;
+    const minLerp = 1 - Math.pow(1 - minBaseLerp, deltaTime * 60);
+    const maxLerp = 1 - Math.pow(1 - maxBaseLerp, deltaTime * 60);
     this.visibleMinNote += minDelta * minLerp;
     this.visibleMaxNote += maxDelta * maxLerp;
   }

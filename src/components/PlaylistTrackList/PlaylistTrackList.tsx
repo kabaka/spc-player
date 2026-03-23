@@ -83,6 +83,14 @@ export function PlaylistTrackList({ compact = false }: PlaylistTrackListProps) {
     }
   }, [focusedIndex, tracks.length, idPrefix]);
 
+  // Scroll active (playing) track into view on auto-advance
+  useEffect(() => {
+    if (activeIndex !== null && activeIndex >= 0 && tracks.length > 0) {
+      const el = document.getElementById(`${idPrefix}track-${activeIndex}`);
+      el?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeIndex, tracks.length, idPrefix]);
+
   // ── Announcements ─────────────────────────────────────────────────
   const announce = useCallback((message: string) => {
     if (announcerRef.current) {

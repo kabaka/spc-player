@@ -51,7 +51,7 @@ export function EchoBufferView() {
           style.getPropertyValue('--spc-color-border') ||
           'rgba(255,255,255,0.1)',
         waveL: style.getPropertyValue('--spc-color-accent') || '#6366f1',
-        waveR: style.getPropertyValue('--spc-color-accent-subtle') || '#818cf8',
+        waveR: style.getPropertyValue('--spc-color-echo-right') || '#22D3EE',
       };
     }
 

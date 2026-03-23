@@ -131,6 +131,14 @@
 }
 
 /* ============================================================
+   DETAIL SIDEBAR (right — hidden below wide desktop)
+   ============================================================ */
+
+.detailSidebar {
+  display: none;
+}
+
+/* ============================================================
    MAIN CONTENT
    ============================================================ */
 
@@ -202,5 +210,20 @@
   .main {
     padding: var(--spc-space-6);
     padding-bottom: calc(var(--spc-space-6) + var(--spc-transport-bar-height));
+  }
+}
+
+/* ============================================================
+   WIDE DESKTOP (≥ 1440px) — detail sidebar visible
+   ============================================================ */
+
+@media (min-width: 1440px) {
+  .detailSidebar {
+    display: block;
+    width: 280px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--spc-color-border);
+    overflow-y: auto;
+    padding-bottom: var(--spc-transport-bar-height);
   }
 }

@@ -1,0 +1,201 @@
+/* AudioQualityBadge.module.css — Audio quality badge + signal chain popover */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spc-space-1);
+  min-width: 32px;
+  height: 28px;
+  padding: 0 var(--spc-space-2);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-sm);
+  background: var(--spc-color-surface);
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-xs);
+  font-family: var(--spc-font-mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--spc-duration-fast) var(--spc-easing-default),
+    color var(--spc-duration-fast) var(--spc-easing-default),
+    background var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.trigger:hover {
+  border-color: var(--spc-color-text-muted);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--spc-color-accent);
+  outline-offset: 2px;
+}
+
+.triggerWarning {
+  border-color: var(--spc-color-warning);
+  color: var(--spc-color-warning);
+}
+
+.warningDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--spc-radius-full);
+  background: var(--spc-color-warning);
+  flex-shrink: 0;
+}
+
+/* ── Popover content ─────────────────────────────────────── */
+
+.popoverContent {
+  z-index: var(--spc-z-popover);
+  background: var(--spc-color-surface-raised);
+  border: 1px solid var(--spc-color-border);
+  border-radius: var(--spc-radius-md);
+  box-shadow: var(--spc-shadow-lg);
+  padding: var(--spc-space-3);
+  min-width: 220px;
+  max-width: 280px;
+  animation: badgePopoverFadeIn var(--spc-duration-fast) var(--spc-easing-out);
+}
+
+.popoverContent[data-state='closed'] {
+  animation: badgePopoverFadeOut var(--spc-duration-fast) var(--spc-easing-in);
+}
+
+@keyframes badgePopoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes badgePopoverFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+}
+
+.popoverArrow {
+  fill: var(--spc-color-surface-raised);
+}
+
+/* ── Sections ────────────────────────────────────────────── */
+
+.section {
+  margin-bottom: var(--spc-space-3);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionLabel {
+  font-size: var(--spc-font-size-xs);
+  font-weight: var(--spc-font-weight-medium);
+  color: var(--spc-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spc-space-2);
+}
+
+.dataList {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spc-space-1) var(--spc-space-3);
+  margin: 0;
+  padding: 0;
+}
+
+.label {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text-secondary);
+}
+
+.value {
+  font-size: var(--spc-font-size-xs);
+  color: var(--spc-color-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Load bar ────────────────────────────────────────────── */
+
+.loadBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spc-space-2);
+}
+
+.loadBarTrack {
+  flex: 1;
+  height: 6px;
+  background: var(--spc-color-bg-subtle);
+  border-radius: var(--spc-radius-full);
+  overflow: hidden;
+}
+
+.loadBarFill {
+  height: 100%;
+  border-radius: var(--spc-radius-full);
+  transition: width var(--spc-duration-fast) var(--spc-easing-default);
+}
+
+.loadHealthy {
+  background: var(--spc-color-success);
+}
+
+.loadModerate {
+  background: var(--spc-color-warning);
+}
+
+.loadCritical {
+  background: var(--spc-color-error);
+}
+
+.loadPercent {
+  font-size: var(--spc-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.statusText {
+  font-size: var(--spc-font-size-xs);
+  margin-left: var(--spc-space-1);
+}
+
+.statusHealthy {
+  color: var(--spc-color-success);
+}
+
+.statusModerate {
+  color: var(--spc-color-warning);
+}
+
+.statusCritical {
+  color: var(--spc-color-error);
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .popoverContent {
+    min-width: 200px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popoverContent,
+  .popoverContent[data-state='closed'] {
+    animation: none;
+  }
+}

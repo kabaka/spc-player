@@ -69,6 +69,7 @@ const INTERACTIVE_ROLES = new Set([
 
 const INSTRUMENT_MODE_PASSTHROUGH = new Set([
   'Space',
+  'Backquote',
   'Ctrl+Space',
   'ArrowLeft',
   'ArrowRight',
