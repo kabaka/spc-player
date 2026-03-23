@@ -16,7 +16,7 @@ const BINARY_ID666_SPC = path.join(FIXTURES_DIR, 'binary-id666.spc');
  */
 async function loadFixture(page: Page) {
   await page.goto('/');
-  const fileInput = page.locator('input[type="file"][accept=".spc"]');
+  const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
   await fileInput.setInputFiles(MINIMAL_SPC);
   await expect(
     page.locator('#player-controls').getByText('No track loaded'),
@@ -47,7 +47,7 @@ test.describe('Playlist management', () => {
     page,
   }) => {
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
 
     // Load two different fixtures — the app deduplicates by content hash,
     // so loading the same file twice would only produce one playlist entry.

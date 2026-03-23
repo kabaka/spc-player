@@ -11,7 +11,7 @@ const MINIMAL_SPC = path.join(FIXTURES_DIR, 'minimal-valid.spc');
 /** Load the minimal SPC fixture and wait for the UI to show a loaded track. */
 async function loadFixture(page: Page) {
   await page.goto('/');
-  const fileInput = page.locator('input[type="file"][accept=".spc"]');
+  const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
   await fileInput.setInputFiles(MINIMAL_SPC);
   await expect(
     page.locator('#player-controls').getByText('No track loaded'),
@@ -96,7 +96,7 @@ test.describe('Export workflow', () => {
     await expect(dialog).not.toBeVisible();
   });
 
-  test('export button is disabled when no track is loaded', async ({
+  test('export button is not visible when no track is loaded', async ({
     page,
   }) => {
     await page.goto('/');
@@ -105,7 +105,7 @@ test.describe('Export workflow', () => {
     ).toBeVisible();
 
     const exportBtn = page.getByRole('button', { name: 'Export' });
-    await expect(exportBtn).toBeDisabled();
+    await expect(exportBtn).not.toBeVisible();
   });
 
   test('Ctrl+E opens the export dialog when a track is loaded', async ({

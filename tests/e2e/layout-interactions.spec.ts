@@ -12,7 +12,7 @@ const MINIMAL_SPC = path.join(FIXTURES_DIR, 'minimal-valid.spc');
 /** Load the minimal SPC fixture and wait for the UI to reflect a loaded track. */
 async function loadFixture(page: Page) {
   await page.goto('/');
-  const fileInput = page.locator('input[type="file"][accept=".spc"]');
+  const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
   await fileInput.setInputFiles(MINIMAL_SPC);
   await expect(
     page.locator('#player-controls').getByText('No track loaded'),

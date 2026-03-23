@@ -17,6 +17,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     serviceWorkers: 'block',
+    storageState: 'tests/e2e/storage-state.json',
   },
   projects: [
     {

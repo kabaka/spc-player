@@ -29,7 +29,7 @@ test.describe('SPC file loading', () => {
     ).toBeVisible();
 
     // Load fixture via the hidden file input
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     // "No track loaded" should disappear
@@ -47,7 +47,7 @@ test.describe('SPC file loading', () => {
     page,
   }) => {
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     // Wait for "No track loaded" to disappear (signals load complete)
@@ -66,7 +66,7 @@ test.describe('SPC file loading', () => {
 
   test('seek bar becomes enabled after loading a track', async ({ page }) => {
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
 
     // Pre-condition: seek bar is disabled
     const seekBar = page.getByRole('slider', { name: 'Seek' });
@@ -83,7 +83,7 @@ test.describe('SPC file loading', () => {
   test('loading a corrupt file shows an error message', async ({ page }) => {
     await page.goto('/');
 
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(CORRUPT_SPC);
 
     // Use .first() because both the inline error and the toast notification
@@ -103,7 +103,7 @@ test.describe('SPC file loading', () => {
 
   test('play button is clickable after loading a track', async ({ page }) => {
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     await expect(
@@ -120,7 +120,7 @@ test.describe('SPC file loading', () => {
 
   test('metadata is displayed after file load', async ({ page }) => {
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     await expect(
@@ -144,7 +144,7 @@ test.describe('SPC file loading', () => {
     });
 
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(MINIMAL_SPC);
 
     await expect(
@@ -165,7 +165,7 @@ test.describe('SPC file loading', () => {
 
   test('playback position advances after clicking Play', async ({ page }) => {
     await page.goto('/');
-    const fileInput = page.locator('input[type="file"][accept=".spc"]');
+    const fileInput = page.locator('input[type="file"][accept=".spc"]').first();
     await fileInput.setInputFiles(MINIMAL_SPC);
     await expect(
       page.locator('#player-controls').getByText('No track loaded'),

@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:4173",
+      "localStorage": [
+        {
+          "name": "spc-player-onboarding-dismissed",
+          "value": "true"
+        }
+      ]
+    }
+  ]
+}
