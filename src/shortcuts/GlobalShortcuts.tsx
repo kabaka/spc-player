@@ -375,11 +375,15 @@ export function GlobalShortcuts(): null {
   useShortcut(
     'general.closeDialog',
     () => {
-      // Deactivate instrument mode if active
+      // Deactivate instrument mode if active — only update UI after engine confirms
       if (useAppStore.getState().isInstrumentModeActive) {
-        useAppStore.getState().toggleInstrumentMode();
-        audioEngine.setInstrumentMode(false);
-        audioEngine.noteOff(7);
+        audioEngine
+          .exitInstrumentMode()
+          .then(() => {
+            useAppStore.getState().exitInstrumentMode();
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+          })
+          .catch(() => {});
       }
       // Radix handles Escape for dialogs natively — no further action needed.
     },
@@ -387,11 +391,33 @@ export function GlobalShortcuts(): null {
   );
 
   useShortcut('general.toggleInstrumentMode', () => {
-    useAppStore.getState().toggleInstrumentMode();
-    const nowActive = useAppStore.getState().isInstrumentModeActive;
-    audioEngine.setInstrumentMode(nowActive);
-    if (!nowActive) {
-      audioEngine.noteOff(7);
+    const state = useAppStore.getState();
+    if (state.isInstrumentModeActive) {
+      audioEngine
+        .exitInstrumentMode()
+        .then(() => {
+          useAppStore.getState().exitInstrumentMode();
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
+        })
+        .catch(() => {});
+    } else {
+      audioEngine
+        .enterInstrumentMode()
+        .then(async () => {
+          useAppStore.getState().enterInstrumentMode();
+          try {
+            const catalog = await audioEngine.requestSampleCatalog();
+            useAppStore.getState().setSampleCatalog(catalog);
+            if (catalog.length > 0) {
+              useAppStore.getState().setSelectedSrcn(catalog[0].srcn);
+              audioEngine.setInstrumentSample(catalog[0].srcn);
+            }
+          } catch {
+            // Sample catalog fetch failed — mode is active but no samples
+          }
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
+        })
+        .catch(() => {});
     }
   });
 

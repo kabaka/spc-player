@@ -13,11 +13,31 @@
 import type { AudioPipelineError, ExportError } from '../types/errors';
 
 // ---------------------------------------------------------------------------
+// Shared Data Types
+// ---------------------------------------------------------------------------
+
+/** A BRR sample entry from the SPC sample directory. */
+export interface SampleEntry {
+  /** Sample source number (0–255). */
+  readonly srcn: number;
+  /** BRR data start address in SPC RAM. */
+  readonly startAddress: number;
+  /** Loop start address (0 if no loop). */
+  readonly loopAddress: number;
+  /** Total BRR data size in bytes. */
+  readonly lengthBytes: number;
+  /** Number of 9-byte BRR blocks. */
+  readonly blockCount: number;
+  /** Whether the sample has a loop point. */
+  readonly loops: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Protocol Version
 // ---------------------------------------------------------------------------
 
 /** Wire protocol version for main thread ↔ AudioWorklet messages. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Main → AudioWorklet Messages (§2.2)
@@ -43,7 +63,10 @@ export type MainToWorklet =
   | MainToWorklet.ImportCheckpoints
   | MainToWorklet.NoteOn
   | MainToWorklet.NoteOff
-  | MainToWorklet.SetInstrumentMode;
+  | MainToWorklet.EnterInstrumentMode
+  | MainToWorklet.ExitInstrumentMode
+  | MainToWorklet.RequestSampleCatalog
+  | MainToWorklet.SetInstrumentSample;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace MainToWorklet {
@@ -201,10 +224,26 @@ export namespace MainToWorklet {
     readonly voice: number;
   }
 
-  /** Enable or disable instrument mode (allows DSP rendering while paused). */
-  export interface SetInstrumentMode {
-    readonly type: 'set-instrument-mode';
-    readonly active: boolean;
+  /** Enter instrument mode: halt SPC700, snapshot DSP state, configure voice 0. */
+  export interface EnterInstrumentMode {
+    readonly type: 'enter-instrument-mode';
+  }
+
+  /** Exit instrument mode: release notes, restore DSP snapshot. */
+  export interface ExitInstrumentMode {
+    readonly type: 'exit-instrument-mode';
+  }
+
+  /** Request the BRR sample catalog from the loaded SPC's sample directory. */
+  export interface RequestSampleCatalog {
+    readonly type: 'request-sample-catalog';
+  }
+
+  /** Select a BRR sample source number for instrument mode playback. */
+  export interface SetInstrumentSample {
+    readonly type: 'set-instrument-sample';
+    /** Sample source number (0–255). */
+    readonly srcn: number;
   }
 
   /**
@@ -253,7 +292,9 @@ export type WorkletToMain =
   | WorkletToMain.AudioStats
   | WorkletToMain.Snapshot
   | WorkletToMain.PlaybackEnded
-  | WorkletToMain.Error;
+  | WorkletToMain.Error
+  | WorkletToMain.SampleCatalog
+  | WorkletToMain.InstrumentModeChanged;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace WorkletToMain {
@@ -411,6 +452,18 @@ export namespace WorkletToMain {
     readonly message: string;
     /** Structured context for error reporting (ADR-0015 AppError.context). */
     readonly context: Record<string, unknown>;
+  }
+
+  /** BRR sample catalog extracted from the loaded SPC's sample directory. */
+  export interface SampleCatalog {
+    readonly type: 'sample-catalog';
+    readonly samples: SampleEntry[];
+  }
+
+  /** Instrument mode state change confirmation. */
+  export interface InstrumentModeChanged {
+    readonly type: 'instrument-mode-changed';
+    readonly active: boolean;
   }
 }
 

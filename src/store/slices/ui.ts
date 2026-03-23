@@ -19,12 +19,12 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
     set({ isExportDialogOpen: open }, false, 'ui/setIsExportDialogOpen');
   },
 
-  toggleInstrumentMode: () => {
-    set(
-      (state) => ({ isInstrumentModeActive: !state.isInstrumentModeActive }),
-      false,
-      'ui/toggleInstrumentMode',
-    );
+  enterInstrumentMode: () => {
+    set({ isInstrumentModeActive: true }, false, 'ui/enterInstrumentMode');
+  },
+
+  exitInstrumentMode: () => {
+    set({ isInstrumentModeActive: false }, false, 'ui/exitInstrumentMode');
   },
 
   setPlaybackAnnouncement: (text) => {

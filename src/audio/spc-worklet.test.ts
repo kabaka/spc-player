@@ -50,7 +50,7 @@ let SpcProcessorClass: any;
 
 const QUANTUM_FRAMES = 128;
 const DSP_SAMPLE_RATE = 32_000;
-const PROTOCOL_VERSION = 1;
+const PROTOCOL_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Mock WASM DSP factory

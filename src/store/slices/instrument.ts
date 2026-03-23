@@ -1,26 +1,27 @@
 import type { InstrumentSlice, SliceCreator } from '../types';
 
 export const createInstrumentSlice: SliceCreator<InstrumentSlice> = (set) => ({
-  activeInstrumentIndex: null,
+  selectedSrcn: null,
+  sampleCatalog: [],
   isMidiConnected: false,
 
-  setActiveInstrument: (index) => {
-    set(
-      { activeInstrumentIndex: index },
-      false,
-      'instrument/setActiveInstrument',
-    );
+  setSelectedSrcn: (srcn) => {
+    set({ selectedSrcn: srcn }, false, 'instrument/setSelectedSrcn');
+  },
+
+  setSampleCatalog: (catalog) => {
+    set({ sampleCatalog: catalog }, false, 'instrument/setSampleCatalog');
   },
 
   setMidiConnected: (connected) => {
     set({ isMidiConnected: connected }, false, 'instrument/setMidiConnected');
   },
 
-  resetInstrument: () => {
+  clearInstrumentState: () => {
     set(
-      { activeInstrumentIndex: null, isMidiConnected: false },
+      { selectedSrcn: null, sampleCatalog: [], isMidiConnected: false },
       false,
-      'instrument/resetInstrument',
+      'instrument/clearInstrumentState',
     );
   },
 });

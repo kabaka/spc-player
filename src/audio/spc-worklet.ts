@@ -17,6 +17,7 @@ import type { DspExports } from './dsp-exports';
 import type {
   MainToWorklet,
   PlaybackSegment,
+  SampleEntry,
   VoiceState,
   WorkletErrorCode,
   WorkletToMain,
@@ -24,7 +25,7 @@ import type {
 
 // PROTOCOL_VERSION is a const — duplicated here because runtime imports
 // from the main bundle are forbidden in AudioWorklet context.
-const PROTOCOL_VERSION = 1;
+const PROTOCOL_VERSION = 2;
 
 /** Whether the `performance` timing API is available in this context. */
 const hasPerformanceApi =
@@ -91,6 +92,9 @@ class SpcProcessor extends AudioWorkletProcessor {
 
   // -- Instrument mode (render DSP while paused for note playback) ----------
   private instrumentModeActive = false;
+  private instrumentSnapshot: ArrayBuffer | null = null;
+  private instrumentSrcn = 0;
+  private readonly instrumentVoice = 0;
 
   // -- Voice state buffer (pre-allocated for telemetry) ---------------------
   private voiceStatePtr = 0;
@@ -447,6 +451,10 @@ class SpcProcessor extends AudioWorkletProcessor {
           this.pendingMessages.push(msg);
           return;
         }
+        // Exit instrument mode before resuming playback
+        if (this.instrumentModeActive) {
+          this.handleExitInstrumentMode();
+        }
         this.isPlaying = true;
         this.postMessage({ type: 'playback-state', state: 'playing' });
         break;
@@ -548,11 +556,9 @@ class SpcProcessor extends AudioWorkletProcessor {
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           const clampedPitch = Math.max(0, Math.min(0x3fff, msg.pitch));
           if (this.instrumentModeActive) {
-            // Reserve voice 7 for instrument use — copy sample source
-            // from the selected voice so the correct instrument plays.
-            const srcn = this.wasm.dsp_get_register(msg.voice * 0x10 + 0x04);
-            this.wasm.dsp_set_register(0x74, srcn); // voice 7 SRCN
-            this.wasm.dsp_voice_note_on(7, clampedPitch);
+            // In instrument mode: always play on voice 0 with selected SRCN
+            this.wasm.dsp_set_register(0x04, this.instrumentSrcn);
+            this.wasm.dsp_voice_note_on(this.instrumentVoice, clampedPitch);
           } else {
             this.wasm.dsp_voice_note_on(msg.voice, clampedPitch);
           }
@@ -565,7 +571,7 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           if (this.instrumentModeActive) {
-            this.wasm.dsp_voice_note_off(7);
+            this.wasm.dsp_voice_note_off(this.instrumentVoice);
           } else {
             this.wasm.dsp_voice_note_off(msg.voice);
           }
@@ -585,8 +591,33 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         this.handleImportCheckpoints(msg);
         break;
-      case 'set-instrument-mode':
-        this.instrumentModeActive = msg.active;
+      case 'enter-instrument-mode':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.handleEnterInstrumentMode();
+        break;
+      case 'exit-instrument-mode':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.handleExitInstrumentMode();
+        break;
+      case 'request-sample-catalog':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.handleRequestSampleCatalog();
+        break;
+      case 'set-instrument-sample':
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.handleSetInstrumentSample(msg);
         break;
     }
   }
@@ -1251,6 +1282,241 @@ class SpcProcessor extends AudioWorkletProcessor {
     this.prevDspRight = 0;
     if (this.resamplerMode === 1) {
       this.wasm.dsp_resample_sinc_reset();
+    }
+  }
+
+  // =========================================================================
+  // Instrument mode
+  // =========================================================================
+
+  /** Maximum BRR blocks to walk per sample during catalog enumeration. */
+  private static readonly MAX_BRR_BLOCKS_PER_SAMPLE = 1024;
+
+  /** IPL ROM region start — sample data must not extend into this range. */
+  private static readonly IPL_ROM_START = 0xffc0;
+
+  private handleEnterInstrumentMode(): void {
+    if (!this.wasm) return;
+
+    if (this.isPlaying) {
+      this.postError(
+        'AUDIO_WASM_TRAP',
+        'Cannot enter instrument mode while playing',
+        {},
+      );
+      return;
+    }
+
+    if (this.instrumentModeActive) return;
+
+    // 1. Capture DSP snapshot for later restoration
+    const size = this.wasm.dsp_snapshot_size();
+    const snapshotPtr = this.wasm.wasm_alloc(size);
+    if (snapshotPtr === 0) {
+      this.postError('AUDIO_WASM_TRAP', 'Failed to allocate snapshot buffer', {
+        requestedSize: size,
+      });
+      return;
+    }
+
+    const written = this.wasm.dsp_snapshot(snapshotPtr);
+    if (written === 0) {
+      this.wasm.wasm_dealloc(snapshotPtr, size);
+      this.postError('AUDIO_WASM_TRAP', 'dsp_snapshot returned 0 bytes', {});
+      return;
+    }
+
+    // Copy snapshot out of WASM memory before dealloc
+    const snapshotView = new Uint8Array(
+      this.wasm.memory.buffer,
+      snapshotPtr,
+      written,
+    );
+    this.instrumentSnapshot = new ArrayBuffer(written);
+    new Uint8Array(this.instrumentSnapshot).set(snapshotView);
+    this.wasm.wasm_dealloc(snapshotPtr, size);
+
+    // 2. Halt SPC700 CPU by writing idle loop (BRA $FE) at current PC.
+    //    This prevents the sound driver from overwriting DSP registers.
+    const cpuRegsPtr = this.wasm.wasm_alloc(8);
+    this.wasm.dsp_get_cpu_registers(cpuRegsPtr);
+    // Re-acquire view after potential memory growth from wasm_alloc
+    // Register layout: [PC_lo, PC_hi, A, X, Y, SP, PSW, pad]
+    const cpuRegs = new Uint8Array(this.wasm.memory.buffer, cpuRegsPtr, 8);
+    const pc = cpuRegs[0] | (cpuRegs[1] << 8);
+    this.wasm.wasm_dealloc(cpuRegsPtr, 8);
+
+    // Reject if PC is in the IPL ROM region (0xFFC0-0xFFFF) or would overflow
+    if (pc >= SpcProcessor.IPL_ROM_START) {
+      this.postError(
+        'AUDIO_WASM_TRAP',
+        'Cannot enter instrument mode: SPC700 PC is in IPL ROM region',
+        { pc },
+      );
+      return;
+    }
+
+    const ramBase = this.wasm.dsp_get_ram_ptr();
+    const mem = new Uint8Array(this.wasm.memory.buffer);
+    mem[ramBase + pc] = 0x2f; // BRA opcode
+    mem[ramBase + pc + 1] = 0xfe; // offset -2 (branch to self)
+
+    // 3. Configure voice 0 for instrument playback
+    // Key off ALL voices to silence residual game audio
+    this.wasm.dsp_set_register(0x5c, 0xff); // KOFF all 8 voices
+    const v = this.instrumentVoice;
+    const vBase = v * 0x10;
+    this.wasm.dsp_set_register(vBase + 0x00, 0x7f); // VOLL max
+    this.wasm.dsp_set_register(vBase + 0x01, 0x7f); // VOLR max
+    this.wasm.dsp_set_register(vBase + 0x05, 0xff); // ADSR1: enabled, attack=15, decay=7
+    this.wasm.dsp_set_register(vBase + 0x06, 0xe0); // ADSR2: sustain=7, release=0
+    this.wasm.dsp_set_register(vBase + 0x04, this.instrumentSrcn); // SRCN
+
+    // Clear voice 0 from echo, noise, and pitch modulation
+    const eon = this.wasm.dsp_get_register(0x4d);
+    this.wasm.dsp_set_register(0x4d, eon & ~(1 << v));
+    const non = this.wasm.dsp_get_register(0x3d);
+    this.wasm.dsp_set_register(0x3d, non & ~(1 << v));
+    const pmon = this.wasm.dsp_get_register(0x2d);
+    this.wasm.dsp_set_register(0x2d, pmon & ~(1 << v));
+
+    // Ensure master volume is audible (some games set MVOL to 0 before starting)
+    if (this.wasm.dsp_get_register(0x0c) === 0) {
+      this.wasm.dsp_set_register(0x0c, 0x7f); // MVOLL
+    }
+    if (this.wasm.dsp_get_register(0x1c) === 0) {
+      this.wasm.dsp_set_register(0x1c, 0x7f); // MVOLR
+    }
+
+    // Clear mute and soft reset flags in FLG register
+    const flg = this.wasm.dsp_get_register(0x6c);
+    if (flg & 0xc0) {
+      this.wasm.dsp_set_register(0x6c, flg & 0x3f);
+    }
+
+    // 4. Activate instrument mode
+    this.instrumentModeActive = true;
+    this.postMessage({ type: 'instrument-mode-changed', active: true });
+  }
+
+  private handleExitInstrumentMode(): void {
+    if (!this.wasm || !this.instrumentModeActive) return;
+
+    // 1. Release any held note
+    this.wasm.dsp_voice_note_off(this.instrumentVoice);
+
+    // 2. Restore DSP snapshot (includes original RAM bytes at PC)
+    if (this.instrumentSnapshot) {
+      const data = new Uint8Array(this.instrumentSnapshot);
+      const ptr = this.wasm.wasm_alloc(data.byteLength);
+      if (ptr !== 0) {
+        const wasmMemory = new Uint8Array(this.wasm.memory.buffer);
+        wasmMemory.set(data, ptr);
+        this.wasm.dsp_restore(ptr, data.byteLength);
+        this.wasm.wasm_dealloc(ptr, data.byteLength);
+      }
+      this.instrumentSnapshot = null;
+    }
+
+    // 3. Deactivate instrument mode
+    this.instrumentModeActive = false;
+    this.postMessage({ type: 'instrument-mode-changed', active: false });
+  }
+
+  private handleRequestSampleCatalog(): void {
+    if (!this.wasm) return;
+
+    const dirBase = this.wasm.dsp_get_register(0x5d) * 0x100;
+    const ramBase = this.wasm.dsp_get_ram_ptr();
+    const mem = new Uint8Array(this.wasm.memory.buffer);
+
+    const samples: SampleEntry[] = [];
+    const seenAddresses = new Set<number>();
+
+    for (let srcn = 0; srcn < 256; srcn++) {
+      const entryOffset = dirBase + srcn * 4;
+
+      // Bounds check: directory entry must fit within 64 KB RAM
+      if (entryOffset + 4 > 65536) break;
+
+      const startLo = mem[ramBase + entryOffset];
+      const startHi = mem[ramBase + entryOffset + 1];
+      const loopLo = mem[ramBase + entryOffset + 2];
+      const loopHi = mem[ramBase + entryOffset + 3];
+
+      const startAddress = startLo | (startHi << 8);
+      const loopAddress = loopLo | (loopHi << 8);
+
+      // Skip invalid entries: must be before IPL ROM region and
+      // must have room for at least one 9-byte BRR block
+      if (startAddress >= SpcProcessor.IPL_ROM_START) continue;
+      if (startAddress + 9 > 65536) continue;
+
+      // Deduplicate by start address (keep all SRCNs, skip re-walking BRR)
+      if (seenAddresses.has(startAddress)) {
+        // Find the existing entry and add as a duplicate SRCN reference.
+        // For simplicity, include duplicate as a separate entry pointing
+        // to the same data — the UI can deduplicate by startAddress.
+        const existing = samples.find((s) => s.startAddress === startAddress);
+        if (existing) {
+          samples.push({
+            srcn,
+            startAddress: existing.startAddress,
+            loopAddress,
+            lengthBytes: existing.lengthBytes,
+            blockCount: existing.blockCount,
+            loops: existing.loops,
+          });
+        }
+        continue;
+      }
+
+      // Walk BRR blocks to determine sample length and loop status
+      let addr = startAddress;
+      let blockCount = 0;
+      let loops = false;
+
+      while (
+        blockCount < SpcProcessor.MAX_BRR_BLOCKS_PER_SAMPLE &&
+        addr < SpcProcessor.IPL_ROM_START
+      ) {
+        const header = mem[ramBase + addr];
+        blockCount++;
+
+        const isEnd = (header & 0x01) !== 0;
+        const isLoop = (header & 0x02) !== 0;
+
+        if (isEnd) {
+          loops = isLoop;
+          break;
+        }
+
+        addr += 9;
+      }
+
+      if (blockCount === 0) continue;
+
+      seenAddresses.add(startAddress);
+
+      samples.push({
+        srcn,
+        startAddress,
+        loopAddress,
+        lengthBytes: blockCount * 9,
+        blockCount,
+        loops,
+      });
+    }
+
+    this.postMessage({ type: 'sample-catalog', samples });
+  }
+
+  private handleSetInstrumentSample(
+    msg: MainToWorklet.SetInstrumentSample,
+  ): void {
+    this.instrumentSrcn = msg.srcn & 0xff;
+    if (this.instrumentModeActive && this.wasm) {
+      this.wasm.dsp_set_register(0x04, this.instrumentSrcn);
     }
   }
 

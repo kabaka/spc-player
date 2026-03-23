@@ -61,7 +61,8 @@ describe('Composed AppStore', () => {
 
     it('has correct instrument defaults', () => {
       const s = store.getState();
-      expect(s.activeInstrumentIndex).toBeNull();
+      expect(s.selectedSrcn).toBeNull();
+      expect(s.sampleCatalog).toEqual([]);
       expect(s.isMidiConnected).toBe(false);
     });
 

@@ -18,8 +18,14 @@ import type { CheckpointWorkerMessage } from '@/workers/checkpoint-worker';
 import { audioStateBuffer, resetAudioStateBuffer } from './audio-state-buffer';
 import spcWorkletUrl from './spc-worklet.ts?worker&url';
 import { loadDspWasmBytes } from './wasm-loader';
-import type { MainToWorklet, WorkletToMain } from './worker-protocol';
+import type {
+  MainToWorklet,
+  SampleEntry,
+  WorkletToMain,
+} from './worker-protocol';
 import { PROTOCOL_VERSION } from './worker-protocol';
+
+export type { SampleEntry } from './worker-protocol';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 type SoundTouchModule = typeof import('@soundtouchjs/audio-worklet');
@@ -377,16 +383,127 @@ class AudioEngine {
     this.postCommand({ type: 'note-off', voice });
   }
 
-  /** Enable or disable instrument mode in the worklet. */
-  setInstrumentMode(active: boolean): void {
-    this.postCommand({ type: 'set-instrument-mode', active });
-
-    // Resume AudioContext if suspended (autoplay policy) — key press
-    // counts as a user gesture that allows audio.
-    if (active && this.audioContext?.state === 'suspended') {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      this.audioContext.resume().catch(() => {});
+  /** Enter instrument mode. Pauses playback if playing. */
+  async enterInstrumentMode(): Promise<void> {
+    if (this.userIntentPlaying) {
+      this.pause();
     }
+
+    // Resume AudioContext if suspended (user gesture allows audio)
+    if (this.audioContext?.state === 'suspended') {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      await this.audioContext.resume().catch(() => {});
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      if (!this.workletNode) {
+        reject(new Error('Worklet not initialized'));
+        return;
+      }
+
+      const port = this.workletNode.port;
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        port.removeEventListener('message', handler);
+      };
+
+      const handler = (event: MessageEvent<WorkletToMain>) => {
+        if (
+          event.data.type === 'instrument-mode-changed' &&
+          event.data.active
+        ) {
+          cleanup();
+          resolve();
+        } else if (event.data.type === 'error') {
+          cleanup();
+          reject(new Error(event.data.message));
+        }
+      };
+
+      const timer = setTimeout(() => {
+        port.removeEventListener('message', handler);
+        reject(new Error('Enter instrument mode timed out'));
+      }, SNAPSHOT_TIMEOUT_MS);
+
+      port.addEventListener('message', handler);
+      this.postCommand({ type: 'enter-instrument-mode' });
+    });
+  }
+
+  /** Exit instrument mode. Restores previous DSP state. */
+  async exitInstrumentMode(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (!this.workletNode) {
+        reject(new Error('Worklet not initialized'));
+        return;
+      }
+
+      const port = this.workletNode.port;
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        port.removeEventListener('message', handler);
+      };
+
+      const handler = (event: MessageEvent<WorkletToMain>) => {
+        if (
+          event.data.type === 'instrument-mode-changed' &&
+          !event.data.active
+        ) {
+          cleanup();
+          resolve();
+        } else if (event.data.type === 'error') {
+          cleanup();
+          reject(new Error(event.data.message));
+        }
+      };
+
+      const timer = setTimeout(() => {
+        port.removeEventListener('message', handler);
+        reject(new Error('Exit instrument mode timed out'));
+      }, SNAPSHOT_TIMEOUT_MS);
+
+      port.addEventListener('message', handler);
+      this.postCommand({ type: 'exit-instrument-mode' });
+    });
+  }
+
+  /** Request the sample catalog from the loaded SPC. */
+  requestSampleCatalog(): Promise<SampleEntry[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.workletNode) {
+        reject(new Error('Worklet not initialized'));
+        return;
+      }
+
+      const port = this.workletNode.port;
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        port.removeEventListener('message', handler);
+      };
+
+      const handler = (event: MessageEvent<WorkletToMain>) => {
+        if (event.data.type === 'sample-catalog') {
+          cleanup();
+          resolve(event.data.samples);
+        }
+      };
+
+      const timer = setTimeout(() => {
+        port.removeEventListener('message', handler);
+        reject(new Error('Sample catalog request timed out'));
+      }, SNAPSHOT_TIMEOUT_MS);
+
+      port.addEventListener('message', handler);
+      this.postCommand({ type: 'request-sample-catalog' });
+    });
+  }
+
+  /** Select a sample SRCN for instrument mode playback. */
+  setInstrumentSample(srcn: number): void {
+    this.postCommand({ type: 'set-instrument-sample', srcn });
   }
 
   /** Set output resampler mode. 0=linear (JS), 1=sinc (WASM Lanczos-3). */
@@ -668,6 +785,12 @@ class AudioEngine {
       case 'snapshot':
         // Handled by external snapshot request flow
         break;
+      case 'sample-catalog':
+        // Handled by requestSampleCatalog() Promise
+        break;
+      case 'instrument-mode-changed':
+        // Handled by enterInstrumentMode() / exitInstrumentMode() Promises
+        break;
       case 'playback-ended':
         this.onPlaybackEnded?.();
         break;
@@ -736,12 +859,13 @@ class AudioEngine {
 
     // D9/D11: Update CPU registers when present.
     if (msg.cpuRegisters) {
+      // Register layout: [PC_lo, PC_hi, A, X, Y, SP, PSW, pad]
       const cpu = new Uint8Array(msg.cpuRegisters);
-      audioStateBuffer.cpuRegisters.a = cpu[0];
-      audioStateBuffer.cpuRegisters.x = cpu[1];
-      audioStateBuffer.cpuRegisters.y = cpu[2];
-      audioStateBuffer.cpuRegisters.sp = cpu[3];
-      audioStateBuffer.cpuRegisters.pc = cpu[4] | (cpu[5] << 8);
+      audioStateBuffer.cpuRegisters.pc = cpu[0] | (cpu[1] << 8);
+      audioStateBuffer.cpuRegisters.a = cpu[2];
+      audioStateBuffer.cpuRegisters.x = cpu[3];
+      audioStateBuffer.cpuRegisters.y = cpu[4];
+      audioStateBuffer.cpuRegisters.sp = cpu[5];
       audioStateBuffer.cpuRegisters.psw = cpu[6];
     }
 

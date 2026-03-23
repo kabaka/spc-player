@@ -1,9 +1,9 @@
-import { useNavigate, useSearch } from '@tanstack/react-router';
 import { VisuallyHidden } from 'radix-ui';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 import { audioEngine } from '@/audio/engine';
+import type { SampleEntry } from '@/audio/worker-protocol';
 import { Button } from '@/components/Button/Button';
 import { Label } from '@/components/Label/Label';
 import { useMidi } from '@/hooks/useMidi';
@@ -18,45 +18,42 @@ import { VirtualKeyboard } from './VirtualKeyboard';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const VOICE_OPTIONS = Array.from({ length: 8 }, (_, i) => ({
-  value: i,
-  label: `Voice ${i}`,
-}));
+const INSTRUMENT_VOICE = 0;
 
 // ── Component ─────────────────────────────────────────────────────────
 
 export function InstrumentView() {
   const selectorId = useId();
-  const { instrument } = useSearch({ from: '/instrument' });
-  const navigate = useNavigate();
 
-  const activeInstrumentIndex = useAppStore((s) => s.activeInstrumentIndex);
-  const setActiveInstrument = useAppStore((s) => s.setActiveInstrument);
   const isInstrumentModeActive = useAppStore((s) => s.isInstrumentModeActive);
-  const toggleInstrumentMode = useAppStore((s) => s.toggleInstrumentMode);
+  const enterInstrumentMode = useAppStore((s) => s.enterInstrumentMode);
+  const exitInstrumentMode = useAppStore((s) => s.exitInstrumentMode);
+  const selectedSrcn = useAppStore((s) => s.selectedSrcn);
+  const setSelectedSrcn = useAppStore((s) => s.setSelectedSrcn);
+  const sampleCatalog = useAppStore((s) => s.sampleCatalog);
+  const setSampleCatalog = useAppStore((s) => s.setSampleCatalog);
+  const metadata = useAppStore((s) => s.metadata);
 
-  const selectedVoice = activeInstrumentIndex ?? instrument ?? 0;
+  const hasSpcLoaded = metadata !== null;
 
   // ── Slider state ──────────────────────────────────────────────────────────
   const [pitchShift, setPitchShift] = useState(0);
   const [gain, setGain] = useState(100);
   const [filterCutoff, setFilterCutoff] = useState(100);
+  const [isActivating, setIsActivating] = useState(false);
 
   const handleNoteOn = useCallback(
     (midiNote: number, _velocity?: number) => {
       const adjustedMidi = midiNote + pitchShift;
       const pitch = midiNoteToPitch(adjustedMidi, 60);
-      audioEngine.noteOn(selectedVoice, pitch);
+      audioEngine.noteOn(INSTRUMENT_VOICE, pitch);
     },
-    [selectedVoice, pitchShift],
+    [pitchShift],
   );
 
-  const handleNoteOff = useCallback(
-    (_midiNote: number) => {
-      audioEngine.noteOff(selectedVoice);
-    },
-    [selectedVoice],
-  );
+  const handleNoteOff = useCallback((_midiNote: number) => {
+    audioEngine.noteOff(INSTRUMENT_VOICE);
+  }, []);
 
   const midi = useMidi({ onNoteOn: handleNoteOn, onNoteOff: handleNoteOff });
 
@@ -66,31 +63,48 @@ export function InstrumentView() {
     isActive: isInstrumentModeActive,
   });
 
-  // Sync instrument mode to engine; deactivate on unmount
-  useEffect(() => {
-    audioEngine.setInstrumentMode(isInstrumentModeActive);
-  }, [isInstrumentModeActive]);
-
+  // Exit instrument mode on unmount
   useEffect(() => {
     return () => {
-      audioEngine.setInstrumentMode(false);
       if (useAppStore.getState().isInstrumentModeActive) {
-        useAppStore.getState().toggleInstrumentMode();
+        useAppStore.getState().exitInstrumentMode();
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        audioEngine.exitInstrumentMode().catch(() => {});
       }
     };
   }, []);
 
-  const handleVoiceChange = useCallback(
+  const handleActivate = useCallback(async () => {
+    if (isActivating) return;
+    setIsActivating(true);
+    try {
+      await audioEngine.enterInstrumentMode();
+      enterInstrumentMode();
+      const catalog = await audioEngine.requestSampleCatalog();
+      setSampleCatalog(catalog);
+      if (catalog.length > 0) {
+        const firstSrcn = catalog[0].srcn;
+        setSelectedSrcn(firstSrcn);
+        audioEngine.setInstrumentSample(firstSrcn);
+      }
+    } finally {
+      setIsActivating(false);
+    }
+  }, [isActivating, enterInstrumentMode, setSampleCatalog, setSelectedSrcn]);
+
+  const handleDeactivate = useCallback(async () => {
+    exitInstrumentMode();
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    await audioEngine.exitInstrumentMode().catch(() => {});
+  }, [exitInstrumentMode]);
+
+  const handleSampleChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
-      const index = Number(e.target.value);
-      setActiveInstrument(index);
-      void navigate({
-        to: '/instrument',
-        search: (prev) => ({ ...prev, instrument: index }),
-        replace: true,
-      });
+      const srcn = Number(e.target.value);
+      setSelectedSrcn(srcn);
+      audioEngine.setInstrumentSample(srcn);
     },
-    [setActiveInstrument, navigate],
+    [setSelectedSrcn],
   );
 
   // Placeholder ADSR values — these would come from reading DSP registers
@@ -111,37 +125,29 @@ export function InstrumentView() {
       </VisuallyHidden.Root>
 
       <div className={styles.header}>
-        <div className={styles.selectorGroup}>
-          <Label htmlFor={selectorId}>Voice</Label>
-          <select
-            id={selectorId}
-            value={selectedVoice}
-            onChange={handleVoiceChange}
-            className={styles.voiceSelect}
-            aria-label="Select voice"
-          >
-            {VOICE_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <h2 className={styles.sectionHeading}>Instrument</h2>
 
         <div className={styles.statusGroup}>
-          <Button
-            variant="secondary"
-            size="sm"
-            aria-pressed={isInstrumentModeActive}
-            onClick={toggleInstrumentMode}
-            className={
-              isInstrumentModeActive
-                ? styles.modeToggleActive
-                : styles.modeToggle
-            }
-          >
-            Keyboard Mode
-          </Button>
+          {isInstrumentModeActive ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDeactivate}
+              className={styles.modeToggleActive}
+            >
+              Exit Instrument Mode
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleActivate}
+              disabled={!hasSpcLoaded || isActivating}
+              className={styles.modeToggle}
+            >
+              {isActivating ? 'Activating…' : 'Enter Instrument Mode'}
+            </Button>
+          )}
           {midi.connectedDevices.length > 0 && (
             <span className={styles.midiBadge} aria-hidden="true">
               MIDI Connected
@@ -157,48 +163,81 @@ export function InstrumentView() {
         </div>
       </div>
 
-      <div className={styles.content}>
-        <section
-          aria-label="Virtual keyboard"
-          className={styles.keyboardSection}
-        >
-          <VirtualKeyboard
-            baseOctave={keyboard.baseOctave}
-            octaveCount={2}
-            activeNotes={keyboard.activeNotes}
-            isInstrumentMode={keyboard.isActive}
-            onNoteOn={handleNoteOn}
-            onNoteOff={handleNoteOff}
-          />
-        </section>
-
-        <div className={styles.sidePanel}>
-          <section
-            aria-label="Instrument controls"
-            className={styles.controlsSection}
-          >
-            <h2 className={styles.sectionHeading}>Controls</h2>
-            <InstrumentControls
-              pitchShift={pitchShift}
-              gain={gain}
-              filterCutoff={filterCutoff}
-              onPitchShiftChange={setPitchShift}
-              onGainChange={setGain}
-              onFilterCutoffChange={setFilterCutoff}
-            />
-          </section>
-
-          <section aria-label="ADSR envelope" className={styles.adsrSection}>
-            <h2 className={styles.sectionHeading}>ADSR Envelope</h2>
-            <AdsrDisplay
-              attack={adsrState.attack}
-              decay={adsrState.decay}
-              sustain={adsrState.sustain}
-              release={adsrState.release}
-            />
-          </section>
+      {!hasSpcLoaded && !isInstrumentModeActive && (
+        <div className={styles.emptyState}>
+          <p>Load an SPC file to use instrument mode.</p>
         </div>
-      </div>
+      )}
+
+      {hasSpcLoaded && !isInstrumentModeActive && (
+        <div className={styles.emptyState}>
+          <p>Enter instrument mode to play samples from the loaded SPC file.</p>
+        </div>
+      )}
+
+      {isInstrumentModeActive && (
+        <div className={styles.content}>
+          <div className={styles.selectorGroup}>
+            <Label htmlFor={selectorId}>Sample</Label>
+            <select
+              id={selectorId}
+              value={selectedSrcn ?? ''}
+              onChange={handleSampleChange}
+              className={styles.sampleSelect}
+              aria-label="Select sample"
+            >
+              {sampleCatalog.map((sample: SampleEntry) => (
+                <option key={sample.srcn} value={sample.srcn}>
+                  #{String(sample.srcn).padStart(3, '0')} — {sample.lengthBytes}{' '}
+                  bytes
+                  {sample.loops ? ' ♻ Loop' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <section
+            aria-label="Virtual keyboard"
+            className={styles.keyboardSection}
+          >
+            <VirtualKeyboard
+              baseOctave={keyboard.baseOctave}
+              octaveCount={2}
+              activeNotes={keyboard.activeNotes}
+              isInstrumentMode={keyboard.isActive}
+              onNoteOn={handleNoteOn}
+              onNoteOff={handleNoteOff}
+            />
+          </section>
+
+          <div className={styles.sidePanel}>
+            <section
+              aria-label="Instrument controls"
+              className={styles.controlsSection}
+            >
+              <h2 className={styles.sectionHeading}>Controls</h2>
+              <InstrumentControls
+                pitchShift={pitchShift}
+                gain={gain}
+                filterCutoff={filterCutoff}
+                onPitchShiftChange={setPitchShift}
+                onGainChange={setGain}
+                onFilterCutoffChange={setFilterCutoff}
+              />
+            </section>
+
+            <section aria-label="ADSR envelope" className={styles.adsrSection}>
+              <h2 className={styles.sectionHeading}>ADSR Envelope</h2>
+              <AdsrDisplay
+                attack={adsrState.attack}
+                decay={adsrState.decay}
+                sustain={adsrState.sustain}
+                release={adsrState.release}
+              />
+            </section>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -37,7 +37,7 @@ describe('A-B loop unit conversion', () => {
   });
 });
 
-describe('toggleInstrumentMode', () => {
+describe('enterInstrumentMode / exitInstrumentMode', () => {
   let store: ReturnType<typeof createTestStore>;
 
   beforeEach(() => {
@@ -48,14 +48,14 @@ describe('toggleInstrumentMode', () => {
     expect(store.getState().isInstrumentModeActive).toBe(false);
   });
 
-  it('toggles to active', () => {
-    store.getState().toggleInstrumentMode();
+  it('enters instrument mode', () => {
+    store.getState().enterInstrumentMode();
     expect(store.getState().isInstrumentModeActive).toBe(true);
   });
 
-  it('toggles back to inactive', () => {
-    store.getState().toggleInstrumentMode();
-    store.getState().toggleInstrumentMode();
+  it('exits instrument mode', () => {
+    store.getState().enterInstrumentMode();
+    store.getState().exitInstrumentMode();
     expect(store.getState().isInstrumentModeActive).toBe(false);
   });
 });

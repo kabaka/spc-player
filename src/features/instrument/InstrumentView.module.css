@@ -17,9 +17,10 @@
   display: flex;
   align-items: center;
   gap: var(--spc-space-2);
+  margin-bottom: var(--spc-space-2);
 }
 
-.voiceSelect {
+.sampleSelect {
   font-family: var(--spc-font-sans);
   font-size: var(--spc-font-size-sm);
   padding: var(--spc-space-1) var(--spc-space-2);
@@ -27,6 +28,18 @@
   color: var(--spc-color-text);
   border: 1px solid var(--spc-color-border);
   border-radius: var(--spc-radius-sm);
+  min-width: 200px;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--spc-color-text-secondary);
+  font-size: var(--spc-font-size-sm);
+  text-align: center;
+  padding: var(--spc-space-6);
 }
 
 .statusGroup {

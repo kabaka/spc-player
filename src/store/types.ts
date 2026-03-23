@@ -1,6 +1,7 @@
 /// <reference types="zustand/middleware" />
 import type { StateCreator } from 'zustand';
 
+import type { SampleEntry } from '@/audio/worker-protocol';
 import type { SpcMetadata } from '@/core/spc-types';
 
 // ── Domain types ──────────────────────────────────────────────────────
@@ -146,11 +147,13 @@ export interface SettingsSlice {
 }
 
 export interface InstrumentSlice {
-  activeInstrumentIndex: number | null;
+  selectedSrcn: number | null;
+  sampleCatalog: SampleEntry[];
   isMidiConnected: boolean;
-  setActiveInstrument: (index: number | null) => void;
+  setSelectedSrcn: (srcn: number | null) => void;
+  setSampleCatalog: (catalog: SampleEntry[]) => void;
   setMidiConnected: (connected: boolean) => void;
-  resetInstrument: () => void;
+  clearInstrumentState: () => void;
 }
 
 export interface UISlice {
@@ -162,7 +165,8 @@ export interface UISlice {
   setIsLoadingTrack: (loading: boolean) => void;
   setLoadingError: (error: string | null) => void;
   setIsExportDialogOpen: (open: boolean) => void;
-  toggleInstrumentMode: () => void;
+  enterInstrumentMode: () => void;
+  exitInstrumentMode: () => void;
   setPlaybackAnnouncement: (text: string) => void;
 }
 
