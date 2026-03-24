@@ -420,7 +420,11 @@ class AudioEngine {
           // Insert instrument gain node into audio graph
           if (this.audioContext && this.workletNode && this.gainNode) {
             this.instrumentGainNode = this.audioContext.createGain();
-            this.workletNode.disconnect(this.gainNode);
+            // Bypass SoundTouch if active
+            if (this.soundTouchNode) {
+              this.soundTouchNode.disconnect();
+            }
+            this.workletNode.disconnect();
             this.workletNode.connect(this.instrumentGainNode);
             this.instrumentGainNode.connect(this.gainNode);
           }
@@ -445,10 +449,16 @@ class AudioEngine {
   async exitInstrumentMode(): Promise<void> {
     // Remove instrument gain node before sending exit command
     if (this.instrumentGainNode && this.workletNode && this.gainNode) {
-      this.workletNode.disconnect(this.instrumentGainNode);
+      this.workletNode.disconnect();
       this.instrumentGainNode.disconnect();
       this.instrumentGainNode = null;
-      this.workletNode.connect(this.gainNode);
+      // Restore SoundTouch if it was previously active
+      if (this.soundTouchNode && this.isSoundTouchActive()) {
+        this.workletNode.connect(this.soundTouchNode);
+        this.soundTouchNode.connect(this.gainNode);
+      } else {
+        this.workletNode.connect(this.gainNode);
+      }
     }
 
     return new Promise<void>((resolve, reject) => {

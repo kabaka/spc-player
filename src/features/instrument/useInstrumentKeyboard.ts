@@ -36,6 +36,12 @@ export function useInstrumentKeyboard(
 
   const [baseOctave, setBaseOctave] = useState(DEFAULT_OCTAVE);
   const [velocity, setVelocity] = useState(DEFAULT_VELOCITY);
+
+  const baseOctaveRef = useRef(baseOctave);
+  baseOctaveRef.current = baseOctave;
+
+  const velocityRef = useRef(velocity);
+  velocityRef.current = velocity;
   const [activeNotes, setActiveNotes] = useState<ReadonlySet<number>>(
     new Set(),
   );
@@ -107,14 +113,14 @@ export function useInstrumentKeyboard(
       // Note keys
       if (ALL_NOTE_MAPPINGS.has(code)) {
         event.preventDefault();
-        const midiNote = codeToMidiNote(code, baseOctave);
+        const midiNote = codeToMidiNote(code, baseOctaveRef.current);
         if (midiNote === null) return;
 
         // Avoid retriggering if the key is already down
         if (pressedKeysRef.current.has(code)) return;
 
         pressedKeysRef.current.set(code, midiNote);
-        onNoteOnRef.current(midiNote, velocity);
+        onNoteOnRef.current(midiNote, velocityRef.current);
         setActiveNotes(new Set(pressedKeysRef.current.values()));
       }
     };
@@ -136,7 +142,7 @@ export function useInstrumentKeyboard(
       document.removeEventListener('keydown', handleKeyDown, { capture: true });
       document.removeEventListener('keyup', handleKeyUp, { capture: true });
     };
-  }, [isActive, baseOctave, velocity]);
+  }, [isActive]);
 
   return {
     isActive,

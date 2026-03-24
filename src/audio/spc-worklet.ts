@@ -97,12 +97,10 @@ class SpcProcessor extends AudioWorkletProcessor {
   private instrumentVoices: {
     active: boolean;
     midiNote: number;
-    basePitch: number;
     releasing: boolean;
   }[] = Array.from({ length: 8 }, () => ({
     active: false,
     midiNote: -1,
-    basePitch: 0,
     releasing: false,
   }));
   private instrumentGain = 0x7f;
@@ -672,7 +670,6 @@ class SpcProcessor extends AudioWorkletProcessor {
         this.instrumentVoices[freeVoice] = {
           active: true,
           midiNote: onMidiNote,
-          basePitch: onPitch,
           releasing: false,
         };
         break;
@@ -1417,9 +1414,15 @@ class SpcProcessor extends AudioWorkletProcessor {
     this.wasm.dsp_set_register(0x5c, koffToWrite);
     this.pendingKoffMask = 0;
 
-    // Trigger all pending KONs
+    // Trigger all pending KONs (apply current pitch offset)
     for (const noteOn of this.pendingNoteOns) {
-      this.wasm.dsp_voice_note_on(noteOn.voice, noteOn.pitch);
+      const slot = this.instrumentVoices[noteOn.voice];
+      const adjustedMidi = slot.midiNote + this.instrumentPitchOffset;
+      const adjustedPitch = Math.round(
+        0x1000 * Math.pow(2, (adjustedMidi - 60) / 12),
+      );
+      const clamped = Math.max(0, Math.min(0x3fff, adjustedPitch));
+      this.wasm.dsp_voice_note_on(noteOn.voice, clamped);
     }
     this.pendingNoteOns.length = 0;
   }
@@ -1535,7 +1538,6 @@ class SpcProcessor extends AudioWorkletProcessor {
     for (const slot of this.instrumentVoices) {
       slot.active = false;
       slot.midiNote = -1;
-      slot.basePitch = 0;
       slot.releasing = false;
     }
     this.pendingKoffMask = 0;
