@@ -150,9 +150,13 @@ export interface InstrumentSlice {
   selectedSrcn: number | null;
   sampleCatalog: SampleEntry[];
   isMidiConnected: boolean;
+  pitchShift: number;
+  gain: number;
   setSelectedSrcn: (srcn: number | null) => void;
   setSampleCatalog: (catalog: SampleEntry[]) => void;
   setMidiConnected: (connected: boolean) => void;
+  setPitchShift: (value: number) => void;
+  setGain: (value: number) => void;
   clearInstrumentState: () => void;
 }
 

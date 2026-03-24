@@ -139,6 +139,14 @@
 }
 
 /* ============================================================
+   INSTRUMENT SIDEBAR (right — visible at ≥1024px on instrument route)
+   ============================================================ */
+
+.instrumentSidebar {
+  display: none;
+}
+
+/* ============================================================
    MAIN CONTENT
    ============================================================ */
 
@@ -210,6 +218,16 @@
   .main {
     padding: var(--spc-space-6);
     padding-bottom: calc(var(--spc-space-6) + var(--spc-transport-bar-height));
+  }
+
+  .instrumentSidebar {
+    display: block;
+    width: 280px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--spc-color-border);
+    overflow-y: auto;
+    padding: var(--spc-space-4);
+    padding-bottom: var(--spc-transport-bar-height);
   }
 }
 

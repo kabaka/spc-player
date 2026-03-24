@@ -1,0 +1,20 @@
+/* InstrumentSidebarContent.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-6);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spc-space-2);
+}
+
+.sectionHeading {
+  font-size: var(--spc-font-size-sm);
+  font-weight: 600;
+  color: var(--spc-color-text-secondary);
+  margin: 0;
+}

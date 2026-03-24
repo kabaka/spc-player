@@ -84,18 +84,18 @@ describe('useInstrumentKeyboard', () => {
     expect(result.current.baseOctave).toBe(5);
   });
 
-  it('adjusts velocity down with BracketLeft', () => {
+  it('adjusts velocity down with Shift+ArrowLeft', () => {
     const { result } = renderIt(true);
 
     expect(result.current.velocity).toBe(100);
-    act(() => fireKey('keydown', 'BracketLeft'));
+    act(() => fireKey('keydown', 'ArrowLeft', { shiftKey: true }));
     expect(result.current.velocity).toBe(84);
   });
 
-  it('adjusts velocity up with BracketRight', () => {
+  it('adjusts velocity up with Shift+ArrowRight', () => {
     const { result } = renderIt(true);
 
-    act(() => fireKey('keydown', 'BracketRight'));
+    act(() => fireKey('keydown', 'ArrowRight', { shiftKey: true }));
     expect(result.current.velocity).toBe(116);
   });
 

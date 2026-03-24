@@ -8,10 +8,8 @@ import styles from './InstrumentControls.module.css';
 export interface InstrumentControlsProps {
   pitchShift: number;
   gain: number;
-  filterCutoff: number;
   onPitchShiftChange: (value: number) => void;
   onGainChange: (value: number) => void;
-  onFilterCutoffChange: (value: number) => void;
 }
 
 function formatPitchShift(value: number): string {
@@ -24,21 +22,14 @@ function formatGain(value: number): string {
   return `${value}%`;
 }
 
-function formatCutoff(value: number): string {
-  return `${value}%`;
-}
-
 export function InstrumentControls({
   pitchShift,
   gain,
-  filterCutoff,
   onPitchShiftChange,
   onGainChange,
-  onFilterCutoffChange,
 }: InstrumentControlsProps) {
   const pitchId = useId();
   const gainId = useId();
-  const cutoffId = useId();
 
   return (
     <div className={styles.container}>
@@ -49,8 +40,8 @@ export function InstrumentControls({
         <Slider
           value={[pitchShift]}
           onValueChange={([v]) => onPitchShiftChange(v)}
-          min={-24}
-          max={24}
+          min={-48}
+          max={48}
           step={1}
           aria-labelledby={pitchId}
           aria-valuetext={formatPitchShift(pitchShift)}
@@ -75,24 +66,6 @@ export function InstrumentControls({
         />
         <span className={styles.valueDisplay} aria-hidden="true">
           {formatGain(gain)}
-        </span>
-      </div>
-
-      <div className={styles.controlGroup}>
-        <Label htmlFor={cutoffId} className={styles.label}>
-          Filter cutoff
-        </Label>
-        <Slider
-          value={[filterCutoff]}
-          onValueChange={([v]) => onFilterCutoffChange(v)}
-          min={0}
-          max={100}
-          step={1}
-          aria-labelledby={cutoffId}
-          aria-valuetext={formatCutoff(filterCutoff)}
-        />
-        <span className={styles.valueDisplay} aria-hidden="true">
-          {formatCutoff(filterCutoff)}
         </span>
       </div>
     </div>

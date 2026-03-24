@@ -181,12 +181,16 @@ describe('note-mapping', () => {
       }
     });
 
-    it('includes octave and velocity control codes', () => {
+    it('includes octave control codes', () => {
       const claimed = getClaimedCodes();
       expect(claimed.has('Minus')).toBe(true);
       expect(claimed.has('Equal')).toBe(true);
-      expect(claimed.has('BracketLeft')).toBe(true);
-      expect(claimed.has('BracketRight')).toBe(true);
+    });
+
+    it('does NOT include BracketLeft/BracketRight (now passthrough)', () => {
+      const claimed = getClaimedCodes();
+      expect(claimed.has('BracketLeft')).toBe(false);
+      expect(claimed.has('BracketRight')).toBe(false);
     });
 
     it('does NOT include passthrough codes', () => {
@@ -198,7 +202,7 @@ describe('note-mapping', () => {
   });
 
   describe('getPassthroughCodes', () => {
-    it('includes Space, Escape, arrows, and Tab', () => {
+    it('includes Space, Escape, arrows, Tab, and bracket keys', () => {
       const passthrough = getPassthroughCodes();
       expect(passthrough.has('Space')).toBe(true);
       expect(passthrough.has('Escape')).toBe(true);
@@ -207,6 +211,8 @@ describe('note-mapping', () => {
       expect(passthrough.has('ArrowLeft')).toBe(true);
       expect(passthrough.has('ArrowRight')).toBe(true);
       expect(passthrough.has('Tab')).toBe(true);
+      expect(passthrough.has('BracketLeft')).toBe(true);
+      expect(passthrough.has('BracketRight')).toBe(true);
     });
   });
 

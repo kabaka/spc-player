@@ -1,24 +1,21 @@
 import { VisuallyHidden } from 'radix-ui';
 import type { ChangeEvent } from 'react';
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 
 import { audioEngine } from '@/audio/engine';
 import type { SampleEntry } from '@/audio/worker-protocol';
 import { Button } from '@/components/Button/Button';
 import { Label } from '@/components/Label/Label';
+import { VisualizationStage } from '@/components/VisualizationStage/VisualizationStage';
 import { useMidi } from '@/hooks/useMidi';
+import { useShortcut } from '@/shortcuts/useShortcut';
 import { useAppStore } from '@/store/store';
 
-import { AdsrDisplay } from './AdsrDisplay';
 import { InstrumentControls } from './InstrumentControls';
 import styles from './InstrumentView.module.css';
 import { midiNoteToPitch } from './note-mapping';
 import { useInstrumentKeyboard } from './useInstrumentKeyboard';
 import { VirtualKeyboard } from './VirtualKeyboard';
-
-// ── Constants ─────────────────────────────────────────────────────────
-
-const INSTRUMENT_VOICE = 0;
 
 // ── Component ─────────────────────────────────────────────────────────
 
@@ -33,26 +30,26 @@ export function InstrumentView() {
   const sampleCatalog = useAppStore((s) => s.sampleCatalog);
   const setSampleCatalog = useAppStore((s) => s.setSampleCatalog);
   const metadata = useAppStore((s) => s.metadata);
+  const pitchShift = useAppStore((s) => s.pitchShift);
+  const setPitchShift = useAppStore((s) => s.setPitchShift);
+  const gain = useAppStore((s) => s.gain);
+  const setGain = useAppStore((s) => s.setGain);
 
   const hasSpcLoaded = metadata !== null;
 
-  // ── Slider state ──────────────────────────────────────────────────────────
-  const [pitchShift, setPitchShift] = useState(0);
-  const [gain, setGain] = useState(100);
-  const [filterCutoff, setFilterCutoff] = useState(100);
   const [isActivating, setIsActivating] = useState(false);
 
   const handleNoteOn = useCallback(
     (midiNote: number, _velocity?: number) => {
       const adjustedMidi = midiNote + pitchShift;
       const pitch = midiNoteToPitch(adjustedMidi, 60);
-      audioEngine.noteOn(INSTRUMENT_VOICE, pitch);
+      audioEngine.instrumentNoteOn(midiNote, pitch);
     },
     [pitchShift],
   );
 
-  const handleNoteOff = useCallback((_midiNote: number) => {
-    audioEngine.noteOff(INSTRUMENT_VOICE);
+  const handleNoteOff = useCallback((midiNote: number) => {
+    audioEngine.instrumentNoteOff(midiNote);
   }, []);
 
   const midi = useMidi({ onNoteOn: handleNoteOn, onNoteOff: handleNoteOff });
@@ -107,61 +104,54 @@ export function InstrumentView() {
     [setSelectedSrcn],
   );
 
-  // Placeholder ADSR values — these would come from reading DSP registers
-  const adsrState = useMemo(
-    () => ({
-      attack: 10,
-      decay: 5,
-      sustain: 4,
-      release: 20,
-    }),
-    [],
+  const handleGainChange = useCallback(
+    (value: number) => {
+      setGain(value);
+      audioEngine.setInstrumentGainValue(value);
+    },
+    [setGain],
   );
+
+  const handlePitchShiftChange = useCallback(
+    (value: number) => {
+      setPitchShift(value);
+      audioEngine.setInstrumentPitchOffset(value);
+    },
+    [setPitchShift],
+  );
+
+  // Sample navigation shortcuts
+  useShortcut('instrument.previousSample', () => {
+    const { sampleCatalog, selectedSrcn } = useAppStore.getState();
+    if (sampleCatalog.length === 0) return;
+    const currentIndex = sampleCatalog.findIndex(
+      (s) => s.srcn === selectedSrcn,
+    );
+    const nextIndex =
+      currentIndex <= 0 ? sampleCatalog.length - 1 : currentIndex - 1;
+    const newSrcn = sampleCatalog[nextIndex].srcn;
+    setSelectedSrcn(newSrcn);
+    audioEngine.setInstrumentSample(newSrcn);
+  });
+
+  useShortcut('instrument.nextSample', () => {
+    const { sampleCatalog, selectedSrcn } = useAppStore.getState();
+    if (sampleCatalog.length === 0) return;
+    const currentIndex = sampleCatalog.findIndex(
+      (s) => s.srcn === selectedSrcn,
+    );
+    const nextIndex =
+      currentIndex >= sampleCatalog.length - 1 ? 0 : currentIndex + 1;
+    const newSrcn = sampleCatalog[nextIndex].srcn;
+    setSelectedSrcn(newSrcn);
+    audioEngine.setInstrumentSample(newSrcn);
+  });
 
   return (
     <main aria-label="Instrument" className={styles.view}>
       <VisuallyHidden.Root>
         <h1>Instrument</h1>
       </VisuallyHidden.Root>
-
-      <div className={styles.header}>
-        <h2 className={styles.sectionHeading}>Instrument</h2>
-
-        <div className={styles.statusGroup}>
-          {isInstrumentModeActive ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDeactivate}
-              className={styles.modeToggleActive}
-            >
-              Exit Instrument Mode
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleActivate}
-              disabled={!hasSpcLoaded || isActivating}
-              className={styles.modeToggle}
-            >
-              {isActivating ? 'Activating…' : 'Enter Instrument Mode'}
-            </Button>
-          )}
-          {midi.connectedDevices.length > 0 && (
-            <span className={styles.midiBadge} aria-hidden="true">
-              MIDI Connected
-            </span>
-          )}
-        </div>
-
-        <div aria-live="polite" className={styles.srOnly}>
-          {midi.announcement ||
-            (keyboard.isActive
-              ? 'Instrument keyboard mode active. Use Z through M for lower octave, Q through U for upper octave.'
-              : '')}
-        </div>
-      </div>
 
       {!hasSpcLoaded && !isInstrumentModeActive && (
         <div className={styles.emptyState}>
@@ -177,6 +167,46 @@ export function InstrumentView() {
 
       {isInstrumentModeActive && (
         <div className={styles.content}>
+          <div className={styles.visualizationSection}>
+            <VisualizationStage lockedMode="piano-roll" />
+          </div>
+
+          <div className={styles.header}>
+            <h2 className={styles.sectionHeading}>Instrument</h2>
+
+            <div className={styles.statusGroup}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleDeactivate}
+                className={styles.modeToggleActive}
+              >
+                Exit Instrument Mode
+              </Button>
+              {midi.connectedDevices.length > 0 && (
+                <span className={styles.midiBadge} aria-hidden="true">
+                  MIDI Connected
+                </span>
+              )}
+            </div>
+
+            <div aria-live="polite" className={styles.srOnly}>
+              {midi.announcement ||
+                (keyboard.isActive
+                  ? 'Instrument keyboard mode active. Use Z through M for lower octave, Q through U for upper octave.'
+                  : '')}
+            </div>
+          </div>
+
+          <div className={styles.inlineControls}>
+            <InstrumentControls
+              pitchShift={pitchShift}
+              gain={gain}
+              onPitchShiftChange={handlePitchShiftChange}
+              onGainChange={handleGainChange}
+            />
+          </div>
+
           <div className={styles.selectorGroup}>
             <Label htmlFor={selectorId}>Sample</Label>
             <select
@@ -209,32 +239,22 @@ export function InstrumentView() {
               onNoteOff={handleNoteOff}
             />
           </section>
+        </div>
+      )}
 
-          <div className={styles.sidePanel}>
-            <section
-              aria-label="Instrument controls"
-              className={styles.controlsSection}
+      {!isInstrumentModeActive && (
+        <div className={styles.header}>
+          <h2 className={styles.sectionHeading}>Instrument</h2>
+          <div className={styles.statusGroup}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleActivate}
+              disabled={!hasSpcLoaded || isActivating}
+              className={styles.modeToggle}
             >
-              <h2 className={styles.sectionHeading}>Controls</h2>
-              <InstrumentControls
-                pitchShift={pitchShift}
-                gain={gain}
-                filterCutoff={filterCutoff}
-                onPitchShiftChange={setPitchShift}
-                onGainChange={setGain}
-                onFilterCutoffChange={setFilterCutoff}
-              />
-            </section>
-
-            <section aria-label="ADSR envelope" className={styles.adsrSection}>
-              <h2 className={styles.sectionHeading}>ADSR Envelope</h2>
-              <AdsrDisplay
-                attack={adsrState.attack}
-                decay={adsrState.decay}
-                sustain={adsrState.sustain}
-                release={adsrState.release}
-              />
-            </section>
+              {isActivating ? 'Activating…' : 'Enter Instrument Mode'}
+            </Button>
           </div>
         </div>
       )}

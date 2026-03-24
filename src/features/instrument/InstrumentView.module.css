@@ -17,7 +17,6 @@
   display: flex;
   align-items: center;
   gap: var(--spc-space-2);
-  margin-bottom: var(--spc-space-2);
 }
 
 .sampleSelect {
@@ -88,28 +87,28 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: var(--spc-space-4);
   flex: 1;
   min-height: 0;
+  gap: var(--spc-space-2);
+}
+
+.visualizationSection {
+  flex: 1;
+  min-height: 160px;
+  border-radius: var(--spc-radius-md);
+  overflow: hidden;
+}
+
+.inlineControls {
+  display: flex;
+  gap: var(--spc-space-3);
+  align-items: center;
+  padding: var(--spc-space-2) 0;
 }
 
 .keyboardSection {
-  flex: 1;
+  flex-shrink: 0;
   min-width: 0;
-}
-
-.sidePanel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spc-space-4);
-  width: 100%;
-}
-
-.controlsSection,
-.adsrSection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spc-space-2);
 }
 
 .sectionHeading {
@@ -126,15 +125,13 @@
     gap: var(--spc-space-4);
     padding: var(--spc-space-4);
   }
+}
 
-  .content {
-    flex-direction: row;
-    gap: var(--spc-space-6);
-  }
+/* ── Desktop (≥ 1024px) — hide inline controls (sidebar has them) ─ */
 
-  .sidePanel {
-    width: 280px;
-    flex-shrink: 0;
+@media (min-width: 1024px) {
+  .inlineControls {
+    display: none;
   }
 }
 

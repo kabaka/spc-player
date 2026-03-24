@@ -90,4 +90,8 @@ export const defaultKeymap: ReadonlyMap<ShortcutActionId, ShortcutBinding> =
     binding('analysis.voicesTab', ['Alt+KeyV'], 'contextual'),
     binding('analysis.echoTab', ['Alt+KeyE'], 'contextual'),
     binding('analysis.toggleHexDecimal', ['KeyH'], 'contextual'),
+
+    // §2.10 Instrument
+    binding('instrument.previousSample', ['BracketLeft'], 'contextual'),
+    binding('instrument.nextSample', ['BracketRight'], 'contextual'),
   ]);

@@ -23,6 +23,11 @@ const OnboardingOverlay = lazy(() =>
     default: mod.OnboardingOverlay,
   })),
 );
+const InstrumentSidebarContent = lazy(() =>
+  import('@/features/instrument/InstrumentSidebarContent').then((mod) => ({
+    default: mod.InstrumentSidebarContent,
+  })),
+);
 import { BottomNav } from '@/components/BottomNav/BottomNav';
 import { DragDropOverlay } from '@/components/DragDropOverlay/DragDropOverlay';
 import { GamepadIcon } from '@/components/Icons/TransportIcons';
@@ -55,6 +60,8 @@ function RootComponent() {
   const [showHelp, setShowHelp] = useState(false);
   const announcement = useAppStore((s) => s.announcement);
   const hasTrack = useAppStore((s) => s.metadata !== null);
+  const isInstrumentRoute = location.pathname === '/instrument';
+  const isInstrumentModeActive = useAppStore((s) => s.isInstrumentModeActive);
 
   // Apply theme from Zustand store
   useTheme();
@@ -170,9 +177,19 @@ function RootComponent() {
             </ViewErrorBoundary>
           </main>
 
-          {hasTrack && (
+          {!isInstrumentRoute && hasTrack && (
             <aside className={styles.detailSidebar} aria-label="Track details">
               <MetadataPanel />
+            </aside>
+          )}
+          {isInstrumentRoute && isInstrumentModeActive && (
+            <aside
+              className={`${styles.detailSidebar} ${styles.instrumentSidebar}`}
+              aria-label="Instrument controls"
+            >
+              <Suspense fallback={null}>
+                <InstrumentSidebarContent />
+              </Suspense>
             </aside>
           )}
         </div>

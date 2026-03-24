@@ -92,8 +92,14 @@ function resizeCanvasToContainer(
 
 // ── Component ─────────────────────────────────────────────────────────
 
-export function VisualizationStage() {
-  const activeMode = useAppStore((s) => s.activeMode);
+export interface VisualizationStageProps {
+  lockedMode?: VisualizationMode;
+}
+
+export function VisualizationStage({ lockedMode }: VisualizationStageProps) {
+  const storeMode = useAppStore((s) => s.activeMode);
+  const effectiveMode = lockedMode ?? storeMode;
+  const showTabs = lockedMode === undefined;
   const setActiveMode = useAppStore((s) => s.setActiveMode);
   const gameTitle = useAppStore((s) => s.metadata?.gameTitle ?? null);
 
@@ -110,7 +116,7 @@ export function VisualizationStage() {
   // ── Tab keyboard navigation ─────────────────────────────────────
   const handleTabKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLButtonElement>) => {
-      const currentIndex = TABS.findIndex((t) => t.mode === activeMode);
+      const currentIndex = TABS.findIndex((t) => t.mode === effectiveMode);
       let nextIndex = currentIndex;
 
       switch (e.key) {
@@ -139,7 +145,7 @@ export function VisualizationStage() {
         document.getElementById(tabId)?.focus();
       });
     },
-    [activeMode, setActiveMode],
+    [effectiveMode, setActiveMode],
   );
 
   // ── rAF loop and renderer lifecycle ─────────────────────────────
@@ -160,7 +166,7 @@ export function VisualizationStage() {
     motionQuery.addEventListener('change', onMotionChange);
 
     // ── Create and initialize renderer ──────────────────────────
-    const renderer = createRenderer(activeMode);
+    const renderer = createRenderer(effectiveMode);
     rendererRef.current = renderer;
 
     const dims = resizeCanvasToContainer(canvas, wrapper);
@@ -221,7 +227,7 @@ export function VisualizationStage() {
       data.spectrumSettings = undefined;
 
       // Read AnalyserNode FFT data when spectrum mode is active
-      if (activeMode === 'spectrum') {
+      if (effectiveMode === 'spectrum') {
         if (!analyserNode) {
           analyserNode = audioEngine.getAnalyserNode();
         }
@@ -295,7 +301,7 @@ export function VisualizationStage() {
       if (
         data.generation === lastGenerationRef.current &&
         !reduceMotion &&
-        activeMode !== 'spectrum'
+        effectiveMode !== 'spectrum'
       ) {
         return;
       }
@@ -339,16 +345,16 @@ export function VisualizationStage() {
       frameCountRef.current = 0;
       isMobileRef.current = false;
     };
-  }, [activeMode]);
+  }, [effectiveMode]);
 
   // ── Derive aria-label for the canvas wrapper ────────────────────
   const canvasAriaLabel =
-    activeMode === 'cover-art' && gameTitle
+    effectiveMode === 'cover-art' && gameTitle
       ? `Cover art for ${gameTitle}`
-      : ARIA_LABELS[activeMode];
+      : ARIA_LABELS[effectiveMode];
 
   const panelId = 'viz-panel';
-  const activeTabId = `viz-tab-${activeMode}`;
+  const activeTabId = `viz-tab-${effectiveMode}`;
 
   return (
     <div className={styles.stage}>
@@ -358,30 +364,32 @@ export function VisualizationStage() {
       </a>
 
       {/* Tab bar */}
-      <div
-        role="tablist"
-        aria-label="Visualization modes"
-        className={styles.tabBar}
-      >
-        {TABS.map((tab) => {
-          const isSelected = tab.mode === activeMode;
-          return (
-            <button
-              key={tab.mode}
-              id={`viz-tab-${tab.mode}`}
-              role="tab"
-              aria-selected={isSelected}
-              aria-controls={panelId}
-              tabIndex={isSelected ? 0 : -1}
-              className={styles.tab}
-              onClick={() => setActiveMode(tab.mode)}
-              onKeyDown={handleTabKeyDown}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {showTabs && (
+        <div
+          role="tablist"
+          aria-label="Visualization modes"
+          className={styles.tabBar}
+        >
+          {TABS.map((tab) => {
+            const isSelected = tab.mode === effectiveMode;
+            return (
+              <button
+                key={tab.mode}
+                id={`viz-tab-${tab.mode}`}
+                role="tab"
+                aria-selected={isSelected}
+                aria-controls={panelId}
+                tabIndex={isSelected ? 0 : -1}
+                className={styles.tab}
+                onClick={() => setActiveMode(tab.mode)}
+                onKeyDown={handleTabKeyDown}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Tab panel + Canvas */}
       <div

@@ -10,9 +10,7 @@ import {
   getPassthroughCodes,
   OCTAVE_DOWN_CODE,
   OCTAVE_UP_CODE,
-  VELOCITY_DOWN_CODE,
   VELOCITY_STEP,
-  VELOCITY_UP_CODE,
 } from './note-mapping';
 
 export interface UseInstrumentKeyboardOptions {
@@ -71,10 +69,22 @@ export function useInstrumentKeyboard(
     if (!isActive) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Modifier combos bypass instrument mode
+      // Modifier combos bypass instrument mode (except Shift for velocity)
       if (event.ctrlKey || event.metaKey || event.altKey) return;
 
       const { code } = event;
+
+      // Velocity controls (Shift+Arrow)
+      if (code === 'ArrowLeft' && event.shiftKey) {
+        event.preventDefault();
+        setVelocity((prev) => clampVelocity(prev - VELOCITY_STEP));
+        return;
+      }
+      if (code === 'ArrowRight' && event.shiftKey) {
+        event.preventDefault();
+        setVelocity((prev) => clampVelocity(prev + VELOCITY_STEP));
+        return;
+      }
 
       // Passthrough: let these fall through to global shortcuts
       if (PASSTHROUGH_CODES.has(code)) return;
@@ -91,18 +101,6 @@ export function useInstrumentKeyboard(
       if (code === OCTAVE_UP_CODE) {
         event.preventDefault();
         setBaseOctave((prev) => clampOctave(prev + 1));
-        return;
-      }
-
-      // Velocity controls
-      if (code === VELOCITY_DOWN_CODE) {
-        event.preventDefault();
-        setVelocity((prev) => clampVelocity(prev - VELOCITY_STEP));
-        return;
-      }
-      if (code === VELOCITY_UP_CODE) {
-        event.preventDefault();
-        setVelocity((prev) => clampVelocity(prev + VELOCITY_STEP));
         return;
       }
 

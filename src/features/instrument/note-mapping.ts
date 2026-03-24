@@ -63,8 +63,6 @@ export const ALL_NOTE_MAPPINGS: ReadonlyMap<string, NoteMapping> = new Map(
 
 export const OCTAVE_DOWN_CODE = 'Minus';
 export const OCTAVE_UP_CODE = 'Equal';
-export const VELOCITY_DOWN_CODE = 'BracketLeft';
-export const VELOCITY_UP_CODE = 'BracketRight';
 
 const NOTE_NAMES = [
   'C',
@@ -145,8 +143,6 @@ export function getClaimedCodes(): ReadonlySet<string> {
   }
   codes.add(OCTAVE_DOWN_CODE);
   codes.add(OCTAVE_UP_CODE);
-  codes.add(VELOCITY_DOWN_CODE);
-  codes.add(VELOCITY_UP_CODE);
   return codes;
 }
 
@@ -161,6 +157,8 @@ export function getPassthroughCodes(): ReadonlySet<string> {
     'Escape',
     'Tab',
     'Backquote',
+    'BracketLeft',
+    'BracketRight',
   ]);
 }
 

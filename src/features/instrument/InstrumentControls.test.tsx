@@ -11,17 +11,14 @@ describe('InstrumentControls', () => {
   const defaultProps = {
     pitchShift: 0,
     gain: 100,
-    filterCutoff: 75,
     onPitchShiftChange: vi.fn(),
     onGainChange: vi.fn(),
-    onFilterCutoffChange: vi.fn(),
   };
 
-  it('renders 3 labeled sliders', () => {
+  it('renders 2 labeled sliders', () => {
     render(<InstrumentControls {...defaultProps} />);
     expect(screen.getByText('Pitch shift')).toBeInTheDocument();
     expect(screen.getByText('Gain')).toBeInTheDocument();
-    expect(screen.getByText('Filter cutoff')).toBeInTheDocument();
   });
 
   it('displays formatted pitch shift value text', () => {
@@ -32,11 +29,6 @@ describe('InstrumentControls', () => {
   it('displays formatted gain value text', () => {
     render(<InstrumentControls {...defaultProps} gain={120} />);
     expect(screen.getByText('120%')).toBeInTheDocument();
-  });
-
-  it('displays formatted cutoff value text', () => {
-    render(<InstrumentControls {...defaultProps} filterCutoff={50} />);
-    expect(screen.getByText('50%')).toBeInTheDocument();
   });
 
   it('displays zero semitones correctly', () => {

@@ -65,7 +65,9 @@ export type ShortcutActionId =
   | 'analysis.voicesTab'
   | 'analysis.echoTab'
   | 'analysis.toggleHexDecimal'
-  | 'instrument.toggleKeyboard';
+  | 'instrument.toggleKeyboard'
+  | 'instrument.previousSample'
+  | 'instrument.nextSample';
 
 export interface ShortcutOptions {
   scope: ShortcutScope;

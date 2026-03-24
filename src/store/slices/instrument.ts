@@ -4,6 +4,8 @@ export const createInstrumentSlice: SliceCreator<InstrumentSlice> = (set) => ({
   selectedSrcn: null,
   sampleCatalog: [],
   isMidiConnected: false,
+  pitchShift: 0,
+  gain: 100,
 
   setSelectedSrcn: (srcn) => {
     set({ selectedSrcn: srcn }, false, 'instrument/setSelectedSrcn');
@@ -17,9 +19,23 @@ export const createInstrumentSlice: SliceCreator<InstrumentSlice> = (set) => ({
     set({ isMidiConnected: connected }, false, 'instrument/setMidiConnected');
   },
 
+  setPitchShift: (value) => {
+    set({ pitchShift: value }, false, 'instrument/setPitchShift');
+  },
+
+  setGain: (value) => {
+    set({ gain: value }, false, 'instrument/setGain');
+  },
+
   clearInstrumentState: () => {
     set(
-      { selectedSrcn: null, sampleCatalog: [], isMidiConnected: false },
+      {
+        selectedSrcn: null,
+        sampleCatalog: [],
+        isMidiConnected: false,
+        pitchShift: 0,
+        gain: 100,
+      },
       false,
       'instrument/clearInstrumentState',
     );
