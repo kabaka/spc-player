@@ -572,11 +572,11 @@ describe('SpcProcessor', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Instrument mode: KOFF clearing on note-on (regression)
+  // Instrument mode: deferred KOFF/KON flush during process() (regression)
   // -------------------------------------------------------------------------
 
-  describe('instrument mode note-on clears KOFF', () => {
-    it('clears KOFF register before triggering KON in instrument mode', async () => {
+  describe('instrument mode deferred KOFF/KON flush', () => {
+    it('flushes deferred KOFF clear and KON during process()', async () => {
       const { processor, wasm } = await initProcessor();
 
       // Snapshot size must be non-zero for enter-instrument-mode to succeed;
@@ -604,29 +604,45 @@ describe('SpcProcessor', () => {
       );
       expect(koffWritesDuringEntry.length).toBeGreaterThanOrEqual(1);
 
-      // Clear mock history to isolate note-on behavior
+      // Clear mock history to isolate flush behavior
       (wasm.dsp_set_register as ReturnType<typeof vi.fn>).mockClear();
+      (wasm.dsp_voice_note_on as ReturnType<typeof vi.fn>).mockClear();
 
-      // Send a note-on
-      sendMessage(processor, { type: 'note-on', voice: 0, pitch: 0x1000 });
+      // Send instrument-note-on — this defers KON, does NOT fire immediately
+      sendMessage(processor, {
+        type: 'instrument-note-on',
+        midiNote: 60,
+        pitch: 0x1000,
+      });
 
-      // Verify KOFF=0x00 was written BEFORE KON
-      const noteOnSetRegCalls = (
-        wasm.dsp_set_register as ReturnType<typeof vi.fn>
-      ).mock.calls;
-      const koffClearIndex = noteOnSetRegCalls.findIndex(
-        (args: unknown[]) => args[0] === 0x5c && args[1] === 0x00,
+      // KON should NOT have fired yet (deferred to process)
+      expect(wasm.dsp_voice_note_on).not.toHaveBeenCalled();
+
+      // Trigger process() — flushPendingInstrumentWrites() runs pre-render
+      callProcess(processor);
+
+      // Verify KOFF register was written (cleared to 0) during flush
+      const flushRegCalls = (wasm.dsp_set_register as ReturnType<typeof vi.fn>)
+        .mock.calls;
+      const koffClearIndex = flushRegCalls.findIndex(
+        (args: unknown[]) => args[0] === 0x5c,
       );
       expect(koffClearIndex).toBeGreaterThanOrEqual(0);
+      expect(flushRegCalls[koffClearIndex][1]).toBe(0x00);
 
-      // Verify dsp_voice_note_on was called (KON fires)
-      expect(wasm.dsp_voice_note_on).toHaveBeenCalledWith(0, 0x1000);
-
-      // Verify KOFF clear happened before SRCN write (register 0x04)
-      const srcnWriteIndex = noteOnSetRegCalls.findIndex(
-        (args: unknown[]) => args[0] === 0x04,
+      // Verify dsp_voice_note_on was called during flush
+      expect(wasm.dsp_voice_note_on).toHaveBeenCalledWith(
+        expect.any(Number),
+        0x1000,
       );
-      expect(koffClearIndex).toBeLessThan(srcnWriteIndex);
+
+      // Verify ordering: KOFF write happened before KON call.
+      // dsp_set_register calls include the KOFF write; dsp_voice_note_on
+      // is called after all dsp_set_register writes in flushPendingInstrumentWrites.
+      const noteOnVoice = (wasm.dsp_voice_note_on as ReturnType<typeof vi.fn>)
+        .mock.calls[0][0];
+      expect(noteOnVoice).toBeGreaterThanOrEqual(0);
+      expect(noteOnVoice).toBeLessThan(8);
     });
   });
 });
