@@ -94,7 +94,21 @@ class SpcProcessor extends AudioWorkletProcessor {
   private instrumentModeActive = false;
   private instrumentSnapshot: ArrayBuffer | null = null;
   private instrumentSrcn = 0;
-  private readonly instrumentVoice = 0;
+  private instrumentVoices: {
+    active: boolean;
+    midiNote: number;
+    basePitch: number;
+    releasing: boolean;
+  }[] = Array.from({ length: 8 }, () => ({
+    active: false,
+    midiNote: -1,
+    basePitch: 0,
+    releasing: false,
+  }));
+  private instrumentGain = 0x7f;
+  private instrumentPitchOffset = 0;
+  private pendingKoffMask = 0;
+  private pendingNoteOns: { voice: number; pitch: number }[] = [];
 
   // -- Voice state buffer (pre-allocated for telemetry) ---------------------
   private voiceStatePtr = 0;
@@ -246,6 +260,9 @@ class SpcProcessor extends AudioWorkletProcessor {
     }
 
     try {
+      // Flush deferred KOFF/KON writes before rendering (polyphonic instrument mode).
+      this.flushPendingInstrumentWrites();
+
       // D15: Measure processing time for load calculation.
       const processStart = hasPerformanceApi ? performance.now() : 0;
 
@@ -555,18 +572,7 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
           const clampedPitch = Math.max(0, Math.min(0x3fff, msg.pitch));
-          if (this.instrumentModeActive) {
-            // In instrument mode: always play on voice 0 with selected SRCN.
-            // Clear KOFF first — mode entry wrote KOFF=0xFF to silence all
-            // voices, and l_kof persists until explicitly cleared. Without
-            // this, every subsequent DSP sample re-applies key-off,
-            // canceling the note after a single sample (~31µs).
-            this.wasm.dsp_set_register(0x5c, 0x00);
-            this.wasm.dsp_set_register(0x04, this.instrumentSrcn);
-            this.wasm.dsp_voice_note_on(this.instrumentVoice, clampedPitch);
-          } else {
-            this.wasm.dsp_voice_note_on(msg.voice, clampedPitch);
-          }
+          this.wasm.dsp_voice_note_on(msg.voice, clampedPitch);
         }
         break;
       case 'note-off':
@@ -575,11 +581,7 @@ class SpcProcessor extends AudioWorkletProcessor {
           return;
         }
         if (this.wasm && msg.voice >= 0 && msg.voice <= 7) {
-          if (this.instrumentModeActive) {
-            this.wasm.dsp_voice_note_off(this.instrumentVoice);
-          } else {
-            this.wasm.dsp_voice_note_off(msg.voice);
-          }
+          this.wasm.dsp_voice_note_off(msg.voice);
         }
         break;
       case 'set-checkpoint-config':
@@ -624,6 +626,112 @@ class SpcProcessor extends AudioWorkletProcessor {
         }
         this.handleSetInstrumentSample(msg);
         break;
+      case 'instrument-note-on': {
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        if (!this.instrumentModeActive || !this.wasm) break;
+        const { midiNote: onMidiNote, pitch: onPitch } = msg;
+
+        // Check for duplicate — skip if already playing this note
+        let isDuplicate = false;
+        for (const slot of this.instrumentVoices) {
+          if (slot.active && !slot.releasing && slot.midiNote === onMidiNote) {
+            isDuplicate = true;
+            break;
+          }
+        }
+        if (isDuplicate) break;
+
+        // Find free voice
+        let freeVoice = -1;
+        for (let i = 0; i < 8; i++) {
+          if (!this.instrumentVoices[i].active) {
+            freeVoice = i;
+            break;
+          }
+        }
+
+        // Drop if all voices in use
+        if (freeVoice === -1) break;
+
+        // Set per-voice registers (safe to write immediately — not global)
+        const onVBase = freeVoice * 0x10;
+        this.wasm.dsp_set_register(onVBase + 0x04, this.instrumentSrcn);
+        this.wasm.dsp_set_register(onVBase + 0x00, this.instrumentGain);
+        this.wasm.dsp_set_register(onVBase + 0x01, this.instrumentGain);
+
+        // Cancel any pending KOFF for this voice (retrigger case)
+        this.pendingKoffMask &= ~(1 << freeVoice);
+
+        // Queue KON (deferred to process pre-render)
+        this.pendingNoteOns.push({ voice: freeVoice, pitch: onPitch });
+
+        // Track state
+        this.instrumentVoices[freeVoice] = {
+          active: true,
+          midiNote: onMidiNote,
+          basePitch: onPitch,
+          releasing: false,
+        };
+        break;
+      }
+      case 'instrument-note-off': {
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        if (!this.instrumentModeActive) break;
+        const { midiNote: offMidiNote } = msg;
+
+        for (let i = 0; i < 8; i++) {
+          const slot = this.instrumentVoices[i];
+          if (slot.active && !slot.releasing && slot.midiNote === offMidiNote) {
+            // Accumulate into KOFF bitmask (deferred)
+            this.pendingKoffMask |= 1 << i;
+            slot.releasing = true;
+            slot.active = false; // Voice slot is now free for reuse
+            break; // Only release one voice per note-off
+          }
+        }
+        break;
+      }
+      case 'instrument-set-gain': {
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.instrumentGain = Math.max(0, Math.min(127, msg.gain));
+        if (this.instrumentModeActive && this.wasm) {
+          for (let v = 0; v < 8; v++) {
+            this.wasm.dsp_set_register(v * 0x10 + 0x00, this.instrumentGain);
+            this.wasm.dsp_set_register(v * 0x10 + 0x01, this.instrumentGain);
+          }
+        }
+        break;
+      }
+      case 'instrument-set-pitch-offset': {
+        if (this.initPromise !== null && this.wasm === null) {
+          this.pendingMessages.push(msg);
+          return;
+        }
+        this.instrumentPitchOffset = msg.semitones;
+        if (this.instrumentModeActive && this.wasm) {
+          for (let v = 0; v < 8; v++) {
+            const slot = this.instrumentVoices[v];
+            if (!slot.active || slot.releasing) continue;
+            const adjustedMidi = slot.midiNote + this.instrumentPitchOffset;
+            const newPitch = Math.round(
+              0x1000 * Math.pow(2, (adjustedMidi - 60) / 12),
+            );
+            const clamped = Math.max(0, Math.min(0x3fff, newPitch));
+            this.wasm.dsp_set_register(v * 0x10 + 0x02, clamped & 0xff);
+            this.wasm.dsp_set_register(v * 0x10 + 0x03, (clamped >> 8) & 0x3f);
+          }
+        }
+        break;
+      }
     }
   }
 
@@ -1291,6 +1399,32 @@ class SpcProcessor extends AudioWorkletProcessor {
   }
 
   // =========================================================================
+  // Deferred KOFF/KON flush for polyphonic instrument mode
+  // =========================================================================
+
+  private flushPendingInstrumentWrites(): void {
+    if (!this.instrumentModeActive || !this.wasm) return;
+    if (this.pendingKoffMask === 0 && this.pendingNoteOns.length === 0) return;
+
+    // Compute KON bitmask
+    let konMask = 0;
+    for (const noteOn of this.pendingNoteOns) {
+      konMask |= 1 << noteOn.voice;
+    }
+
+    // Write KOFF: only for voices that are being released AND not re-triggered
+    const koffToWrite = this.pendingKoffMask & ~konMask;
+    this.wasm.dsp_set_register(0x5c, koffToWrite);
+    this.pendingKoffMask = 0;
+
+    // Trigger all pending KONs
+    for (const noteOn of this.pendingNoteOns) {
+      this.wasm.dsp_voice_note_on(noteOn.voice, noteOn.pitch);
+    }
+    this.pendingNoteOns.length = 0;
+  }
+
+  // =========================================================================
   // Instrument mode
   // =========================================================================
 
@@ -1366,24 +1500,22 @@ class SpcProcessor extends AudioWorkletProcessor {
     mem[ramBase + pc] = 0x2f; // BRA opcode
     mem[ramBase + pc + 1] = 0xfe; // offset -2 (branch to self)
 
-    // 3. Configure voice 0 for instrument playback
+    // 3. Configure all 8 voices for instrument playback
     // Key off ALL voices to silence residual game audio
     this.wasm.dsp_set_register(0x5c, 0xff); // KOFF all 8 voices
-    const v = this.instrumentVoice;
-    const vBase = v * 0x10;
-    this.wasm.dsp_set_register(vBase + 0x00, 0x7f); // VOLL max
-    this.wasm.dsp_set_register(vBase + 0x01, 0x7f); // VOLR max
-    this.wasm.dsp_set_register(vBase + 0x05, 0xff); // ADSR1: enabled, attack=15, decay=7
-    this.wasm.dsp_set_register(vBase + 0x06, 0xe0); // ADSR2: sustain=7, release=0
-    this.wasm.dsp_set_register(vBase + 0x04, this.instrumentSrcn); // SRCN
+    for (let v = 0; v < 8; v++) {
+      const vBase = v * 0x10;
+      this.wasm.dsp_set_register(vBase + 0x00, this.instrumentGain); // VOLL
+      this.wasm.dsp_set_register(vBase + 0x01, this.instrumentGain); // VOLR
+      this.wasm.dsp_set_register(vBase + 0x05, 0xff); // ADSR1: enabled, attack=15, decay=7
+      this.wasm.dsp_set_register(vBase + 0x06, 0xe0); // ADSR2: sustain=7, release=0
+      this.wasm.dsp_set_register(vBase + 0x04, this.instrumentSrcn); // SRCN
+    }
 
-    // Clear voice 0 from echo, noise, and pitch modulation
-    const eon = this.wasm.dsp_get_register(0x4d);
-    this.wasm.dsp_set_register(0x4d, eon & ~(1 << v));
-    const non = this.wasm.dsp_get_register(0x3d);
-    this.wasm.dsp_set_register(0x3d, non & ~(1 << v));
-    const pmon = this.wasm.dsp_get_register(0x2d);
-    this.wasm.dsp_set_register(0x2d, pmon & ~(1 << v));
+    // Clear EON, NON, PMON for ALL voices
+    this.wasm.dsp_set_register(0x4d, 0x00); // EON
+    this.wasm.dsp_set_register(0x3d, 0x00); // NON
+    this.wasm.dsp_set_register(0x2d, 0x00); // PMON
 
     // Ensure master volume is audible (some games set MVOL to 0 before starting)
     if (this.wasm.dsp_get_register(0x0c) === 0) {
@@ -1399,7 +1531,17 @@ class SpcProcessor extends AudioWorkletProcessor {
       this.wasm.dsp_set_register(0x6c, flg & 0x3f);
     }
 
-    // 4. Activate instrument mode
+    // 4. Reset voice allocation state
+    for (const slot of this.instrumentVoices) {
+      slot.active = false;
+      slot.midiNote = -1;
+      slot.basePitch = 0;
+      slot.releasing = false;
+    }
+    this.pendingKoffMask = 0;
+    this.pendingNoteOns = [];
+
+    // 5. Activate instrument mode
     this.instrumentModeActive = true;
     this.postMessage({ type: 'instrument-mode-changed', active: true });
   }
@@ -1407,8 +1549,20 @@ class SpcProcessor extends AudioWorkletProcessor {
   private handleExitInstrumentMode(): void {
     if (!this.wasm || !this.instrumentModeActive) return;
 
-    // 1. Release any held note
-    this.wasm.dsp_voice_note_off(this.instrumentVoice);
+    // 1. Release ALL active voices via KOFF bitmask
+    let koffMask = 0;
+    for (let v = 0; v < 8; v++) {
+      if (this.instrumentVoices[v].active) {
+        koffMask |= 1 << v;
+        this.instrumentVoices[v].active = false;
+      }
+    }
+    if (koffMask !== 0) {
+      this.wasm.dsp_set_register(0x5c, koffMask);
+    }
+    // Clear pending operations
+    this.pendingKoffMask = 0;
+    this.pendingNoteOns = [];
 
     // 2. Restore DSP snapshot (includes original RAM bytes at PC)
     if (this.instrumentSnapshot) {
@@ -1521,7 +1675,9 @@ class SpcProcessor extends AudioWorkletProcessor {
   ): void {
     this.instrumentSrcn = msg.srcn & 0xff;
     if (this.instrumentModeActive && this.wasm) {
-      this.wasm.dsp_set_register(0x04, this.instrumentSrcn);
+      for (let v = 0; v < 8; v++) {
+        this.wasm.dsp_set_register(v * 0x10 + 0x04, this.instrumentSrcn);
+      }
     }
   }
 

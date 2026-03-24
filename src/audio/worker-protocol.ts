@@ -66,7 +66,11 @@ export type MainToWorklet =
   | MainToWorklet.EnterInstrumentMode
   | MainToWorklet.ExitInstrumentMode
   | MainToWorklet.RequestSampleCatalog
-  | MainToWorklet.SetInstrumentSample;
+  | MainToWorklet.SetInstrumentSample
+  | MainToWorklet.InstrumentNoteOn
+  | MainToWorklet.InstrumentNoteOff
+  | MainToWorklet.InstrumentSetGain
+  | MainToWorklet.InstrumentSetPitchOffset;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace MainToWorklet {
@@ -244,6 +248,36 @@ export namespace MainToWorklet {
     readonly type: 'set-instrument-sample';
     /** Sample source number (0–255). */
     readonly srcn: number;
+  }
+
+  /** Trigger a polyphonic note-on in instrument mode. */
+  export interface InstrumentNoteOn {
+    readonly type: 'instrument-note-on';
+    /** MIDI note number (0–127). */
+    readonly midiNote: number;
+    /** S-DSP 14-bit pitch value. */
+    readonly pitch: number;
+  }
+
+  /** Trigger a polyphonic note-off in instrument mode. */
+  export interface InstrumentNoteOff {
+    readonly type: 'instrument-note-off';
+    /** MIDI note number (0–127). */
+    readonly midiNote: number;
+  }
+
+  /** Set DSP-level volume for instrument mode voices. */
+  export interface InstrumentSetGain {
+    readonly type: 'instrument-set-gain';
+    /** Volume level 0–127 for DSP VOL registers. */
+    readonly gain: number;
+  }
+
+  /** Set pitch offset for all active instrument mode voices. */
+  export interface InstrumentSetPitchOffset {
+    readonly type: 'instrument-set-pitch-offset';
+    /** Pitch offset in semitones. */
+    readonly semitones: number;
   }
 
   /**

@@ -82,6 +82,9 @@ class AudioEngine {
   private currentTempo = 1.0;
   private currentPitch = 1.0;
 
+  // Instrument mode gain node (inserted between worklet and main gain)
+  private instrumentGainNode: GainNode | null = null;
+
   /** Initialize: compile WASM, create AudioContext, load worklet, create audio graph. */
   async init(): Promise<void> {
     if (this.isInitialized) return;
@@ -414,6 +417,13 @@ class AudioEngine {
           event.data.active
         ) {
           cleanup();
+          // Insert instrument gain node into audio graph
+          if (this.audioContext && this.workletNode && this.gainNode) {
+            this.instrumentGainNode = this.audioContext.createGain();
+            this.workletNode.disconnect(this.gainNode);
+            this.workletNode.connect(this.instrumentGainNode);
+            this.instrumentGainNode.connect(this.gainNode);
+          }
           resolve();
         } else if (event.data.type === 'error') {
           cleanup();
@@ -433,6 +443,14 @@ class AudioEngine {
 
   /** Exit instrument mode. Restores previous DSP state. */
   async exitInstrumentMode(): Promise<void> {
+    // Remove instrument gain node before sending exit command
+    if (this.instrumentGainNode && this.workletNode && this.gainNode) {
+      this.workletNode.disconnect(this.instrumentGainNode);
+      this.instrumentGainNode.disconnect();
+      this.instrumentGainNode = null;
+      this.workletNode.connect(this.gainNode);
+    }
+
     return new Promise<void>((resolve, reject) => {
       if (!this.workletNode) {
         reject(new Error('Worklet not initialized'));
@@ -504,6 +522,44 @@ class AudioEngine {
   /** Select a sample SRCN for instrument mode playback. */
   setInstrumentSample(srcn: number): void {
     this.postCommand({ type: 'set-instrument-sample', srcn });
+  }
+
+  /** Trigger a polyphonic note-on in instrument mode. */
+  instrumentNoteOn(midiNote: number, pitch: number): void {
+    this.postCommand({ type: 'instrument-note-on', midiNote, pitch });
+  }
+
+  /** Trigger a polyphonic note-off in instrument mode. */
+  instrumentNoteOff(midiNote: number): void {
+    this.postCommand({ type: 'instrument-note-off', midiNote });
+  }
+
+  /** Set DSP-level volume for instrument mode voices. */
+  setInstrumentGain(gain: number): void {
+    this.postCommand({ type: 'instrument-set-gain', gain });
+  }
+
+  /** Set pitch offset for all active instrument mode voices. */
+  setInstrumentPitchOffset(semitones: number): void {
+    this.postCommand({ type: 'instrument-set-pitch-offset', semitones });
+  }
+
+  /**
+   * Set instrument gain with two-tier control:
+   * 0–100% maps to DSP volume 0–127; >100% adds Web Audio boost up to 2×.
+   */
+  setInstrumentGainValue(gainPercent: number): void {
+    const dspGain = Math.round((Math.min(gainPercent, 100) / 100) * 127);
+    this.postCommand({ type: 'instrument-set-gain', gain: dspGain });
+
+    if (this.instrumentGainNode && this.audioContext) {
+      const webAudioGain = Math.max(1.0, gainPercent / 100);
+      this.instrumentGainNode.gain.setTargetAtTime(
+        webAudioGain,
+        this.audioContext.currentTime,
+        0.01,
+      );
+    }
   }
 
   /** Set output resampler mode. 0=linear (JS), 1=sinc (WASM Lanczos-3). */
@@ -1028,6 +1084,12 @@ class AudioEngine {
       this.soundTouchNode = null;
     }
     this.soundTouchRegistered = false;
+
+    // Disconnect instrument gain node
+    if (this.instrumentGainNode) {
+      this.instrumentGainNode.disconnect();
+      this.instrumentGainNode = null;
+    }
 
     if (this.workletNode) {
       this.workletNode.port.onmessage = null;
