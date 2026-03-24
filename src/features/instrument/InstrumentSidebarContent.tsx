@@ -1,5 +1,7 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import type { VoiceStateSnapshot } from '@/audio/audio-state-buffer';
+import { audioStateBuffer } from '@/audio/audio-state-buffer';
 import { audioEngine } from '@/audio/engine';
 import { useAppStore } from '@/store/store';
 
@@ -29,16 +31,31 @@ export function InstrumentSidebarContent() {
     [setPitchShift],
   );
 
-  // Placeholder ADSR values — these would come from reading DSP registers
-  const adsrState = useMemo(
-    () => ({
-      attack: 10,
-      decay: 5,
-      sustain: 4,
-      release: 20,
-    }),
-    [],
-  );
+  const [adsrState, setAdsrState] = useState({
+    attack: 0,
+    decay: 0,
+    sustain: 0,
+    release: 0,
+  });
+  const [currentPhase, setCurrentPhase] =
+    useState<VoiceStateSnapshot['envelopePhase']>('silent');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const regs = audioStateBuffer.dspRegisters;
+      const voiceBase = 0 * 0x10; // voice 0 for instrument mode
+      const adsr1 = regs[voiceBase + 0x05];
+      const adsr2 = regs[voiceBase + 0x06];
+      setAdsrState({
+        attack: adsr1 & 0x0f,
+        decay: (adsr1 >> 4) & 0x07,
+        sustain: (adsr2 >> 5) & 0x07,
+        release: adsr2 & 0x1f,
+      });
+      setCurrentPhase(audioStateBuffer.voices[0].envelopePhase);
+    }, 60);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className={styles.container}>
@@ -59,6 +76,7 @@ export function InstrumentSidebarContent() {
           decay={adsrState.decay}
           sustain={adsrState.sustain}
           release={adsrState.release}
+          currentPhase={currentPhase}
         />
       </section>
     </div>

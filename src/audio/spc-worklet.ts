@@ -67,6 +67,7 @@ class SpcProcessor extends AudioWorkletProcessor {
 
   // -- Sample counting for duration/fade ------------------------------------
   private renderedSamples = 0;
+  private instrumentSamples = 0;
   private durationSamples: number | null = null;
   private fadeOutSamples = 0;
 
@@ -399,6 +400,11 @@ class SpcProcessor extends AudioWorkletProcessor {
           // Silence any remaining audio in this quantum that is past the end.
           // (applyFade already zeroed samples past the fade region.)
         }
+      }
+
+      // Track elapsed DSP samples in instrument mode for piano roll animation.
+      if (!this.isPlaying && this.instrumentModeActive) {
+        this.instrumentSamples += intAdvance;
       }
 
       // Telemetry emission at configured interval.
@@ -1544,6 +1550,7 @@ class SpcProcessor extends AudioWorkletProcessor {
     this.pendingNoteOns = [];
 
     // 5. Activate instrument mode
+    this.instrumentSamples = 0;
     this.instrumentModeActive = true;
     this.postMessage({ type: 'instrument-mode-changed', active: true });
   }
@@ -1580,6 +1587,7 @@ class SpcProcessor extends AudioWorkletProcessor {
     }
 
     // 3. Deactivate instrument mode
+    this.instrumentSamples = 0;
     this.instrumentModeActive = false;
     this.postMessage({ type: 'instrument-mode-changed', active: false });
   }
@@ -1856,7 +1864,10 @@ class SpcProcessor extends AudioWorkletProcessor {
 
     const msg: WorkletToMain.Telemetry = {
       type: 'telemetry',
-      positionSamples: this.renderedSamples,
+      positionSamples:
+        this.instrumentModeActive && !this.isPlaying
+          ? this.instrumentSamples
+          : this.renderedSamples,
       vuLeft: [
         ...this.telemetryVuLeft,
       ] as unknown as WorkletToMain.Telemetry['vuLeft'],

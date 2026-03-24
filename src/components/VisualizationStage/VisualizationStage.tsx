@@ -94,9 +94,13 @@ function resizeCanvasToContainer(
 
 export interface VisualizationStageProps {
   lockedMode?: VisualizationMode;
+  className?: string;
 }
 
-export function VisualizationStage({ lockedMode }: VisualizationStageProps) {
+export function VisualizationStage({
+  lockedMode,
+  className,
+}: VisualizationStageProps) {
   const storeMode = useAppStore((s) => s.activeMode);
   const effectiveMode = lockedMode ?? storeMode;
   const showTabs = lockedMode === undefined;
@@ -357,7 +361,7 @@ export function VisualizationStage({ lockedMode }: VisualizationStageProps) {
   const activeTabId = `viz-tab-${effectiveMode}`;
 
   return (
-    <div className={styles.stage}>
+    <div className={`${styles.stage}${className ? ` ${className}` : ''}`}>
       {/* Skip link — visible only on keyboard focus */}
       <a className={styles.skipLink} href="#after-visualization">
         Skip visualization

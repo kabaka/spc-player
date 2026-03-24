@@ -39,6 +39,7 @@ export function TransportBar() {
   const loopRegion = useAppStore((s) => s.loopRegion);
   const isLoadingTrack = useAppStore((s) => s.isLoadingTrack);
   const activeIndex = useAppStore((s) => s.activeIndex);
+  const isInstrumentModeActive = useAppStore((s) => s.isInstrumentModeActive);
 
   const setPlaybackStatus = useAppStore((s) => s.setPlaybackStatus);
   const setPosition = useAppStore((s) => s.setPosition);
@@ -228,7 +229,7 @@ export function TransportBar() {
                 className={styles.prevNextBtn}
                 aria-label="Previous track"
                 onClick={handlePrevious}
-                disabled={!hasTrack}
+                disabled={!hasTrack || isInstrumentModeActive}
                 tabIndex={0 === rovingIndex ? 0 : -1}
               >
                 <PreviousTrackIcon />
@@ -244,7 +245,7 @@ export function TransportBar() {
                 className={styles.playPauseBtn}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
                 onClick={handlePlayPause}
-                disabled={!hasTrack}
+                disabled={!hasTrack || isInstrumentModeActive}
                 tabIndex={1 === rovingIndex ? 0 : -1}
               >
                 {isPlaying ? <PauseIcon /> : <PlayIcon />}
@@ -260,7 +261,7 @@ export function TransportBar() {
                 className={styles.prevNextBtn}
                 aria-label="Next track"
                 onClick={handleNext}
-                disabled={!hasTrack}
+                disabled={!hasTrack || isInstrumentModeActive}
                 tabIndex={2 === rovingIndex ? 0 : -1}
               >
                 <NextTrackIcon />
@@ -278,7 +279,7 @@ export function TransportBar() {
               onSeek={handleSeek}
               loopRegion={loopRegion}
               onLoopMarkerChange={handleLoopMarkerChange}
-              disabled={!hasTrack}
+              disabled={!hasTrack || isInstrumentModeActive}
             />
           </div>
           <div

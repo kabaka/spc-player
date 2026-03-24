@@ -8,8 +8,8 @@ import type { AudioVisualizationData, VisualizationRenderer } from '../types';
 
 const SNES_SAMPLE_RATE = 32000;
 const VOICE_COUNT = 8;
-const DESKTOP_TIME_WINDOW_S = 5;
-const MOBILE_TIME_WINDOW_S = 3;
+const DESKTOP_TIME_WINDOW_S = 3;
+const MOBILE_TIME_WINDOW_S = 2;
 const MOBILE_BREAKPOINT_PX = 768;
 const MUTED_ALPHA = 0.3;
 const GRID_ALPHA = 0.06;

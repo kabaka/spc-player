@@ -73,7 +73,8 @@ const INSTRUMENT_MODE_PASSTHROUGH = new Set([
   'Ctrl+Space',
   'ArrowLeft',
   'ArrowRight',
-
+  'BracketLeft',
+  'BracketRight',
   'ArrowUp',
   'ArrowDown',
   'Escape',

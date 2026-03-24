@@ -30,6 +30,10 @@
   min-width: 200px;
 }
 
+.fillStage {
+  height: 100%;
+}
+
 .emptyState {
   display: flex;
   align-items: center;

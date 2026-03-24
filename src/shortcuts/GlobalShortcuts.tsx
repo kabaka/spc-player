@@ -39,6 +39,7 @@ export function GlobalShortcuts(): null {
   // ── Player controls ─────────────────────────────────────────────────
 
   useShortcut('playback.playPause', () => {
+    if (useAppStore.getState().isInstrumentModeActive) return;
     const status = useAppStore.getState().playbackStatus;
     if (status === 'playing') {
       audioEngine.pause();
@@ -50,16 +51,19 @@ export function GlobalShortcuts(): null {
   });
 
   useShortcut('playback.stop', () => {
+    if (useAppStore.getState().isInstrumentModeActive) return;
     audioEngine.stop();
     setPlaybackStatus('stopped');
     setPosition(0);
   });
 
   useShortcut('playback.nextTrack', () => {
+    if (useAppStore.getState().isInstrumentModeActive) return;
     nextTrack();
   });
 
   useShortcut('playback.previousTrack', () => {
+    if (useAppStore.getState().isInstrumentModeActive) return;
     previousTrack();
   });
 

@@ -168,7 +168,10 @@ export function InstrumentView() {
       {isInstrumentModeActive && (
         <div className={styles.content}>
           <div className={styles.visualizationSection}>
-            <VisualizationStage lockedMode="piano-roll" />
+            <VisualizationStage
+              lockedMode="piano-roll"
+              className={styles.fillStage}
+            />
           </div>
 
           <div className={styles.header}>
